@@ -149,7 +149,7 @@ namespace DualContouring
         return damageBuffer;
     }
 
-    bool drawDamage(const float &x, const float &y, const float &z, const float radius, const float value, float *outPositions, unsigned int *outPositionsCount) {
+    bool drawDamageSphere(const float &x, const float &y, const float &z, const float radius, const float value, float *outPositions, unsigned int *outPositionsCount) {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
 
