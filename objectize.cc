@@ -33,4 +33,8 @@ EMSCRIPTEN_KEEPALIVE bool drawDamageSphere(float x, float y, float z, float radi
     return DualContouring::drawDamageSphere(x, y, z, radius, value, outPositions, outPositionsCount);
 }
 
+EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
+    free(ptr);
+}
+
 } // extern "C"
