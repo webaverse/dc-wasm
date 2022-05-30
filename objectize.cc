@@ -9,10 +9,6 @@ EMSCRIPTEN_KEEPALIVE void setChunkSize(int newChunkSize) {
     return DualContouring::setChunkSize(newChunkSize);
 }
 
-EMSCRIPTEN_KEEPALIVE void clearTemporaryChunkDataDualContouring() {
-    return DualContouring::clearTemporaryChunkData();
-}
-
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
     return DualContouring::clearChunkRoot(x, y, z);
 }

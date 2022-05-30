@@ -68,6 +68,7 @@ namespace DualContouring
         {
             return;
         }
+        // printf("FOUND IT\n");
         removeOctreeFromHashMap(octreeMin, chunksListHashMap);
         destroyOctree(chunkRoot);
     }
