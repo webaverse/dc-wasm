@@ -292,8 +292,6 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 		node->children[i] = nullptr;
 	}
 
-	printf("I AM NOT A LEAF");
-
 	node->type = Node_Psuedo;
 	node->drawInfo = drawInfo;
 
@@ -1033,8 +1031,7 @@ OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int size, const
 	root->lod = lod;
 
 	OctreeNode *octreeRootNode = constructOctreeNodes(root, lod, chunkNoise, damageBuffer);
-	std::cout << octreeRootNode << std::endl;
-	// octreeRootNode = switchChunkLod(octreeRootNode, lod);
+	octreeRootNode = switchChunkLod(octreeRootNode, lod);
 
 	return octreeRootNode;
 }

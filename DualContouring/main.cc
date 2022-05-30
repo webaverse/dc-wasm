@@ -30,7 +30,7 @@ namespace DualContouring
     }
     OctreeNode *generateChunkData(const vm::ivec3 octreeMin, const int lod)
     {
-        CachedNoise chunkNoise(octreeMin, chunkSize, lod);
+        CachedNoise chunkNoise(octreeMin, chunkSize);
         ChunkDamageBuffer &damageBuffer = getChunkDamageBuffer(octreeMin);
         OctreeNode *chunk = constructOctreeDownwards(octreeMin, chunkSize, lod, chunkNoise, damageBuffer);
         // printf("CHUNK DATA IS GENERATED\n");

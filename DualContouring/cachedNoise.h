@@ -22,13 +22,11 @@ public:
     CachedNoise() = delete;
     CachedNoise(const CachedNoise &other) = delete;
     CachedNoise(const vm::ivec3 chunkMin,
-                const int chunkSize,
-                const int chunkLod) : rng(100),
-                                           fastNoise(rng()),
-                                           min(chunkMin),
-                                           size(chunkSize),
-                                           gridPoints(size + 3),
-                                           gridSteps(chunkLod)
+                const int chunkSize) : rng(100),
+                                       fastNoise(rng()),
+                                       min(chunkMin),
+                                       size(chunkSize),
+                                       gridPoints(size + 3)
     {
         init();
     };
@@ -51,7 +49,6 @@ public:
     // private:
     int size;
     int gridPoints;
-    int gridSteps;
     vm::ivec3 min;
     std::vector<float> cachedNoiseField;
     std::mt19937 rng;
@@ -64,9 +61,9 @@ public:
 
         cachedNoiseField.resize(gridPoints * gridPoints);
 
-        for (int dz = 0; dz < gridPoints; dz+=gridSteps)
+        for (int dz = 0; dz < gridPoints; dz++)
         {
-            for (int dx = 0; dx < gridPoints; dx+=gridSteps)
+            for (int dx = 0; dx < gridPoints; dx++)
             {
                 cachedNoiseField[dx + dz * gridPoints] = (float)fastNoise.GetSimplexFractal(dx + min.x - 1, dz + min.z - 1);
             }
