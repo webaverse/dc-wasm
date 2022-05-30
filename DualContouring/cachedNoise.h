@@ -1,6 +1,7 @@
 #ifndef CHACHEDNOISE_H
 #define CHACHEDNOISE_H
 
+#include "main.h"
 #include "vectorMath.h"
 #include "../FastNoise.h"
 #include "../hash.h"
@@ -14,18 +15,12 @@
 class CachedNoise
 {
 public:
-    /* CachedNoise() : rng(1000),
-                    fastNoise(rng()), min(vm::ivec3(0)), size(64), gridPoints(size + 3)
-    {
-        init();
-    }; */
     CachedNoise() = delete;
     CachedNoise(const CachedNoise &other) = delete;
-    CachedNoise(const vm::ivec3 chunkMin,
-                const int chunkSize) : rng(100),
+    CachedNoise(const vm::ivec3 chunkMin) : rng(100),
                                        fastNoise(rng()),
                                        min(chunkMin),
-                                       size(chunkSize),
+                                       size(DualContouring::chunkSize),
                                        gridPoints(size + 3)
     {
         init();

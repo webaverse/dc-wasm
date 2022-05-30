@@ -1,4 +1,5 @@
 #include "main.h"
+#include "octree.h"
 
 // namespace ChunkMesh
 // {
@@ -30,9 +31,9 @@ namespace DualContouring
     }
     OctreeNode *generateChunkData(const vm::ivec3 octreeMin, const int lod)
     {
-        CachedNoise chunkNoise(octreeMin, chunkSize);
+        CachedNoise chunkNoise(octreeMin);
         ChunkDamageBuffer &damageBuffer = getChunkDamageBuffer(octreeMin);
-        OctreeNode *chunk = constructOctreeDownwards(octreeMin, chunkSize, lod, chunkNoise, damageBuffer);
+        OctreeNode *chunk = constructOctreeDownwards(octreeMin, lod, chunkNoise, damageBuffer);
         // printf("CHUNK DATA IS GENERATED\n");
         return chunk;
     }
@@ -173,35 +174,3 @@ namespace DualContouring
         return drew;
     }
 }
-
-// int main()
-// {
-//     const vm::ivec3 OFFSETS[8] =
-//         {
-//             vm::ivec3(0, 0, 0), vm::ivec3(1, 0, 0), vm::ivec3(0, 0, 1), vm::ivec3(1, 0, 1),
-//             vm::ivec3(0, 1, 0), vm::ivec3(1, 1, 0), vm::ivec3(0, 1, 1), vm::ivec3(1, 1, 1)};
-
-//     const int min = -((64 * 4) / 2);
-//     const int max = (64 * 4) / 2;
-
-//     for (int x = min; x < max; x += 64)
-//     {
-//         for (int y = min; y < max; y += 64)
-//         {
-//             for (int z = min; z < max; z += 64)
-//             {
-//                 // DualContouring::generateChunkData(x, y, z, 1);
-//                 // DualContouring::setChunkLod(x, y, z, 1);
-
-//                 std::cout << "\n"
-//                           << DualContouring::createChunkMesh(x, y, z, 1)
-//                           << std::endl;
-
-//                 // DualContouring::clearTemporaryChunkData();
-//                 DualContouring::clearChunkRoot(x, y, z);
-//             }
-//         }
-//     }
-
-//     return 0;
-// }

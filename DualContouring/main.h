@@ -5,13 +5,16 @@
 #include <cstdint>
 #include <ctime>
 #include <string.h>
-#include "octree.h"
-#include "cachedNoise.h"
+// #include "octree.h"
+// #include "cachedNoise.h"
 #include "vectorMath.h"
-#include "chunkDamageBuffer.h"
+// #include "chunkDamageBuffer.h"
+
+class ChunkDamageBuffer;
 
 namespace DualContouring
 {
+    extern int chunkSize;
     // class Chunk
     // {
     // public:

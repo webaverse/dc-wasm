@@ -350,7 +350,7 @@ OctreeNode *createChunkWithLod(OctreeNode *chunkRoot)
 
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
 {
-	const unsigned int mask = ~(64 - 1);
+	const unsigned int mask = ~(DualContouring::chunkSize - 1);
 	return vm::ivec3(p.x & mask, p.y & mask, p.z & mask);
 }
 
@@ -1022,11 +1022,11 @@ OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, CachedNoise &c
 	return node;
 }
 
-OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int size, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
 {
 	OctreeNode *root = new OctreeNode;
 	root->min = min;
-	root->size = size;
+	root->size = DualContouring::chunkSize;
 	root->type = Node_Internal;
 	root->lod = lod;
 
