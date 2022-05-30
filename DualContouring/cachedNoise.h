@@ -21,8 +21,12 @@ public:
     }; */
     CachedNoise() = delete;
     CachedNoise(const CachedNoise &other) = delete;
-    CachedNoise(const vm::ivec3 chunkMin, int chunkSize) : rng(100),
-                                                           fastNoise(rng()), min(chunkMin), size(chunkSize), gridPoints(size + 3)
+    CachedNoise(const vm::ivec3 chunkMin,
+                const int chunkSize) : rng(100),
+                                       fastNoise(rng()),
+                                       min(chunkMin),
+                                       size(chunkSize),
+                                       gridPoints(size + 3)
     {
         init();
     };
@@ -42,7 +46,7 @@ public:
         return (cachedNoiseField.at(index) + 1.f) / 2.f;
     }
 
-// private:
+    // private:
     int size;
     int gridPoints;
     vm::ivec3 min;
@@ -57,8 +61,10 @@ public:
 
         cachedNoiseField.resize(gridPoints * gridPoints);
 
-        for (int dz = 0; dz < gridPoints; dz++) {
-            for (int dx = 0; dx < gridPoints; dx++) {
+        for (int dz = 0; dz < gridPoints; dz++)
+        {
+            for (int dx = 0; dx < gridPoints; dx++)
+            {
                 cachedNoiseField[dx + dz * gridPoints] = (float)fastNoise.GetSimplexFractal(dx + min.x - 1, dz + min.z - 1);
             }
         }

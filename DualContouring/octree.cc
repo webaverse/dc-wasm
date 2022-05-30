@@ -170,12 +170,12 @@ void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &posi
 	selectMostCommonBiomes(biome, biomeWeights, biomeData, gridPoints * gridPoints);
 }
 
-OctreeNode *switchChunkLod(OctreeNode *node, LodLevel lod)
+OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 {
 
 	if (!node)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	if (node->type != Node_Internal)
@@ -292,7 +292,7 @@ OctreeNode *switchChunkLod(OctreeNode *node, LodLevel lod)
 		node->children[i] = nullptr;
 	}
 
-	node->type = Node_Leaf;
+	node->type = Node_Psuedo;
 	node->drawInfo = drawInfo;
 
 	return node;
@@ -388,7 +388,6 @@ void removeOctreeFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, O
 void addChunkRootToHashMap(OctreeNode *root, std::unordered_map<uint64_t, OctreeNode *> &hashMap)
 {
 	const uint64_t rootIndex = hashOctreeMin(root->min);
-	// std::cout << "Adding something here : " << rootIndex << endl;
 	hashMap.insert(std::pair<uint64_t, OctreeNode *>(rootIndex, root));
 }
 
@@ -494,7 +493,7 @@ OctreeNode *constructOctreeUpwards(
 	return root;
 }
 
-void generateVertexIndices(OctreeNode *node, VertexBuffer &vertexBuffer)
+void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertexBuffer)
 {
 	if (!node)
 	{
@@ -502,10 +501,11 @@ void generateVertexIndices(OctreeNode *node, VertexBuffer &vertexBuffer)
 	}
 
 	if (node->type == Node_Internal)
+	// if (node->size > lod)
 	{
 		for (int i = 0; i < 8; i++)
 		{
-			generateVertexIndices(node->children[i], vertexBuffer);
+			generateVertexIndices(node->children[i], lod, vertexBuffer);
 		}
 	}
 	else
@@ -798,16 +798,16 @@ vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, CachedNoise &chunkNoise, Chun
 {
 	const float H = 0.001f;
 	const float dx = Density_Func(p + vm::vec3(H, 0.f, 0.f), chunkNoise, damageBuffer) -
-	  Density_Func(p - vm::vec3(H, 0.f, 0.f), chunkNoise, damageBuffer);
+					 Density_Func(p - vm::vec3(H, 0.f, 0.f), chunkNoise, damageBuffer);
 	const float dy = Density_Func(p + vm::vec3(0.f, H, 0.f), chunkNoise, damageBuffer) -
-	  Density_Func(p - vm::vec3(0.f, H, 0.f), chunkNoise, damageBuffer);
+					 Density_Func(p - vm::vec3(0.f, H, 0.f), chunkNoise, damageBuffer);
 	const float dz = Density_Func(p + vm::vec3(0.f, 0.f, H), chunkNoise, damageBuffer) -
-	  Density_Func(p - vm::vec3(0.f, 0.f, H), chunkNoise, damageBuffer);
+					 Density_Func(p - vm::vec3(0.f, 0.f, H), chunkNoise, damageBuffer);
 
 	return vm::normalize(vm::vec3(dx, dy, dz));
 }
 
-OctreeNode *constructLeaf(OctreeNode *leaf, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
 {
 	if (!leaf)
 	{
@@ -817,7 +817,7 @@ OctreeNode *constructLeaf(OctreeNode *leaf, CachedNoise &chunkNoise, ChunkDamage
 	int corners = 0;
 	for (int i = 0; i < 8; i++)
 	{
-		const vm::ivec3 cornerPos = leaf->min + CHILD_MIN_OFFSETS[i];
+		const vm::ivec3 cornerPos = leaf->min + CHILD_MIN_OFFSETS[i] * lod;
 		const float density = Density_Func(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), chunkNoise, damageBuffer);
 		const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
 		corners |= (material << i);
@@ -851,8 +851,8 @@ OctreeNode *constructLeaf(OctreeNode *leaf, CachedNoise &chunkNoise, ChunkDamage
 			continue;
 		}
 
-		const vm::vec3 p1 = vm::vec3(leaf->min.x + CHILD_MIN_OFFSETS[c1].x, leaf->min.y + CHILD_MIN_OFFSETS[c1].y, leaf->min.z + CHILD_MIN_OFFSETS[c1].z);
-		const vm::vec3 p2 = vm::vec3(leaf->min.x + CHILD_MIN_OFFSETS[c2].x, leaf->min.y + CHILD_MIN_OFFSETS[c2].y, leaf->min.z + CHILD_MIN_OFFSETS[c2].z);
+		const vm::vec3 p1 = vm::vec3(leaf->min.x + CHILD_MIN_OFFSETS[c1].x * lod, leaf->min.y + CHILD_MIN_OFFSETS[c1].y * lod, leaf->min.z + CHILD_MIN_OFFSETS[c1].z * lod);
+		const vm::vec3 p2 = vm::vec3(leaf->min.x + CHILD_MIN_OFFSETS[c2].x * lod, leaf->min.y + CHILD_MIN_OFFSETS[c2].y * lod, leaf->min.z + CHILD_MIN_OFFSETS[c2].z * lod);
 		const vm::vec3 p = approximateZeroCrossingPosition(p1, p2, chunkNoise, damageBuffer);
 		const vm::vec3 n = calculateSurfaceNormal(p, chunkNoise, damageBuffer);
 		qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
@@ -987,16 +987,16 @@ std::vector<OctreeNode *> findSeamNodes(OctreeNode *targetRoot, std::vector<Octr
 	return seamNodes;
 }
 
-OctreeNode *constructOctreeNodes(OctreeNode *node, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
 {
 	if (!node)
 	{
 		return nullptr;
 	}
 
-	if (node->size == 1)
+	if (node->size == lod)
 	{
-		return constructLeaf(node, chunkNoise, damageBuffer);
+		return constructLeaf(node, lod, chunkNoise, damageBuffer);
 	}
 
 	const int childSize = node->size / 2;
@@ -1009,7 +1009,7 @@ OctreeNode *constructOctreeNodes(OctreeNode *node, CachedNoise &chunkNoise, Chun
 		child->min = node->min + (CHILD_MIN_OFFSETS[i] * childSize);
 		child->type = Node_Internal;
 
-		node->children[i] = constructOctreeNodes(child, chunkNoise, damageBuffer);
+		node->children[i] = constructOctreeNodes(child, lod, chunkNoise, damageBuffer);
 		hasChildren |= (node->children[i] != nullptr);
 	}
 
@@ -1022,30 +1022,28 @@ OctreeNode *constructOctreeNodes(OctreeNode *node, CachedNoise &chunkNoise, Chun
 	return node;
 }
 
-OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int size, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int size, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
 {
 	OctreeNode *root = new OctreeNode;
 	root->min = min;
 	root->size = size;
 	root->type = Node_Internal;
+	root->lod = lod;
 
-	const OctreeNode *octreeRootNode = constructOctreeNodes(root, chunkNoise, damageBuffer);
-	if (!octreeRootNode)
-	{
-		return nullptr;
-	}
+	OctreeNode *octreeRootNode = constructOctreeNodes(root, lod, chunkNoise, damageBuffer);
+	octreeRootNode = switchChunkLod(octreeRootNode, lod);
 
-	return root;
+	return octreeRootNode;
 }
 
-void generateMeshFromOctree(OctreeNode *node, bool isSeam, VertexBuffer &vertexBuffer)
+void generateMeshFromOctree(OctreeNode *node, const int lod, bool isSeam, VertexBuffer &vertexBuffer)
 {
 	if (!node)
 	{
 		return;
 	}
 
-	generateVertexIndices(node, vertexBuffer);
+	generateVertexIndices(node, lod, vertexBuffer);
 	contourCellProc(node, vertexBuffer.indices, isSeam);
 }
 
