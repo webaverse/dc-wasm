@@ -4,6 +4,8 @@
 #include "vectorMath.h"
 
 #include <vector>
+#include <stdint.h>
+#include <cstring>
 
 typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;

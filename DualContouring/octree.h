@@ -28,14 +28,6 @@ enum OctreeNodeType
     Node_Leaf
 };
 
-enum LodLevel
-{
-    Lod0 = 1,
-    Lod1 = 2,
-    Lod2 = 4,
-    Lod3 = 8
-};
-
 struct OctreeDrawInfo
 {
     OctreeDrawInfo()
@@ -56,7 +48,7 @@ class OctreeNode
 {
 public:
     OctreeNode()
-        : type(Node_None), min(0, 0, 0), size(0), drawInfo(nullptr), lod(Lod0)
+        : type(Node_None), min(0, 0, 0), size(0), drawInfo(nullptr), lod(1)
     {
         for (int i = 0; i < 8; i++)
         {
@@ -65,7 +57,7 @@ public:
     }
 
     OctreeNode(const OctreeNodeType _type)
-        : type(_type), min(0, 0, 0), size(0), drawInfo(nullptr), lod(Lod0)
+        : type(_type), min(0, 0, 0), size(0), drawInfo(nullptr), lod(1)
     {
         for (int i = 0; i < 8; i++)
         {
@@ -76,7 +68,7 @@ public:
     OctreeNodeType type;
     vm::ivec3 min;
     int size;
-    LodLevel lod;
+    int lod;
     OctreeNode *children[8];
     OctreeDrawInfo *drawInfo;
 };
@@ -94,10 +86,10 @@ OctreeNode *constructOctreeUpwards(
     const vm::ivec3 &rootMin,
     const int rootNodeSize);
 
-OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int size, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer);
-OctreeNode *switchChunkLod(OctreeNode *node, LodLevel lod);
+OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int size, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer);
+OctreeNode *switchChunkLod(OctreeNode *node,const int lod);
 void destroyOctree(OctreeNode *node);
-void generateMeshFromOctree(OctreeNode *node, bool isSeam, VertexBuffer &vertexBuffer);
+void generateMeshFromOctree(OctreeNode *node,const int lod , bool isSeam, VertexBuffer &vertexBuffer);
 
 void addNodesToVector(OctreeNode *node, std::vector<OctreeNode *> &vector);
 
