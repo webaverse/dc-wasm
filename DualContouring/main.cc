@@ -12,7 +12,7 @@
 namespace DualContouring
 {
     // chunk settings
-    int chunkSize = 64;
+    int chunkSize = 16;
 
     // storing the octrees that we would delete after mesh construction
     std::vector<OctreeNode *> temporaryNodesList;
@@ -69,7 +69,6 @@ namespace DualContouring
         {
             return;
         }
-        // printf("FOUND IT\n");
         removeOctreeFromHashMap(octreeMin, chunksListHashMap);
         destroyOctree(chunkRoot);
     }
@@ -84,11 +83,18 @@ namespace DualContouring
         OctreeNode *chunkRoot = generateChunkData(octreeMin, lod);
         if (!chunkRoot)
         {
+            // printf("Chunk Has No Data\n");
             return nullptr;
         }
 
         addChunkRootToHashMap(chunkRoot, chunksListHashMap);
         generateMeshFromOctree(chunkRoot, lod, false, vertexBuffer);
+
+        // mesh is not valid
+        if(vertexBuffer.indices.size() == 0){
+            printf("Generated Mesh Is Not Valid\n");
+            return nullptr;
+        }
 
         // std::vector<OctreeNode *> neighbouringChunks;
         // std::vector<OctreeNode *> seamNodes = findSeamNodes(chunkWithLod, neighbouringChunks, chunksListHashMap, getChunkRootFromHashMap);

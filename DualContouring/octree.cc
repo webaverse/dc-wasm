@@ -146,7 +146,6 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 	biomeWeights.y = selectedBiomesWeights[1];
 	biomeWeights.z = selectedBiomesWeights[2];
 	biomeWeights.w = selectedBiomesWeights[3];
-	// std::cout << biome.y << std::endl;
 }
 
 void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, CachedNoise &chunkNoise)
@@ -292,7 +291,7 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 		node->children[i] = nullptr;
 	}
 
-	node->type = Node_Psuedo;
+	node->type = Node_Leaf;
 	node->drawInfo = drawInfo;
 
 	return node;
@@ -501,7 +500,6 @@ void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertex
 	}
 
 	if (node->type == Node_Internal)
-	// if (node->size > lod)
 	{
 		for (int i = 0; i < 8; i++)
 		{
@@ -511,14 +509,11 @@ void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertex
 	else
 	{
 		OctreeDrawInfo *d = node->drawInfo;
-		// std::cout << node->size << endl;
 		if (!d)
 		{
 			printf("Error! Could not add vertex!\n");
-			// exit(EXIT_FAILURE);
 			return;
 		}
-
 		d->index = vertexBuffer.positions.size();
 		vertexBuffer.positions.push_back(d->position);
 		vertexBuffer.normals.push_back(d->averageNormal);
@@ -529,7 +524,7 @@ void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertex
 
 void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 {
-	int minSize = 1000000; // arbitrary big number
+	int minSize = 2147483647; // arbitrary big number
 	int minIndex = 0;
 	int indices[4] = {-1, -1, -1, -1};
 	bool flip = false;
@@ -590,19 +585,19 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	if (isSeam)
-	{
-		std::vector<vm::ivec3> chunkRoots;
-		for (int i = 0; i < 4; i++)
-		{
-			const uint64_t chunkIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
-			chunkRoots.push_back(chunkMinForPosition(node[i]->min));
-		}
-		if (chunkRoots.size() == 1)
-		{
-			return;
-		}
-	}
+	// if (isSeam)
+	// {
+	// 	std::vector<vm::ivec3> chunkRoots;
+	// 	for (int i = 0; i < 4; i++)
+	// 	{
+	// 		const uint64_t chunkIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
+	// 		chunkRoots.push_back(chunkMinForPosition(node[i]->min));
+	// 	}
+	// 	if (chunkRoots.size() == 1)
+	// 	{
+	// 		return;
+	// 	}
+	// }
 
 	const bool isBranch[4] =
 		{
@@ -729,7 +724,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, boo
 
 void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, bool isSeam)
 {
-	if (node == NULL || node->type == Node_Leaf)
+	if (!node || node->type == Node_Leaf)
 	{
 		return;
 	}
@@ -883,7 +878,6 @@ OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, CachedNoise &chunkNoi
 	drawInfo->corners = corners;
 
 	setBiomeData(drawInfo->biome, drawInfo->biomeWeights, drawInfo->position, chunkNoise);
-	// std::cout << drawInfo->biomeWeights.x << std::endl;
 
 	leaf->type = Node_Leaf;
 	leaf->drawInfo = drawInfo;

@@ -73,7 +73,7 @@ public:
     OctreeDrawInfo *drawInfo;
 };
 
-OctreeNode *createChunkWithLod(OctreeNode *chunkRoot);
+// OctreeNode *createChunkWithLod(OctreeNode *chunkRoot);
 OctreeNode *getChunkRootFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 void removeOctreeFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 void addChunkRootToHashMap(OctreeNode *root, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
