@@ -79,7 +79,7 @@ void removeOctreeFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, O
 void addChunkRootToHashMap(OctreeNode *root, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 uint64_t hashOctreeMin(const vm::ivec3 &min);
 
-std::vector<OctreeNode *> findSeamNodes(OctreeNode *root, std::vector<OctreeNode *>(&neighbouringChunks), std::unordered_map<uint64_t, OctreeNode *> hashMap, OctreeNode *(*getChunkRootFromHashMap)(vm::ivec3, std::unordered_map<uint64_t, OctreeNode *> &));
+std::vector<OctreeNode *> findSeamNodes(OctreeNode *root);
 OctreeNode *constructOctreeUpwards(
     OctreeNode *octree,
     const std::vector<OctreeNode *> &inputNodes,
@@ -87,9 +87,9 @@ OctreeNode *constructOctreeUpwards(
     const int rootNodeSize);
 
 OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer);
-OctreeNode *switchChunkLod(OctreeNode *node,const int lod);
+OctreeNode *switchChunkLod(OctreeNode *node, const int lod);
 void destroyOctree(OctreeNode *node);
-void generateMeshFromOctree(OctreeNode *node,const int lod , bool isSeam, VertexBuffer &vertexBuffer);
+void generateMeshFromOctree(OctreeNode *node, const int lod, bool isSeam, VertexBuffer &vertexBuffer);
 
 void addNodesToVector(OctreeNode *node, std::vector<OctreeNode *> &vector);
 

@@ -21,7 +21,7 @@ public:
                                        fastNoise(rng()),
                                        min(chunkMin),
                                        size(DualContouring::chunkSize),
-                                       gridPoints(size + 3)
+                                       gridPoints(size + 4)
     {
         init();
     };

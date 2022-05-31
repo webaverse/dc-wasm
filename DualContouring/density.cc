@@ -101,11 +101,11 @@ float Density_Func(const vm::vec3 &position, CachedNoise &chunkNoise, ChunkDamag
 
 	// const float mountainsNoise = fractalNoise(2, 0.2f, 2.1f, 0.21f, p);
 
-	const float cube = cuboid(position, vm::vec3(-4., 10.f, -4.f), vm::vec3(12.f));
+	// const float cube = cuboid(position, vm::vec3(-4., 10.f, -4.f), vm::vec3(12.f));
 	// const float orb = sphere(position, vm::vec3(15.f, 2.5f, 1.f), 16.f);
 
 	// return orb;
 	// return cube;
-	// return terrain;
-	return std::max(-cube, terrain);
+	return terrain;
+	// return std::max(-cube, terrain);
 }

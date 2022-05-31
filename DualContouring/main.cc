@@ -29,14 +29,6 @@ namespace DualContouring
     {
         return vertexBuffer.getBuffer();
     }
-    OctreeNode *generateChunkData(const vm::ivec3 octreeMin, const int lod)
-    {
-        CachedNoise chunkNoise(octreeMin);
-        ChunkDamageBuffer &damageBuffer = getChunkDamageBuffer(octreeMin);
-        OctreeNode *chunk = constructOctreeDownwards(octreeMin, lod, chunkNoise, damageBuffer);
-        // printf("CHUNK DATA IS GENERATED\n");
-        return chunk;
-    }
 
     void clearTemporaryChunkData()
     {
@@ -62,7 +54,6 @@ namespace DualContouring
 
     void clearChunkRoot(float x, float y, float z)
     {
-        // we destroy the chunk root separately because we might need it for LOD switch if it's already generated
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
         if (!chunkRoot)
@@ -78,28 +69,29 @@ namespace DualContouring
         VertexBuffer vertexBuffer;
 
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-        // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
-
-        OctreeNode *chunkRoot = generateChunkData(octreeMin, lod);
+        CachedNoise chunkNoise(octreeMin);
+        ChunkDamageBuffer &damageBuffer = getChunkDamageBuffer(octreeMin);
+        OctreeNode *chunkRoot = constructOctreeDownwards(octreeMin, lod, chunkNoise, damageBuffer);
         if (!chunkRoot)
         {
             // printf("Chunk Has No Data\n");
             return nullptr;
         }
 
-        addChunkRootToHashMap(chunkRoot, chunksListHashMap);
         generateMeshFromOctree(chunkRoot, lod, false, vertexBuffer);
 
         // mesh is not valid
-        if(vertexBuffer.indices.size() == 0){
-            printf("Generated Mesh Is Not Valid\n");
+        if (vertexBuffer.indices.size() == 0)
+        {
+            // printf("Generated Mesh Is Not Valid\n");
             return nullptr;
         }
 
-        // std::vector<OctreeNode *> neighbouringChunks;
-        // std::vector<OctreeNode *> seamNodes = findSeamNodes(chunkWithLod, neighbouringChunks, chunksListHashMap, getChunkRootFromHashMap);
-        // OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkWithLod->min, chunkWithLod->size * 2);
-        // generateMeshFromOctree(seamRoot, true, vertexBuffer);
+        addChunkRootToHashMap(chunkRoot, chunksListHashMap);
+
+        std::vector<OctreeNode *> seamNodes = findSeamNodes(chunkRoot);
+        OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkRoot->min, chunkRoot->size * 2);
+        generateMeshFromOctree(seamRoot, lod, true, vertexBuffer);
 
         // adding the chunk clone + neighbouring chunk clones to the destroyable list
         // for (int i = 0; i < neighbouringChunks.size(); i++)

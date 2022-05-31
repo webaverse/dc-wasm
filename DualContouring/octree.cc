@@ -331,22 +331,6 @@ void cloneNode(OctreeNode *sourceNode, OctreeNode *node)
 	}
 }
 
-OctreeNode *createChunkWithLod(OctreeNode *chunkRoot)
-{
-	if (!chunkRoot)
-	{
-		return nullptr;
-	}
-	// set the active lod of the root
-	OctreeNode *chunk = new OctreeNode;
-	// clone chunk root data
-	cloneNode(chunkRoot, chunk);
-	// apply lod to chunk clone
-	chunk = switchChunkLod(chunk, chunkRoot->lod);
-
-	return chunk;
-}
-
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
 {
 	const unsigned int mask = ~(DualContouring::chunkSize - 1);
@@ -924,8 +908,14 @@ std::vector<OctreeNode *> findSeamNodes(OctreeNode *targetRoot, std::vector<Octr
 
 	const vm::ivec3 OFFSETS[8] =
 		{
-			vm::ivec3(0, 0, 0), vm::ivec3(1, 0, 0), vm::ivec3(0, 0, 1), vm::ivec3(1, 0, 1),
-			vm::ivec3(0, 1, 0), vm::ivec3(1, 1, 0), vm::ivec3(0, 1, 1), vm::ivec3(1, 1, 1)};
+			vm::ivec3(0, 0, 0),
+			vm::ivec3(1, 0, 0),
+			vm::ivec3(0, 0, 1),
+			vm::ivec3(1, 0, 1),
+			vm::ivec3(0, 1, 0),
+			vm::ivec3(1, 1, 0),
+			vm::ivec3(0, 1, 1),
+			vm::ivec3(1, 1, 1)};
 
 	FilterNodesFunc selectionFuncs[8] =
 		{
@@ -963,20 +953,10 @@ std::vector<OctreeNode *> findSeamNodes(OctreeNode *targetRoot, std::vector<Octr
 			}};
 
 	std::vector<OctreeNode *> seamNodes;
-	for (int i = 0; i < 8; i++)
-	{
-		const vm::ivec3 offsetMin = OFFSETS[i] * targetRoot->size;
-		const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-		if (OctreeNode *chunkRoot = getChunkRootFromHashMap(chunkMin, hashMap))
-		{
-			if (OctreeNode *chunkWithLod = createChunkWithLod(chunkRoot))
-			{
-				neighbouringChunks.push_back(chunkWithLod);
-				std::vector<OctreeNode *> chunkNodes = findNodes(chunkWithLod, selectionFuncs[i]);
-				seamNodes.insert(std::end(seamNodes), std::begin(chunkNodes), std::end(chunkNodes));
-			}
-		}
-	}
+	std::vector<OctreeNode *> chunkNodes = findNodes(targetRoot, selectionFuncs[0]);
+	seamNodes.insert(std::end(seamNodes), std::begin(chunkNodes), std::end(chunkNodes));
+
+	
 
 	return seamNodes;
 }
