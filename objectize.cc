@@ -65,6 +65,10 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
     );
 }
 
+EMSCRIPTEN_KEEPALIVE void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer) {
+    DualContouring::injectDamage(x, y, z, damageBuffer);
+}
+
 EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
     free(ptr);
 }
