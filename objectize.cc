@@ -9,6 +9,10 @@ EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
     DualContouring::initialize(chunkSize, seed);
 }
 
+EMSCRIPTEN_KEEPALIVE float *getChunkHeightField(float x, float y, float z) {
+    return DualContouring::getChunkHeightField(x, y, z);
+}
+
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
     return DualContouring::clearChunkRoot(x, y, z);
 }
