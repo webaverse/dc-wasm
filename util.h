@@ -23,14 +23,22 @@ T trilinear(
   int gridPoints
 )
 {
-  vm::ivec3 p000 = vm::ivec3(int(location.x), int(location.y), int(location.z));
-  vm::ivec3 p100 = vm::ivec3(int(location.x) + 1, int(location.y), int(location.z));
-  vm::ivec3 p010 = vm::ivec3(int(location.x), int(location.y) + 1, int(location.z));
-  vm::ivec3 p110 = vm::ivec3(int(location.x) + 1, int(location.y) + 1, int(location.z));
-  vm::ivec3 p001 = vm::ivec3(int(location.x), int(location.y), int(location.z) + 1);
-  vm::ivec3 p101 = vm::ivec3(int(location.x) + 1, int(location.y), int(location.z) + 1);
-  vm::ivec3 p011 = vm::ivec3(int(location.x), int(location.y) + 1, int(location.z) + 1);
-  vm::ivec3 p111 = vm::ivec3(int(location.x) + 1, int(location.y) + 1, int(location.z) + 1);
+  float rx = std::round(location.x);
+  float ry = std::round(location.y);
+  float rz = std::round(location.z);
+
+  int ix = int(rx);
+  int iy = int(ry);
+  int iz = int(rz);
+  
+  vm::ivec3 p000 = vm::ivec3(ix, iy, iz);
+  vm::ivec3 p100 = vm::ivec3(ix + 1, iy, iz);
+  vm::ivec3 p010 = vm::ivec3(ix, iy + 1, iz);
+  vm::ivec3 p110 = vm::ivec3(ix + 1, iy + 1, iz);
+  vm::ivec3 p001 = vm::ivec3(ix, iy, iz + 1);
+  vm::ivec3 p101 = vm::ivec3(ix + 1, iy, iz + 1);
+  vm::ivec3 p011 = vm::ivec3(ix, iy + 1, iz + 1);
+  vm::ivec3 p111 = vm::ivec3(ix + 1, iy + 1, iz + 1);
 
   int i000 = p000.x + p000.z * gridPoints + p000.y * gridPoints * gridPoints;
   int i100 = p100.x + p100.z * gridPoints + p100.y * gridPoints * gridPoints;
