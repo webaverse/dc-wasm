@@ -157,7 +157,7 @@ namespace DualContouring
         return constructOutputBuffer(vertexBuffer);
     }
 
-    bool drawDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount)
+    bool drawSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -184,9 +184,15 @@ namespace DualContouring
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                outPositions[(*outPositionsCount)++] = min.x;
-                                outPositions[(*outPositionsCount)++] = min.y;
-                                outPositions[(*outPositionsCount)++] = min.z;
+                                int gridSize = chunkSize + 3;
+                                int damageBufferSize = gridSize * gridSize * gridSize;
+                                memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+
+                                outPositions[(*outPositionsCount)*3] = min.x;
+                                outPositions[(*outPositionsCount)*3+1] = min.y;
+                                outPositions[(*outPositionsCount)*3+2] = min.z;
+
+                                (*outPositionsCount)++;
                             }
 
                             drew = true;
@@ -198,7 +204,7 @@ namespace DualContouring
         return drew;
     }
     
-    bool eraseDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount) {
+    bool eraseSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
         
@@ -224,9 +230,15 @@ namespace DualContouring
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                outPositions[(*outPositionsCount)++] = min.x;
-                                outPositions[(*outPositionsCount)++] = min.y;
-                                outPositions[(*outPositionsCount)++] = min.z;
+                                int gridSize = chunkSize + 3;
+                                int damageBufferSize = gridSize * gridSize * gridSize;
+                                memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+
+                                outPositions[(*outPositionsCount)*3] = min.x;
+                                outPositions[(*outPositionsCount)*3+1] = min.y;
+                                outPositions[(*outPositionsCount)*3+2] = min.z;
+                                
+                                (*outPositionsCount)++;
                             }
 
                             drew = true;
@@ -238,12 +250,13 @@ namespace DualContouring
         return drew;
     }
 
-    bool addCubeDamage(
+    bool drawCubeDamage(
         float x, float y, float z,
         float qx, float qy, float qz, float qw,
         float sx, float sy, float sz,
         float *outPositions,
-        unsigned int *outPositionsCount
+        unsigned int *outPositionsCount,
+        float *outDamages
     ) {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -276,9 +289,15 @@ namespace DualContouring
                         )) {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                outPositions[(*outPositionsCount)++] = min.x;
-                                outPositions[(*outPositionsCount)++] = min.y;
-                                outPositions[(*outPositionsCount)++] = min.z;
+                                int gridSize = chunkSize + 3;
+                                int damageBufferSize = gridSize * gridSize * gridSize;
+                                memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+
+                                outPositions[(*outPositionsCount)*3] = min.x;
+                                outPositions[(*outPositionsCount)*3+1] = min.y;
+                                outPositions[(*outPositionsCount)*3+2] = min.z;
+
+                                (*outPositionsCount)++;
                             }
 
                             drew = true;
@@ -295,7 +314,8 @@ namespace DualContouring
         float qx, float qy, float qz, float qw,
         float sx, float sy, float sz,
         float *outPositions,
-        unsigned int *outPositionsCount
+        unsigned int *outPositionsCount,
+        float *outDamages
     ) {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -328,9 +348,15 @@ namespace DualContouring
                         )) {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                outPositions[(*outPositionsCount)++] = min.x;
-                                outPositions[(*outPositionsCount)++] = min.y;
-                                outPositions[(*outPositionsCount)++] = min.z;
+                                int gridSize = chunkSize + 3;
+                                int damageBufferSize = gridSize * gridSize * gridSize;
+                                memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+
+                                outPositions[(*outPositionsCount)*3] = min.x;
+                                outPositions[(*outPositionsCount)*3+1] = min.y;
+                                outPositions[(*outPositionsCount)*3+2] = min.z;
+                                
+                                (*outPositionsCount)++;
                             }
 
                             drew = true;

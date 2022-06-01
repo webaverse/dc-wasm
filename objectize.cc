@@ -21,26 +21,29 @@ EMSCRIPTEN_KEEPALIVE uint8_t *createChunkMeshDualContouring(float x, float y, fl
     return DualContouring::createChunkMesh(x, y, z, lod);
 }
 
-EMSCRIPTEN_KEEPALIVE bool drawDamageSphere(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
-    return DualContouring::drawDamageSphere(x, y, z, radius, outPositions, outPositionsCount);
+EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
+    return DualContouring::drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages);
 }
 
-EMSCRIPTEN_KEEPALIVE bool eraseDamageSphere(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
-    return DualContouring::eraseDamageSphere(x, y, z, radius, outPositions, outPositionsCount);
+EMSCRIPTEN_KEEPALIVE bool eraseSphereDamage(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
+    return DualContouring::eraseSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages);
 }
 
-EMSCRIPTEN_KEEPALIVE bool addCubeDamage(
+EMSCRIPTEN_KEEPALIVE bool drawCubeDamage(
     float x, float y, float z,
     float qx, float qy, float qz, float qw,
     float sx, float sy, float sz,
     float *outPositions,
-    unsigned int *outPositionsCount
+    unsigned int *outPositionsCount,
+    float *outDamages
 ) {
-    return DualContouring::addCubeDamage(
+    return DualContouring::drawCubeDamage(
         x, y, z,
         qx, qy, qz, qw,
         sx, sy, sz,
-        outPositions, outPositionsCount
+        outPositions,
+        outPositionsCount,
+        outDamages
     );
 }
 
@@ -49,13 +52,16 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
     float qx, float qy, float qz, float qw,
     float sx, float sy, float sz,
     float *outPositions,
-    unsigned int *outPositionsCount
+    unsigned int *outPositionsCount,
+    float *outDamages
 ) {
     return DualContouring::eraseCubeDamage(
         x, y, z,
         qx, qy, qz, qw,
         sx, sy, sz,
-        outPositions, outPositionsCount
+        outPositions,
+        outPositionsCount,
+        outDamages
     );
 }
 

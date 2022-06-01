@@ -31,21 +31,23 @@ namespace DualContouring
     // void setChunkLod(float x, float y, float z, const int lod);
     uint8_t *createChunkMesh(float x, float y, float z, const int lod);
     ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min);
-    bool drawDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount);
-    bool eraseDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount);
-    bool addCubeDamage(
+    bool drawSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
+    bool eraseSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
+    bool drawCubeDamage(
         float x, float y, float z,
         float qx, float qy, float qz, float qw,
         float sx, float sy, float sz,
         float *outPositions,
-        unsigned int *outPositionsCount
+        unsigned int *outPositionsCount,
+        float *outDamages
     );
     bool eraseCubeDamage(
         float x, float y, float z,
         float qx, float qy, float qz, float qw,
         float sx, float sy, float sz,
         float *outPositions,
-        unsigned int *outPositionsCount
+        unsigned int *outPositionsCount,
+        float *outDamages
     );
 };
 
