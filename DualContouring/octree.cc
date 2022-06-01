@@ -85,7 +85,7 @@ const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[7] =
 
 ChunkOctree::ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, const int &lod) : lod(lod)
 {
-	std::cout << "FUNC" << std::endl;
+	// std::cout << "FUNC" << std::endl;
 	this->root = constructOctreeDownwards(chunk, min, size, lod);
 }
 ChunkOctree::~ChunkOctree()
