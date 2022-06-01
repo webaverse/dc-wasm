@@ -5,8 +5,8 @@
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE void setChunkSize(int newChunkSize) {
-    return DualContouring::setChunkSize(newChunkSize);
+EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
+    DualContouring::initialize(chunkSize, seed);
 }
 
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
@@ -17,8 +17,12 @@ EMSCRIPTEN_KEEPALIVE uint8_t *createChunkMeshDualContouring(float x, float y, fl
     return DualContouring::createChunkMesh(x, y, z, lod);
 }
 
-EMSCRIPTEN_KEEPALIVE bool drawDamageSphere(float x, float y, float z, float radius, float value, float *outPositions, unsigned int *outPositionsCount) {
-    return DualContouring::drawDamageSphere(x, y, z, radius, value, outPositions, outPositionsCount);
+EMSCRIPTEN_KEEPALIVE bool drawDamageSphere(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
+    return DualContouring::drawDamageSphere(x, y, z, radius, outPositions, outPositionsCount);
+}
+
+EMSCRIPTEN_KEEPALIVE bool eraseDamageSphere(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
+    return DualContouring::eraseDamageSphere(x, y, z, radius, outPositions, outPositionsCount);
 }
 
 EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
