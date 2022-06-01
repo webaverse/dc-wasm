@@ -278,26 +278,25 @@ public:
     }
 
     bool addSphereDamage(const float &x, const float &y, const float &z, const float radius) {
-        int ax = int(x) - min.x + 1;
-        int az = int(z) - min.z + 1;
-        int ay = int(y) - min.y + 1;
+        int bx = int(x);
+        int by = int(y);
+        int bz = int(z);
+
         bool drew = false;
-        for (float dy = -radius; dy <= radius; dy++) {
-            for (float dx = -radius; dx <= radius; dx++) {
-                for (float dz = -radius; dz <= radius; dz++) {
-                    int lx = ax + dx;
-                    int lz = az + dz;
-                    int ly = ay + dy;
-                    if (
-                        lx >= 0 && lx < gridPoints &&
-                        lz >= 0 && lz < gridPoints &&
-                        ly >= 0 && ly < gridPoints
-                    ) {
-                        float distance = sqrt(dx * dx + dy * dy + dz * dz);
-                        float distanceFactor = distance - radius;
-                        int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                        
-                        cachedSdf[index] += std::min(cachedSdf[index], distanceFactor);
+        for (int ly = 0; ly < gridPoints; ly++) {
+            for (int lz = 0; lz < gridPoints; lz++) {
+                for (int lx = 0; lx < gridPoints; lx++) {
+                    int ax = min.x + lx - 1;
+                    int ay = min.y + ly - 1;
+                    int az = min.z + lz - 1;
+
+                    float newDistance = signedDistanceToSphere(bx, by, bz, radius, ax, ay, az);
+
+                    int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
+                    float oldDistance = cachedSdf[index];
+
+                    if (newDistance < oldDistance) {
+                        cachedSdf[index] = newDistance;
                         drew = true;
                     }
                 }
@@ -306,35 +305,29 @@ public:
         return drew;
     }
     bool removeSphereDamage(const float &x, const float &y, const float &z, const float radius) {
-        int ax = int(x) - min.x + 1;
-        int az = int(z) - min.z + 1;
-        int ay = int(y) - min.y + 1;
+        int bx = int(x);
+        int by = int(y);
+        int bz = int(z);
 
         std::vector<bool> erased(gridPoints * gridPoints * gridPoints, false);
 
         bool drew = false;
-        for (float dy = -radius; dy <= radius; dy++) {
-            for (float dz = -radius; dz <= radius; dz++) {
-                for (float dx = -radius; dx <= radius; dx++) {
-                    int lx = ax + dx;
-                    int lz = az + dz;
-                    int ly = ay + dy;
-                    if (
-                        lx >= 0 && lx < gridPoints &&
-                        lz >= 0 && lz < gridPoints &&
-                        ly >= 0 && ly < gridPoints
-                    ) {
-                        float distance = sqrt(dx * dx + dy * dy + dz * dz);
-                        float newDistance = distance - radius;
+        for (int ly = 0; ly < gridPoints; ly++) {
+            for (int lz = 0; lz < gridPoints; lz++) {
+                for (int lx = 0; lx < gridPoints; lx++) {
+                    int ax = min.x + lx - 1;
+                    int ay = min.y + ly - 1;
+                    int az = min.z + lz - 1;
 
-                        int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                        float oldDistance = cachedSdf[index];
+                    float newDistance = signedDistanceToSphere(bx, by, bz, radius, ax, ay, az);
 
-                        if (newDistance < 0.f || oldDistance >= newDistance) {
-                            cachedSdf[index] = (float)size;
-                            erased[index] = true;
-                            drew = true;
-                        }
+                    int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
+                    float oldDistance = cachedSdf[index];
+
+                    if (newDistance <= 0.f || oldDistance >= newDistance) {
+                        cachedSdf[index] = (float)size;
+                        erased[index] = true;
+                        drew = true;
                     }
                 }
             }
@@ -352,28 +345,22 @@ public:
         const float &qx, const float &qy, const float &qz, const float &qw,
         const float &sx, const float &sy, const float &sz
     ) {
-        Matrix m(Vec{x, y, z}, Quat{qx, qy, qz, qw}, Vec{sx, sy, sz});
+        Matrix m(Vec{x, y, z}, Quat{qx, qy, qz, qw}, Vec{1, 1, 1});
         Matrix mInverse = m;
         mInverse.invert();
 
         bool drew = true;
-        for (int y = -1; y < size + 2; y++) {
-            for (int z = -1; z < size + 2; z++) {
-                for (int x = -1; x < size + 2; x++) {
-                    Vec p = Vec(x, y, z).applyMatrix(mInverse);
-                    Vec clampedP = Vec{
-                        std::min(std::max(p.x, -.5f), 0.5f),
-                        std::min(std::max(p.y, -.5f), 0.5f),
-                        std::min(std::max(p.z, -.5f), 0.5f)
-                    };
-                    Vec diff = p - clampedP;
-                    float newDistance = diff.magnitude();
+        for (int ly = 0; ly < gridPoints; ly++) {
+            for (int lz = 0; lz < gridPoints; lz++) {
+                for (int lx = 0; lx < gridPoints; lx++) {
+                    int ax = min.x + lx - 1;
+                    int ay = min.y + ly - 1;
+                    int az = min.z + lz - 1;
 
-                    int ax = int(x) - min.x + 1;
-                    int ay = int(y) - min.y + 1;
-                    int az = int(z) - min.z + 1;
+                    Vec p = Vec(ax, ay, az).applyMatrix(mInverse);
+                    float newDistance = signedDistanceToBox(sx, sy, sz, p.x, p.y, p.z);
 
-                    int index = ax + az * gridPoints + ay * gridPoints * gridPoints;
+                    int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
                     float oldDistance = cachedSdf[index];
 
                     if (newDistance < oldDistance) {
@@ -390,34 +377,27 @@ public:
         const float &qx, const float &qy, const float &qz, const float &qw,
         const float &sx, const float &sy, const float &sz
     ) {
-        Matrix m(Vec{x, y, z}, Quat{qx, qy, qz, qw}, Vec{sx, sy, sz});
+        Matrix m(Vec{x, y, z}, Quat{qx, qy, qz, qw}, Vec{1, 1, 1});
         Matrix mInverse = m;
         mInverse.invert();
 
         std::vector<bool> erased(gridPoints * gridPoints * gridPoints, false);
 
         bool drew = true;
-        for (int y = -1; y < size + 2; y++) {
-            for (int z = -1; z < size + 2; z++) {
-                for (int x = -1; x < size + 2; x++) {
+        for (int ly = 0; ly < gridPoints; ly++) {
+            for (int lz = 0; lz < gridPoints; lz++) {
+                for (int lx = 0; lx < gridPoints; lx++) {
+                    int ax = min.x + lx - 1;
+                    int ay = min.y + ly - 1;
+                    int az = min.z + lz - 1;
 
-                    Vec p = Vec(x, y, z).applyMatrix(mInverse);
-                    Vec clampedP = Vec{
-                        std::min(std::max(p.x, -.5f), 0.5f),
-                        std::min(std::max(p.y, -.5f), 0.5f),
-                        std::min(std::max(p.z, -.5f), 0.5f)
-                    };
-                    Vec diff = p - clampedP;
-                    float newDistance = diff.magnitude();
+                    Vec p = Vec(ax, ay, az).applyMatrix(mInverse);
+                    float newDistance = signedDistanceToBox(sx, sy, sz, p.x, p.y, p.z);
 
-                    int ax = int(x) - min.x + 1;
-                    int ay = int(y) - min.y + 1;
-                    int az = int(z) - min.z + 1;
-
-                    int index = ax + az * gridPoints + ay * gridPoints * gridPoints;
+                    int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
                     float oldDistance = cachedSdf[index];
 
-                    if (newDistance < 0.f || oldDistance >= newDistance) {
+                    if (newDistance <= 0.f || oldDistance >= newDistance) {
                         cachedSdf[index] = (float)size;
                         erased[index] = true;
                         drew = true;

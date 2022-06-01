@@ -35,7 +35,7 @@ namespace DualContouring
     {
         return vertexBuffer.getBuffer();
     }
-    CachedNoise &getChunkNoise(vm::ivec3 min)
+    CachedNoise &getChunkNoise(const vm::ivec3 &min)
     {
         uint64_t minHash = hashOctreeMin(min);
 
@@ -283,9 +283,9 @@ namespace DualContouring
 
                         CachedNoise &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.addCubeDamage(
-                            sx, sy, sz,
+                            x, y, z,
                             qx, qy, qz, qw,
-                            ax, ay, az
+                            sx, sy, sz
                         )) {
                             if (*outPositionsCount < maxPositionsCount)
                             {
@@ -342,9 +342,9 @@ namespace DualContouring
 
                         CachedNoise &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.removeCubeDamage(
-                            sx, sy, sz,
+                            x, y, z,
                             qx, qy, qz, qw,
-                            ax, ay, az
+                            sx, sy, sz
                         )) {
                             if (*outPositionsCount < maxPositionsCount)
                             {
