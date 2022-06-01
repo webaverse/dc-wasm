@@ -13,27 +13,45 @@ namespace DualContouring
 {
     // chunk settings
     int chunkSize = 16;
+    FastNoise *fastNoise = nullptr;
 
     // storing the octrees that we would delete after mesh construction
     std::vector<OctreeNode *> temporaryNodesList;
 
     // storing the octree roots here for search
     std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
-    std::unordered_map<uint64_t, ChunkDamageBuffer> chunksDamageBufferHashMap;
+    std::unordered_map<uint64_t, CachedNoise> chunksNoiseHashMap;
 
-    void setChunkSize(int newChunkSize)
+    void initialize(int newChunkSize, int seed)
     {
         chunkSize = newChunkSize;
+
+        std::mt19937 rng(seed);
+        fastNoise = new FastNoise(rng());
+        fastNoise->SetFrequency(0.02);
+        fastNoise->SetFractalOctaves(4);
     }
     uint8_t *constructOutputBuffer(VertexBuffer &vertexBuffer)
     {
         return vertexBuffer.getBuffer();
     }
+    CachedNoise &getChunkNoise(vm::ivec3 min)
+    {
+        uint64_t minHash = hashOctreeMin(min);
+
+        const auto &iter = chunksNoiseHashMap.find(minHash);
+        if (iter == chunksNoiseHashMap.end())
+        {
+            chunksNoiseHashMap.emplace(std::make_pair(minHash, CachedNoise(min)));
+        }
+
+        CachedNoise &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
+        return chunkNoise;
+    }
     OctreeNode *generateChunkData(const vm::ivec3 octreeMin, const int lod)
     {
-        CachedNoise chunkNoise(octreeMin);
-        ChunkDamageBuffer &damageBuffer = getChunkDamageBuffer(octreeMin);
-        OctreeNode *chunk = constructOctreeDownwards(octreeMin, lod, chunkNoise, damageBuffer);
+        CachedNoise &chunkNoise = getChunkNoise(octreeMin);
+        OctreeNode *chunk = constructOctreeDownwards(octreeMin, lod, chunkNoise);
         // printf("CHUNK DATA IS GENERATED\n");
         return chunk;
     }
@@ -118,21 +136,7 @@ namespace DualContouring
         return constructOutputBuffer(vertexBuffer);
     }
 
-    ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min)
-    {
-        uint64_t minHash = hashOctreeMin(min);
-
-        const auto &iter = chunksDamageBufferHashMap.find(minHash);
-        if (iter == chunksDamageBufferHashMap.end())
-        {
-            chunksDamageBufferHashMap.emplace(std::make_pair(minHash, ChunkDamageBuffer(min, chunkSize)));
-        }
-
-        ChunkDamageBuffer &damageBuffer = chunksDamageBufferHashMap.find(minHash)->second;
-        return damageBuffer;
-    }
-
-    bool drawDamageSphere(const float &x, const float &y, const float &z, const float radius, const float value, float *outPositions, unsigned int *outPositionsCount)
+    bool drawDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -154,9 +158,9 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        ChunkDamageBuffer &damageBuffer = getChunkDamageBuffer(min);
+                        CachedNoise &chunkNoise = getChunkNoise(min);
                         // std::cout << "pre draw damage " << ax << " " << ay << " " << az << " - " << min.x << " " << min.y << " " << min.z << std::endl;
-                        if (damageBuffer.drawDamage(ax, ay, az, radius, value))
+                        if (chunkNoise.addDamage(ax, ay, az, radius))
                         {
                             // std::cout << "draw damage yes 1" << std::endl;
                             if (*outPositionsCount < maxPositionsCount)
@@ -178,5 +182,9 @@ namespace DualContouring
             }
         }
         return drew;
+    }
+    
+    bool eraseDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount) {
+        return false;
     }
 }
