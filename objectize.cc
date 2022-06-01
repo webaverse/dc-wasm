@@ -5,8 +5,12 @@
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE void setChunkSize(int newChunkSize) {
-    return DualContouring::setChunkSize(newChunkSize);
+EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
+    DualContouring::initialize(chunkSize, seed);
+}
+
+EMSCRIPTEN_KEEPALIVE float *getChunkHeightField(float x, float y, float z) {
+    return DualContouring::getChunkHeightField(x, y, z);
 }
 
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
@@ -17,8 +21,48 @@ EMSCRIPTEN_KEEPALIVE uint8_t *createChunkMeshDualContouring(float x, float y, fl
     return DualContouring::createChunkMesh(x, y, z, lod);
 }
 
-EMSCRIPTEN_KEEPALIVE bool drawDamageSphere(float x, float y, float z, float radius, float value, float *outPositions, unsigned int *outPositionsCount) {
-    return DualContouring::drawDamageSphere(x, y, z, radius, value, outPositions, outPositionsCount);
+EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
+    return DualContouring::drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages);
+}
+
+EMSCRIPTEN_KEEPALIVE bool eraseSphereDamage(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
+    return DualContouring::eraseSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages);
+}
+
+EMSCRIPTEN_KEEPALIVE bool drawCubeDamage(
+    float x, float y, float z,
+    float qx, float qy, float qz, float qw,
+    float sx, float sy, float sz,
+    float *outPositions,
+    unsigned int *outPositionsCount,
+    float *outDamages
+) {
+    return DualContouring::drawCubeDamage(
+        x, y, z,
+        qx, qy, qz, qw,
+        sx, sy, sz,
+        outPositions,
+        outPositionsCount,
+        outDamages
+    );
+}
+
+EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
+    float x, float y, float z,
+    float qx, float qy, float qz, float qw,
+    float sx, float sy, float sz,
+    float *outPositions,
+    unsigned int *outPositionsCount,
+    float *outDamages
+) {
+    return DualContouring::eraseCubeDamage(
+        x, y, z,
+        qx, qy, qz, qw,
+        sx, sy, sz,
+        outPositions,
+        outPositionsCount,
+        outDamages
+    );
 }
 
 EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
