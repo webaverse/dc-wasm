@@ -152,6 +152,29 @@ public:
         );
     }
 
+    // signed distance field function for a box at the origin
+    // returns negative for points inside the box, zero at the box's surface, and positive for points outside the box
+    // sx sy sz is the size of the box. the box goes from -sx/2 to sx/2, -sy/2 to sy/2, -sz/2 to sz/2
+    // px py pz is the point to check
+    float signedDistanceToBox(float sx, float sy, float sz, float px, float py, float pz) {
+        float dx = std::abs(px) - sx / 2;
+        float dy = std::abs(py) - sy / 2;
+        float dz = std::abs(pz) - sz / 2;
+        float d = std::max(std::max(dx, dy), dz);
+        return d;
+    }
+
+    // signed distance to box.
+    // returns negative for points inside the sphere, zero at the sphere's surface, and positive for points outside the sphere
+    // cx, cy, cz is the center of the sphere. r is the radius. px, py, pz is the point to check
+    float signedDistanceToSphere(float cx, float cy, float cz, float r, float px, float py, float pz) {
+        float dx = px - cx;
+        float dy = py - cy;
+        float dz = pz - cz;
+        float d = sqrt(dx * dx + dy * dy + dz * dz);
+        return d - r;
+    }
+
     void patchFrontier(std::vector<bool> &erased) {
         // frontier points are those that are erased and have a neighbor that is not erased
         std::deque<vm::ivec3> frontierPoints;
