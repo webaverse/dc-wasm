@@ -180,24 +180,17 @@ namespace DualContouring
                         seenHashes.insert(minHash);
 
                         CachedNoise &chunkNoise = getChunkNoise(min);
-                        // std::cout << "pre draw damage " << ax << " " << ay << " " << az << " - " << min.x << " " << min.y << " " << min.z << std::endl;
                         if (chunkNoise.addDamage(ax, ay, az, radius))
                         {
-                            // std::cout << "draw damage yes 1" << std::endl;
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                // std::cout << "draw damage yes 2" << std::endl;
                                 outPositions[(*outPositionsCount)++] = min.x;
                                 outPositions[(*outPositionsCount)++] = min.y;
                                 outPositions[(*outPositionsCount)++] = min.z;
-                            } /* else {
-                                std::cout << "draw damage no 2" << std::endl;
-                            } */
+                            }
 
                             drew = true;
-                        } /* else {
-                            std::cout << "draw damage no 1" << std::endl;
-                        } */
+                        }
                     }
                 }
             }
