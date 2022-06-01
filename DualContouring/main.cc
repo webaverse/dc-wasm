@@ -199,7 +199,43 @@ namespace DualContouring
     }
     
     bool eraseDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount) {
-        return false;
+        unsigned int maxPositionsCount = *outPositionsCount;
+        *outPositionsCount = 0;
+        
+        bool drew = false;
+        std::set<uint64_t> seenHashes;
+        for (float dx = -1; dx <= 1; dx += 2)
+        {
+            for (float dz = -1; dz <= 1; dz += 2)
+            {
+                for (float dy = -1; dy <= 1; dy += 2)
+                {
+                    float ax = x + dx * radius;
+                    float ay = y + dy * radius;
+                    float az = z + dz * radius;
+                    vm::ivec3 min = vm::ivec3(std::floor(ax / (float)chunkSize), std::floor(ay / (float)chunkSize), std::floor(az / (float)chunkSize)) * chunkSize;
+                    uint64_t minHash = hashOctreeMin(min);
+                    if (seenHashes.find(minHash) == seenHashes.end())
+                    {
+                        seenHashes.insert(minHash);
+
+                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        if (chunkNoise.removeDamage(ax, ay, az, radius))
+                        {
+                            if (*outPositionsCount < maxPositionsCount)
+                            {
+                                outPositions[(*outPositionsCount)++] = min.x;
+                                outPositions[(*outPositionsCount)++] = min.y;
+                                outPositions[(*outPositionsCount)++] = min.z;
+                            }
+
+                            drew = true;
+                        }
+                    }
+                }
+            }
+        }
+        return drew;
     }
 
     bool addCubeDamage(
