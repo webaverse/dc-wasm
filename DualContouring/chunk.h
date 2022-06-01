@@ -61,9 +61,6 @@ public:
         cachedSdf = std::move(other.cachedSdf);
         return *this;
     }
-    float getNoise(const float &x, const float &y){
-        return (float)DualContouring::fastNoise->GetSimplexFractal(x, y);
-    }
 
     void init() {
         initHeightField();
