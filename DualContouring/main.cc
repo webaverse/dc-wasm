@@ -312,4 +312,26 @@ namespace DualContouring
         }
         return drew;
     }
+
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer) {
+        const vm::ivec3 min = vm::ivec3(x, y, z);
+        uint64_t minHash = hashOctreeMin(min);
+        const auto &iter = chunksNoiseHashMap.find(minHash);
+        if (iter != chunksNoiseHashMap.end())
+        {
+            CachedNoise &chunkNoise = iter->second;
+            chunkNoise.injectDamage(damageBuffer);
+        } else {
+            std::vector<float> cachedHeightField;
+
+            int gridSize = chunkSize + 3;
+            std::vector<float> cachedSdf(gridSize * gridSize * gridSize);
+            memcpy(cachedSdf.data(), damageBuffer, cachedSdf.size() * sizeof(float));
+            
+            CachedNoise chunkNoise(min, std::move(cachedHeightField), std::move(cachedSdf));
+            chunkNoise.initHeightField();
+            
+            chunksNoiseHashMap.emplace(std::make_pair(minHash, std::move(chunkNoise)));
+        }
+    }
 }

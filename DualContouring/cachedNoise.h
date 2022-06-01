@@ -43,6 +43,15 @@ public:
     {
         init();
     };
+    CachedNoise(const vm::ivec3 chunkMin, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
+        min(chunkMin),
+        size(DualContouring::chunkSize),
+        gridPoints(size + 3),
+        cachedHeightField(std::move(cachedHeightField)),
+        cachedSdf(std::move(cachedSdf))
+    {
+        // nothing
+    }
     CachedNoise &operator=(const CachedNoise &other) = delete;
     CachedNoise &operator=(const CachedNoise &&other) {
         size = other.size;
@@ -53,12 +62,12 @@ public:
         return *this;
     }
 
-    void init()
-    {
+    void init() {
+        initHeightField();
+        initSdf();
+    }
+    void initHeightField() {
         cachedHeightField.resize(gridPoints * gridPoints, -std::numeric_limits<float>::infinity());
-        cachedSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
-
-        // height field
         for (int dz = 0; dz < gridPoints; dz++)
         {
             for (int dx = 0; dx < gridPoints; dx++)
@@ -71,8 +80,9 @@ public:
                 cachedHeightField[index2D] = height;
             }
         }
-
-        // noise field
+    }
+    void initSdf() {
+        cachedSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
         for (int dz = 0; dz < gridPoints; dz++)
         {
             for (int dx = 0; dx < gridPoints; dx++)
@@ -115,7 +125,7 @@ public:
         const int zc = std::ceil(z);
         const float dz = z - zf;
         return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
-    } 
+    }
 
     float getRawHeight(const int &x, const int &z)
     {
@@ -212,7 +222,7 @@ public:
                     }
                 }
             }
-            // sanity check: if we don't have any candidate distances, this should not have been a frontier point
+            // sanity check: if we don't have any candidate distances, this should not have been a frontier point!
             if (candidateDistances.size() == 0) {
                 std::cerr << "Error: candidateDistances.size() == 0; invalid frontier" << std::endl;
                 abort();
@@ -398,6 +408,12 @@ public:
         }
 
         return drew;
+    }
+
+    void injectDamage(float *damageBuffer) {
+        std::vector<float> cachedHeightField;
+        std::vector<float> cachedSdf(gridPoints * gridPoints * gridPoints);
+        memcpy(cachedSdf.data(), this->cachedSdf.data(), sizeof(float) * gridPoints * gridPoints * gridPoints);
     }
 };
 #endif // CHACHEDNOISE_H
