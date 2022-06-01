@@ -180,7 +180,7 @@ namespace DualContouring
                         seenHashes.insert(minHash);
 
                         CachedNoise &chunkNoise = getChunkNoise(min);
-                        if (chunkNoise.addDamage(ax, ay, az, radius))
+                        if (chunkNoise.addSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
@@ -226,7 +226,7 @@ namespace DualContouring
                         seenHashes.insert(minHash);
 
                         CachedNoise &chunkNoise = getChunkNoise(min);
-                        if (chunkNoise.removeDamage(ax, ay, az, radius))
+                        if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {

@@ -254,7 +254,7 @@ public:
         }
     }
 
-    bool addDamage(const float &x, const float &y, const float &z, const float radius) {
+    bool addSphereDamage(const float &x, const float &y, const float &z, const float radius) {
         int ax = int(x) - min.x + 1;
         int az = int(z) - min.z + 1;
         int ay = int(y) - min.y + 1;
@@ -282,7 +282,7 @@ public:
         }
         return drew;
     }
-    bool removeDamage(const float &x, const float &y, const float &z, const float radius) {
+    bool removeSphereDamage(const float &x, const float &y, const float &z, const float radius) {
         int ax = int(x) - min.x + 1;
         int az = int(z) - min.z + 1;
         int ay = int(y) - min.y + 1;
