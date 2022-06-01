@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <set>
 // #include "../vm/glm.hpp"
-#include "cachedNoise.h"
+#include "chunk.h"
 
 enum OctreeNodeType
 {
@@ -72,20 +72,34 @@ public:
     OctreeDrawInfo *drawInfo;
 };
 
+class ChunkOctree
+{
+public:
+    ChunkOctree() = delete;
+    ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, const int &lod);
+    ~ChunkOctree();
+    OctreeNode *root;
+    int lod;
+    int size;
+    vm::ivec3 min;
+};
+
+typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
+
 // OctreeNode *createChunkWithLod(OctreeNode *chunkRoot);
 OctreeNode *getChunkRootFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 void removeOctreeFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 void addChunkRootToHashMap(OctreeNode *root, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 uint64_t hashOctreeMin(const vm::ivec3 &min);
 
-std::vector<OctreeNode *> findSeamNodes(OctreeNode *root, std::vector<OctreeNode *>(&neighbouringChunks), std::unordered_map<uint64_t, OctreeNode *> hashMap, OctreeNode *(*getChunkRootFromHashMap)(vm::ivec3, std::unordered_map<uint64_t, OctreeNode *> &));
+std::vector<OctreeNode *> generateSeamNodes(Chunk &chunk,ChunkOctree &chunkOctree,std::vector<OctreeNode *> &neighbourNodes);
 OctreeNode *constructOctreeUpwards(
     OctreeNode *octree,
     const std::vector<OctreeNode *> &inputNodes,
     const vm::ivec3 &rootMin,
     const int rootNodeSize);
 
-OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int lod, CachedNoise &chunkNoise);
+OctreeNode *constructOctreeDownwards(Chunk &chunkNoise , const vm::ivec3 &min, const int &size, const int &lod);
 OctreeNode *switchChunkLod(OctreeNode *node,const int lod);
 void destroyOctree(OctreeNode *node);
 void generateMeshFromOctree(OctreeNode *node,const int lod , bool isSeam, VertexBuffer &vertexBuffer);

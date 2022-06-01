@@ -16,11 +16,11 @@ namespace DualContouring
     FastNoise *fastNoise = nullptr;
 
     // storing the octrees that we would delete after mesh construction
-    std::vector<OctreeNode *> temporaryNodesList;
+    std::vector<OctreeNode *> neighbourNodes;
 
     // storing the octree roots here for search
     std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
-    std::unordered_map<uint64_t, CachedNoise> chunksNoiseHashMap;
+    std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
 
     void initialize(int newChunkSize, int seed)
     {
@@ -35,22 +35,22 @@ namespace DualContouring
     {
         return vertexBuffer.getBuffer();
     }
-    CachedNoise &getChunkNoise(const vm::ivec3 &min)
+    Chunk &getChunkNoise(const vm::ivec3 &min)
     {
         uint64_t minHash = hashOctreeMin(min);
 
         const auto &iter = chunksNoiseHashMap.find(minHash);
         if (iter == chunksNoiseHashMap.end())
         {
-            chunksNoiseHashMap.emplace(std::make_pair(minHash, CachedNoise(min)));
+            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min)));
         }
 
-        CachedNoise &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
+        Chunk &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
         return chunkNoise;
     }
     float *getChunkHeightField(float x, float y, float z) {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        CachedNoise &chunkNoise = getChunkNoise(min);
+        Chunk &chunkNoise = getChunkNoise(min);
         std::vector<float> &heightfieldRaw = chunkNoise.cachedHeightField;
         float *heightfieldOut = (float *)malloc(chunkSize * chunkSize * chunkSize * sizeof(float));
         int gridSize = chunkSize + 3;
@@ -69,35 +69,6 @@ namespace DualContouring
         }
         return heightfieldOut;
     }
-    OctreeNode *generateChunkData(const vm::ivec3 octreeMin, const int lod)
-    {
-        CachedNoise &chunkNoise = getChunkNoise(octreeMin);
-        OctreeNode *chunk = constructOctreeDownwards(octreeMin, lod, chunkNoise);
-        // printf("CHUNK DATA IS GENERATED\n");
-        return chunk;
-    }
-
-    void clearTemporaryChunkData()
-    {
-        std::vector<OctreeNode *> nodesList;
-        for (int i = 0; i < temporaryNodesList.size(); i++)
-        {
-            addNodesToVector(temporaryNodesList[i], nodesList);
-        }
-        // sort and remove duplicates
-        std::sort(nodesList.begin(), nodesList.end());
-        nodesList.erase(std::unique(nodesList.begin(), nodesList.end()), nodesList.end());
-        for (int i = 0; i < nodesList.size(); i++)
-        {
-            const OctreeNode *node = nodesList[i];
-            if (node->drawInfo)
-            {
-                delete node->drawInfo;
-            }
-            delete node;
-        }
-        temporaryNodesList.clear();
-    }
 
     void clearChunkRoot(float x, float y, float z)
     {
@@ -108,6 +79,19 @@ namespace DualContouring
         {
             return;
         }
+        // sort and remove duplicates
+        std::sort(neighbourNodes.begin(), neighbourNodes.end());
+        neighbourNodes.erase(std::unique(neighbourNodes.begin(), neighbourNodes.end()), neighbourNodes.end());
+        for (int i = 0; i < neighbourNodes.size(); i++)
+        {
+            const OctreeNode *node = neighbourNodes[i];
+            if (node->drawInfo)
+            {
+                delete node->drawInfo;
+            }
+            delete node;
+        }
+        neighbourNodes.clear();
         removeOctreeFromHashMap(octreeMin, chunksListHashMap);
         destroyOctree(chunkRoot);
     }
@@ -119,15 +103,19 @@ namespace DualContouring
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        OctreeNode *chunkRoot = generateChunkData(octreeMin, lod);
-        if (!chunkRoot)
+        Chunk &chunk = getChunkNoise(octreeMin);
+        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lod);
+        if (!chunkOctree.root)
         {
             // printf("Chunk Has No Data\n");
             return nullptr;
         }
 
-        addChunkRootToHashMap(chunkRoot, chunksListHashMap);
-        generateMeshFromOctree(chunkRoot, lod, false, vertexBuffer);
+        generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
+
+        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, chunkOctree,neighbourNodes);
+        OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkOctree.root->min, chunkOctree.root->size * 2);
+        generateMeshFromOctree(seamRoot, lod, true, vertexBuffer);
 
         // mesh is not valid
         if (vertexBuffer.indices.size() == 0) {
@@ -135,24 +123,8 @@ namespace DualContouring
             return nullptr;
         }
 
-        // std::vector<OctreeNode *> neighbouringChunks;
-        // std::vector<OctreeNode *> seamNodes = findSeamNodes(chunkWithLod, neighbouringChunks, chunksListHashMap, getChunkRootFromHashMap);
-        // OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkWithLod->min, chunkWithLod->size * 2);
-        // generateMeshFromOctree(seamRoot, true, vertexBuffer);
+        addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
 
-        // adding the chunk clone + neighbouring chunk clones to the destroyable list
-        // for (int i = 0; i < neighbouringChunks.size(); i++)
-        // {
-        //     temporaryNodesList.push_back(neighbouringChunks[i]);
-        // }
-
-        // add the seam octree to the destroyable list
-        // temporaryNodesList.push_back(seamRoot);
-
-        // add the chunk clone octree to the destroyable list
-        // temporaryNodesList.push_back(chunkWithLod);
-        // temporaryNodesList.push_back(chunkRoot);
-        // printf("CHUNK MESH IS GENERATED");
 
         return constructOutputBuffer(vertexBuffer);
     }
@@ -179,7 +151,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.addSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -225,7 +197,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -281,7 +253,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.addCubeDamage(
                             x, y, z,
                             qx, qy, qz, qw,
@@ -340,7 +312,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.removeCubeDamage(
                             x, y, z,
                             qx, qy, qz, qw,
@@ -374,7 +346,7 @@ namespace DualContouring
         const auto &iter = chunksNoiseHashMap.find(minHash);
         if (iter != chunksNoiseHashMap.end())
         {
-            CachedNoise &chunkNoise = iter->second;
+            Chunk &chunkNoise = iter->second;
             chunkNoise.injectDamage(damageBuffer);
         } else {
             std::vector<float> cachedHeightField;
@@ -383,7 +355,7 @@ namespace DualContouring
             std::vector<float> cachedSdf(gridSize * gridSize * gridSize);
             memcpy(cachedSdf.data(), damageBuffer, cachedSdf.size() * sizeof(float));
             
-            CachedNoise chunkNoise(min, std::move(cachedHeightField), std::move(cachedSdf));
+            Chunk chunkNoise(min, std::move(cachedHeightField), std::move(cachedSdf));
             chunkNoise.initHeightField();
             
             chunksNoiseHashMap.emplace(std::make_pair(minHash, std::move(chunkNoise)));
