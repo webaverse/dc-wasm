@@ -33,6 +33,20 @@ namespace DualContouring
     ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min);
     bool drawDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount);
     bool eraseDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount);
+    bool addCubeDamage(
+        float x, float y, float z,
+        float qx, float qy, float qz, float qw,
+        float sx, float sy, float sz,
+        float *outPositions,
+        unsigned int *outPositionsCount
+    );
+    bool eraseCubeDamage(
+        float x, float y, float z,
+        float qx, float qy, float qz, float qw,
+        float sx, float sy, float sz,
+        float *outPositions,
+        unsigned int *outPositionsCount
+    );
 };
 
 #endif // MAIN_H

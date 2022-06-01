@@ -208,4 +208,108 @@ namespace DualContouring
     bool eraseDamageSphere(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount) {
         return false;
     }
+
+    bool addCubeDamage(
+        float x, float y, float z,
+        float qx, float qy, float qz, float qw,
+        float sx, float sy, float sz,
+        float *outPositions,
+        unsigned int *outPositionsCount
+    ) {
+        unsigned int maxPositionsCount = *outPositionsCount;
+        *outPositionsCount = 0;
+
+        Matrix m(Vec{x, y, z}, Quat{qx, qy, qz, qw}, Vec{sx, sy, sz});
+
+        bool drew = false;
+        std::set<uint64_t> seenHashes;
+        for (float dx = -1.f; dx <= 1.f; dx += 2.f)
+        {
+            for (float dz = -1.f; dz <= 1.f; dz += 2.f)
+            {
+                for (float dy = -1.f; dy <= 1.f; dy += 2.f)
+                {
+                    Vec p = (Vec(dx, dy, dz) * 0.5).applyMatrix(m);
+                    float ax = p.x;
+                    float ay = p.y;
+                    float az = p.z;
+                    vm::ivec3 min = vm::ivec3(std::floor(ax / (float)chunkSize), std::floor(ay / (float)chunkSize), std::floor(az / (float)chunkSize)) * chunkSize;
+                    uint64_t minHash = hashOctreeMin(min);
+                    if (seenHashes.find(minHash) == seenHashes.end())
+                    {
+                        seenHashes.insert(minHash);
+
+                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        if (chunkNoise.addCubeDamage(
+                            sx, sy, sz,
+                            qx, qy, qz, qw,
+                            ax, ay, az
+                        )) {
+                            if (*outPositionsCount < maxPositionsCount)
+                            {
+                                outPositions[(*outPositionsCount)++] = min.x;
+                                outPositions[(*outPositionsCount)++] = min.y;
+                                outPositions[(*outPositionsCount)++] = min.z;
+                            }
+
+                            drew = true;
+                        }
+                    }
+                }
+            }
+        }
+        return drew;
+    }
+    
+    bool eraseCubeDamage(
+        float x, float y, float z,
+        float qx, float qy, float qz, float qw,
+        float sx, float sy, float sz,
+        float *outPositions,
+        unsigned int *outPositionsCount
+    ) {
+        unsigned int maxPositionsCount = *outPositionsCount;
+        *outPositionsCount = 0;
+
+        Matrix m(Vec{x, y, z}, Quat{qx, qy, qz, qw}, Vec{sx, sy, sz});
+
+        bool drew = false;
+        std::set<uint64_t> seenHashes;
+        for (float dx = -1.f; dx <= 1.f; dx += 2.f)
+        {
+            for (float dz = -1.f; dz <= 1.f; dz += 2.f)
+            {
+                for (float dy = -1.f; dy <= 1.f; dy += 2.f)
+                {
+                    Vec p = (Vec(dx, dy, dz) * 0.5).applyMatrix(m);
+                    float ax = p.x;
+                    float ay = p.y;
+                    float az = p.z;
+                    vm::ivec3 min = vm::ivec3(std::floor(ax / (float)chunkSize), std::floor(ay / (float)chunkSize), std::floor(az / (float)chunkSize)) * chunkSize;
+                    uint64_t minHash = hashOctreeMin(min);
+                    if (seenHashes.find(minHash) == seenHashes.end())
+                    {
+                        seenHashes.insert(minHash);
+
+                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        if (chunkNoise.removeCubeDamage(
+                            sx, sy, sz,
+                            qx, qy, qz, qw,
+                            ax, ay, az
+                        )) {
+                            if (*outPositionsCount < maxPositionsCount)
+                            {
+                                outPositions[(*outPositionsCount)++] = min.x;
+                                outPositions[(*outPositionsCount)++] = min.y;
+                                outPositions[(*outPositionsCount)++] = min.z;
+                            }
+
+                            drew = true;
+                        }
+                    }
+                }
+            }
+        }
+        return drew;
+    }
 }

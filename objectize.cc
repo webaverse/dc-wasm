@@ -29,6 +29,36 @@ EMSCRIPTEN_KEEPALIVE bool eraseDamageSphere(float x, float y, float z, float rad
     return DualContouring::eraseDamageSphere(x, y, z, radius, outPositions, outPositionsCount);
 }
 
+EMSCRIPTEN_KEEPALIVE bool addCubeDamage(
+    float x, float y, float z,
+    float qx, float qy, float qz, float qw,
+    float sx, float sy, float sz,
+    float *outPositions,
+    unsigned int *outPositionsCount
+) {
+    return DualContouring::addCubeDamage(
+        x, y, z,
+        qx, qy, qz, qw,
+        sx, sy, sz,
+        outPositions, outPositionsCount
+    );
+}
+
+EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
+    float x, float y, float z,
+    float qx, float qy, float qz, float qw,
+    float sx, float sy, float sz,
+    float *outPositions,
+    unsigned int *outPositionsCount
+) {
+    return DualContouring::eraseCubeDamage(
+        x, y, z,
+        qx, qy, qz, qw,
+        sx, sy, sz,
+        outPositions, outPositionsCount
+    );
+}
+
 EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
     free(ptr);
 }
