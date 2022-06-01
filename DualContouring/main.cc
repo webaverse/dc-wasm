@@ -130,8 +130,8 @@ namespace DualContouring
         generateMeshFromOctree(chunkRoot, lod, false, vertexBuffer);
 
         // mesh is not valid
-        if(vertexBuffer.indices.size() == 0){
-            printf("Generated Mesh Is Not Valid\n");
+        if (vertexBuffer.indices.size() == 0) {
+            // printf("Generated Mesh Is Not Valid\n");
             return nullptr;
         }
 
