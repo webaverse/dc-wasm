@@ -100,8 +100,12 @@ namespace DualContouring
         // generateMeshFromOctree(seamRoot, true, vertexBuffer);
 
         // mesh is not valid
+<<<<<<< HEAD
         if (vertexBuffer.indices.size() == 0)
         {
+=======
+        if (vertexBuffer.indices.size() == 0) {
+>>>>>>> main
             // printf("Generated Mesh Is Not Valid\n");
             return nullptr;
         }
@@ -133,8 +137,13 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
+<<<<<<< HEAD
                         Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.addDamage(ax, ay, az, radius))
+=======
+                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        if (chunkNoise.addSphereDamage(ax, ay, az, radius))
+>>>>>>> main
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
@@ -180,8 +189,13 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
+<<<<<<< HEAD
                         Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.removeDamage(ax, ay, az, radius))
+=======
+                        CachedNoise &chunkNoise = getChunkNoise(min);
+                        if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
+>>>>>>> main
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
@@ -238,10 +252,17 @@ namespace DualContouring
 
                         Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.addCubeDamage(
+<<<<<<< HEAD
                                 sx, sy, sz,
                                 qx, qy, qz, qw,
                                 ax, ay, az))
                         {
+=======
+                            x, y, z,
+                            qx, qy, qz, qw,
+                            sx, sy, sz
+                        )) {
+>>>>>>> main
                             if (*outPositionsCount < maxPositionsCount)
                             {
                                 int gridSize = chunkSize + 3;
@@ -297,10 +318,17 @@ namespace DualContouring
 
                         Chunk &chunkNoise = getChunkNoise(min);
                         if (chunkNoise.removeCubeDamage(
+<<<<<<< HEAD
                                 sx, sy, sz,
                                 qx, qy, qz, qw,
                                 ax, ay, az))
                         {
+=======
+                            x, y, z,
+                            qx, qy, qz, qw,
+                            sx, sy, sz
+                        )) {
+>>>>>>> main
                             if (*outPositionsCount < maxPositionsCount)
                             {
                                 int gridSize = chunkSize + 3;

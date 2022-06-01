@@ -50,6 +50,7 @@ namespace DualContouring
         unsigned int *outPositionsCount,
         float *outDamages
     );
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer);
 };
 
 #endif // MAIN_H
