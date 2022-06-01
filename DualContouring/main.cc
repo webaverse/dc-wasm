@@ -48,6 +48,27 @@ namespace DualContouring
         CachedNoise &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
         return chunkNoise;
     }
+    float *getChunkHeightField(float x, float y, float z) {
+        const vm::ivec3 min = vm::ivec3(x, y, z);
+        CachedNoise &chunkNoise = getChunkNoise(min);
+        std::vector<float> &heightfieldRaw = chunkNoise.cachedHeightField;
+        float *heightfieldOut = (float *)malloc(chunkSize * chunkSize * chunkSize * sizeof(float));
+        int gridSize = chunkSize + 3;
+        for (int x = 0; x < chunkSize; x++) {
+            for (int z = 0; z < chunkSize; z++) {
+                for (int y = 0; y < chunkSize; y++) {
+                    int lx = x + 1;
+                    int ly = y + 1;
+                    int lz = z + 1;
+
+                    int outIndex = x + z * chunkSize + y * chunkSize * chunkSize;
+                    int inIndex = lx + lz * gridSize + ly * gridSize * gridSize;
+                    heightfieldOut[outIndex] = heightfieldRaw[inIndex];
+                }
+            }
+        }
+        return heightfieldOut;
+    }
     OctreeNode *generateChunkData(const vm::ivec3 octreeMin, const int lod)
     {
         CachedNoise &chunkNoise = getChunkNoise(octreeMin);
