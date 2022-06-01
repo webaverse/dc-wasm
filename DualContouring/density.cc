@@ -68,7 +68,7 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 // 	// return a - falloffMap(vm::vec2(position.x + 100, position.y - 100));
 // }
 
-unsigned char getBiome(const vm::ivec2 &worldPosition, CachedNoise &chunkNoise)
+unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
 {
 	unsigned char biome = 0xFF;
 	const float noiseValue = chunkNoise.getRawHeight(worldPosition.x, worldPosition.y);
@@ -79,7 +79,7 @@ unsigned char getBiome(const vm::ivec2 &worldPosition, CachedNoise &chunkNoise)
 	return biome;
 }
 
-float Density_Func(const vm::vec3 &position, CachedNoise &chunkNoise)
+float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
 {
 	// const float MAX_HEIGHT = 20.f;
 	// float noise = 0.0;

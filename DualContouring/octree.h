@@ -16,9 +16,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
-// #include "../vm/glm.hpp"
-#include "cachedNoise.h"
-#include "chunkDamageBuffer.h"
+#include "chunk.h"
 
 enum OctreeNodeType
 {
@@ -44,11 +42,14 @@ struct OctreeDrawInfo
     svd::QefData qef;
 };
 
+typedef std::pair<unsigned char, float> BiomePair;
+typedef std::vector<BiomePair> BiomeData;
+
 class OctreeNode
 {
 public:
     OctreeNode()
-        : type(Node_None), min(0, 0, 0), size(0), drawInfo(nullptr), lod(1)
+        : type(Node_None), min(0, 0, 0), size(0), drawInfo(nullptr)
     {
         for (int i = 0; i < 8; i++)
         {
@@ -57,7 +58,7 @@ public:
     }
 
     OctreeNode(const OctreeNodeType _type)
-        : type(_type), min(0, 0, 0), size(0), drawInfo(nullptr), lod(1)
+        : type(_type), min(0, 0, 0), size(0), drawInfo(nullptr)
     {
         for (int i = 0; i < 8; i++)
         {
@@ -68,28 +69,37 @@ public:
     OctreeNodeType type;
     vm::ivec3 min;
     int size;
-    int lod;
     OctreeNode *children[8];
     OctreeDrawInfo *drawInfo;
 };
+class ChunkOctree
+{
+public:
+    ChunkOctree() = delete;
+    ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, const int &lod);
+    ~ChunkOctree();
+    OctreeNode *root;
+    int lod;
+    int size;
+    vm::ivec3 min;
+};
 
-// OctreeNode *createChunkWithLod(OctreeNode *chunkRoot);
 OctreeNode *getChunkRootFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 void removeOctreeFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 void addChunkRootToHashMap(OctreeNode *root, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 uint64_t hashOctreeMin(const vm::ivec3 &min);
 
-std::vector<OctreeNode *> findSeamNodes(OctreeNode *root);
+std::vector<OctreeNode *> generateSeamNodes(const Chunk &chunk, const ChunkOctree &chunkOctree);
 OctreeNode *constructOctreeUpwards(
     OctreeNode *octree,
     const std::vector<OctreeNode *> &inputNodes,
     const vm::ivec3 &rootMin,
     const int rootNodeSize);
 
-OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer);
-OctreeNode *switchChunkLod(OctreeNode *node, const int lod);
+OctreeNode *constructOctreeDownwards(Chunk &chunk,const vm::ivec3 &min, const int &size, const int &lod);
+OctreeNode *simplifyChunkOctree(OctreeNode *node, const int lod);
 void destroyOctree(OctreeNode *node);
-void generateMeshFromOctree(OctreeNode *node, const int lod, bool isSeam, VertexBuffer &vertexBuffer);
+void generateMeshFromOctree(OctreeNode *node, bool isSeam, VertexBuffer &vertexBuffer);
 
 void addNodesToVector(OctreeNode *node, std::vector<OctreeNode *> &vector);
 

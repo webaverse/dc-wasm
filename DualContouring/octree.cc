@@ -9,18 +9,6 @@ const int MATERIAL_SOLID = 1;
 const float QEF_ERROR = 1e-6f;
 const int QEF_SWEEPS = 4;
 
-const vm::ivec3 CHILD_MIN_OFFSETS[] =
-	{
-		// needs to match the vertMap from Dual Contouring impl
-		vm::ivec3(0, 0, 0),
-		vm::ivec3(0, 0, 1),
-		vm::ivec3(0, 1, 0),
-		vm::ivec3(0, 1, 1),
-		vm::ivec3(1, 0, 0),
-		vm::ivec3(1, 0, 1),
-		vm::ivec3(1, 1, 0),
-		vm::ivec3(1, 1, 1),
-};
 // data from the original DC impl, drives the contouring process
 
 const int edgevmap[12][2] =
@@ -71,8 +59,39 @@ const int edgeProcEdgeMask[3][2][5] = {
 
 const int processEdgeMask[3][4] = {{3, 2, 1, 0}, {7, 5, 6, 4}, {11, 10, 9, 8}};
 
-typedef std::pair<unsigned char, float> BiomePair;
-typedef std::vector<BiomePair> BiomeData;
+const vm::ivec3 CHILD_MIN_OFFSETS[8] =
+	{
+		// needs to match the vertMap from Dual Contouring impl
+		vm::ivec3(0, 0, 0),
+		vm::ivec3(0, 0, 1),
+		vm::ivec3(0, 1, 0),
+		vm::ivec3(0, 1, 1),
+		vm::ivec3(1, 0, 0),
+		vm::ivec3(1, 0, 1),
+		vm::ivec3(1, 1, 0),
+		vm::ivec3(1, 1, 1),
+};
+
+const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[7] =
+	{
+		vm::ivec3(1, 0, 0),
+		vm::ivec3(0, 0, 1),
+		vm::ivec3(1, 0, 1),
+		vm::ivec3(0, 1, 0),
+		vm::ivec3(1, 1, 0),
+		vm::ivec3(0, 1, 1),
+		vm::ivec3(1, 1, 1),
+};
+
+ChunkOctree::ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, const int &lod) : lod(lod)
+{
+	std::cout << "FUNC" << std::endl;
+	this->root = constructOctreeDownwards(chunk, min, size, lod);
+}
+ChunkOctree::~ChunkOctree()
+{
+	// destroyOctree(this->root);
+}
 
 void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const BiomeData &samples, const int &n)
 {
@@ -148,7 +167,7 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 	biomeWeights.w = selectedBiomesWeights[3];
 }
 
-void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, CachedNoise &chunkNoise)
+void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
 {
 	const int gridSize = 2;
 	// +1 is for fence post error
@@ -169,7 +188,7 @@ void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &posi
 	selectMostCommonBiomes(biome, biomeWeights, biomeData, gridPoints * gridPoints);
 }
 
-OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
+OctreeNode *simplifyChunkOctree(OctreeNode *node, const int lod)
 {
 
 	if (!node)
@@ -191,7 +210,7 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 
 	for (int i = 0; i < 8; i++)
 	{
-		node->children[i] = switchChunkLod(node->children[i], lod);
+		node->children[i] = simplifyChunkOctree(node->children[i], lod);
 		if (node->children[i])
 		{
 			OctreeNode *child = node->children[i];
@@ -331,11 +350,11 @@ void cloneNode(OctreeNode *sourceNode, OctreeNode *node)
 	}
 }
 
-const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
-{
-	const unsigned int mask = ~(DualContouring::chunkSize - 1);
-	return vm::ivec3(p.x & mask, p.y & mask, p.z & mask);
-}
+// const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
+// {
+// 	const unsigned int mask = ~(DualContouring::chunkSize - 1);
+// 	return vm::ivec3(p.x & mask, p.y & mask, p.z & mask);
+// }
 
 uint64_t hashOctreeMin(const vm::ivec3 &min)
 {
@@ -476,7 +495,7 @@ OctreeNode *constructOctreeUpwards(
 	return root;
 }
 
-void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertexBuffer)
+void generateVertexIndices(OctreeNode *node, VertexBuffer &vertexBuffer)
 {
 	if (!node)
 	{
@@ -487,7 +506,7 @@ void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertex
 	{
 		for (int i = 0; i < 8; i++)
 		{
-			generateVertexIndices(node->children[i], lod, vertexBuffer);
+			generateVertexIndices(node->children[i], vertexBuffer);
 		}
 	}
 	else
@@ -749,7 +768,7 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, bool isSeam)
 	}
 }
 
-vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, Chunk &chunkNoise)
 {
 	// approximate the zero crossing by finding the min value along the edge
 	float minValue = 100000.f;
@@ -760,7 +779,7 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
 	while (currentT <= 1.f)
 	{
 		const vm::vec3 p = p0 + ((p1 - p0) * currentT);
-		const float density = abs(Density_Func(p, chunkNoise, damageBuffer));
+		const float density = abs(Density_Func(p, chunkNoise));
 		if (density < minValue)
 		{
 			minValue = density;
@@ -773,20 +792,20 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
 	return p0 + ((p1 - p0) * t);
 }
 
-vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, Chunk &chunkNoise)
 {
 	const float H = 0.001f;
-	const float dx = Density_Func(p + vm::vec3(H, 0.f, 0.f), chunkNoise, damageBuffer) -
-					 Density_Func(p - vm::vec3(H, 0.f, 0.f), chunkNoise, damageBuffer);
-	const float dy = Density_Func(p + vm::vec3(0.f, H, 0.f), chunkNoise, damageBuffer) -
-					 Density_Func(p - vm::vec3(0.f, H, 0.f), chunkNoise, damageBuffer);
-	const float dz = Density_Func(p + vm::vec3(0.f, 0.f, H), chunkNoise, damageBuffer) -
-					 Density_Func(p - vm::vec3(0.f, 0.f, H), chunkNoise, damageBuffer);
+	const float dx = Density_Func(p + vm::vec3(H, 0.f, 0.f), chunkNoise) -
+					 Density_Func(p - vm::vec3(H, 0.f, 0.f), chunkNoise);
+	const float dy = Density_Func(p + vm::vec3(0.f, H, 0.f), chunkNoise) -
+					 Density_Func(p - vm::vec3(0.f, H, 0.f), chunkNoise);
+	const float dz = Density_Func(p + vm::vec3(0.f, 0.f, H), chunkNoise) -
+					 Density_Func(p - vm::vec3(0.f, 0.f, H), chunkNoise);
 
 	return vm::normalize(vm::vec3(dx, dy, dz));
 }
 
-OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, Chunk &chunkNoise)
 {
 	if (!leaf)
 	{
@@ -797,7 +816,7 @@ OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, CachedNoise &chunkNoi
 	for (int i = 0; i < 8; i++)
 	{
 		const vm::ivec3 cornerPos = leaf->min + CHILD_MIN_OFFSETS[i] * lod;
-		const float density = Density_Func(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), chunkNoise, damageBuffer);
+		const float density = Density_Func(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), chunkNoise);
 		const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
 		corners |= (material << i);
 	}
@@ -832,8 +851,8 @@ OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, CachedNoise &chunkNoi
 
 		const vm::vec3 p1 = vm::vec3(leaf->min.x + CHILD_MIN_OFFSETS[c1].x * lod, leaf->min.y + CHILD_MIN_OFFSETS[c1].y * lod, leaf->min.z + CHILD_MIN_OFFSETS[c1].z * lod);
 		const vm::vec3 p2 = vm::vec3(leaf->min.x + CHILD_MIN_OFFSETS[c2].x * lod, leaf->min.y + CHILD_MIN_OFFSETS[c2].y * lod, leaf->min.z + CHILD_MIN_OFFSETS[c2].z * lod);
-		const vm::vec3 p = approximateZeroCrossingPosition(p1, p2, chunkNoise, damageBuffer);
-		const vm::vec3 n = calculateSurfaceNormal(p, chunkNoise, damageBuffer);
+		const vm::vec3 p = approximateZeroCrossingPosition(p1, p2, chunkNoise);
+		const vm::vec3 n = calculateSurfaceNormal(p, chunkNoise);
 		qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
 
 		averageNormal += n;
@@ -871,7 +890,7 @@ OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, CachedNoise &chunkNoi
 
 typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
 
-void findOctreeNodes(OctreeNode *node, FilterNodesFunc &func, std::vector<OctreeNode *> &nodes)
+void findOctreeNodesRecursively(OctreeNode *node, FilterNodesFunc &func, std::vector<OctreeNode *> &nodes)
 {
 	if (!node)
 	{
@@ -891,38 +910,48 @@ void findOctreeNodes(OctreeNode *node, FilterNodesFunc &func, std::vector<Octree
 	else
 	{
 		for (int i = 0; i < 8; i++)
-			findOctreeNodes(node->children[i], func, nodes);
+			findOctreeNodesRecursively(node->children[i], func, nodes);
 	}
 }
 
-std::vector<OctreeNode *> findNodes(OctreeNode *root, FilterNodesFunc filterFunc)
+std::vector<OctreeNode *> findOctreeNodes(OctreeNode *root, FilterNodesFunc filterFunc)
 {
 	std::vector<OctreeNode *> nodes;
-	findOctreeNodes(root, filterFunc, nodes);
+	findOctreeNodesRecursively(root, filterFunc, nodes);
 	return nodes;
 }
-std::vector<OctreeNode *> findSeamNodes(OctreeNode *targetRoot, std::vector<OctreeNode *>(&neighbouringChunks), std::unordered_map<uint64_t, OctreeNode *> hashMap, OctreeNode *(*getChunkRootFromHashMap)(vm::ivec3, std::unordered_map<uint64_t, OctreeNode *> &))
+
+std::vector<OctreeNode *> constructChunkSeamNode(const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
 {
-	const vm::ivec3 baseChunkMin = vm::ivec3(targetRoot->min);
-	const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(targetRoot->size);
+	std::vector<OctreeNode *> nodes;
 
-	const vm::ivec3 OFFSETS[8] =
-		{
-			vm::ivec3(0, 0, 0),
-			vm::ivec3(1, 0, 0),
-			vm::ivec3(0, 0, 1),
-			vm::ivec3(1, 0, 1),
-			vm::ivec3(0, 1, 0),
-			vm::ivec3(1, 1, 0),
-			vm::ivec3(0, 1, 1),
-			vm::ivec3(1, 1, 1)};
-
-	FilterNodesFunc selectionFuncs[8] =
-		{
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
+	for (int x = 0; x < chunkSize; x++)
+		for (int x = 0; x < chunkSize; x++)
+			for (int x = 0; x < chunkSize; x++)
 			{
-				return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
-			},
+			}
+	return nodes;
+}
+
+std::vector<OctreeNode *> generateSeamNodes(ChunkOctree &chunk)
+{
+	const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
+	const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunk.size);
+
+	std::vector<OctreeNode *> seamNodes;
+
+	FilterNodesFunc rootSeamNodesFinder = [&](const vm::ivec3 &min, const vm::ivec3 &max)
+	{
+		return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
+	};
+
+	std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(chunk.root, rootSeamNodesFinder);
+
+	// adding root chunk seam nodes
+	seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
+
+	FilterNodesFunc selectionFuncs[7] =
+		{
 			[&](const vm::ivec3 &min, const vm::ivec3 &max)
 			{
 				return min.x == seamValues.x;
@@ -952,16 +981,17 @@ std::vector<OctreeNode *> findSeamNodes(OctreeNode *targetRoot, std::vector<Octr
 				return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
 			}};
 
-	std::vector<OctreeNode *> seamNodes;
-	std::vector<OctreeNode *> chunkNodes = findNodes(targetRoot, selectionFuncs[0]);
-	seamNodes.insert(std::end(seamNodes), std::begin(chunkNodes), std::end(chunkNodes));
-
-	
+	// creating the seam nodes of the neighbouring chunks
+	// NEIGHBOUR_CHUNKS_OFFSETS[i]
+	for (int i = 0; i < 7; i++)
+	{
+		std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNode(NEIGHBOUR_CHUNKS_OFFSETS[i], selectionFuncs[i], chunk.size);
+	}
 
 	return seamNodes;
 }
 
-OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, Chunk &chunkNoise)
 {
 	if (!node)
 	{
@@ -970,7 +1000,7 @@ OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, CachedNoise &c
 
 	if (node->size == lod)
 	{
-		return constructLeaf(node, lod, chunkNoise, damageBuffer);
+		return constructLeaf(node, lod, chunkNoise);
 	}
 
 	const int childSize = node->size / 2;
@@ -983,7 +1013,7 @@ OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, CachedNoise &c
 		child->min = node->min + (CHILD_MIN_OFFSETS[i] * childSize);
 		child->type = Node_Internal;
 
-		node->children[i] = constructOctreeNodes(child, lod, chunkNoise, damageBuffer);
+		node->children[i] = constructOctreeNodes(child, lod, chunkNoise);
 		hasChildren |= (node->children[i] != nullptr);
 	}
 
@@ -996,28 +1026,28 @@ OctreeNode *constructOctreeNodes(OctreeNode *node, const int lod, CachedNoise &c
 	return node;
 }
 
-OctreeNode *constructOctreeDownwards(const vm::ivec3 &min, const int lod, CachedNoise &chunkNoise, ChunkDamageBuffer &damageBuffer)
+OctreeNode *constructOctreeDownwards(Chunk &chunk, const vm::ivec3 &min, const int &size, const int &lod)
 {
 	OctreeNode *root = new OctreeNode;
 	root->min = min;
-	root->size = DualContouring::chunkSize;
+	root->size = size;
 	root->type = Node_Internal;
-	root->lod = lod;
 
-	OctreeNode *octreeRootNode = constructOctreeNodes(root, lod, chunkNoise, damageBuffer);
-	octreeRootNode = switchChunkLod(octreeRootNode, lod);
+	OctreeNode *octreeRootNode = constructOctreeNodes(root, lod, chunk);
+	octreeRootNode = simplifyChunkOctree(octreeRootNode, lod);
 
 	return octreeRootNode;
 }
 
-void generateMeshFromOctree(OctreeNode *node, const int lod, bool isSeam, VertexBuffer &vertexBuffer)
+void generateMeshFromOctree(OctreeNode *node, bool isSeam, VertexBuffer &vertexBuffer)
 {
 	if (!node)
 	{
+		// printf("Error : The Root Node Is Null, Mesh Is Not Generated\n");
 		return;
 	}
 
-	generateVertexIndices(node, lod, vertexBuffer);
+	generateVertexIndices(node, vertexBuffer);
 	contourCellProc(node, vertexBuffer.indices, isSeam);
 }
 
