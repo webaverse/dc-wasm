@@ -168,9 +168,19 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 	biomeWeights.w = selectedBiomesWeights[3];
 }
 
-void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
+void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position)
 {
-	const int gridSize = 2;
+	biome.x = 0;
+	biome.y = 0;
+	biome.z = 0;
+	biome.w = 0;
+
+	biomeWeights.x = 0;
+	biomeWeights.y = 0;
+	biomeWeights.z = 0;
+	biomeWeights.w = 0;
+
+	/* const int gridSize = 2;
 	// +1 is for fence post error
 	const int gridPoints = gridSize + 1;
 	BiomeData biomeData;
@@ -182,11 +192,11 @@ void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &posi
 		for (int x = 0; x < gridPoints; x++)
 		{
 			const vm::ivec2 pointPosition = minPoint + vm::ivec2(x, y);
-			biomeData[x + y * gridPoints].first = getBiome(pointPosition, chunkNoise);
+			biomeData[x + y * gridPoints].first = DualContouring::getBiome(pointPosition, chunkNoise);
 			biomeData[x + y * gridPoints].second = 1.f / (vm::distance(minPoint + 1, pointPosition) + 1.f);
 		}
 
-	selectMostCommonBiomes(biome, biomeWeights, biomeData, gridPoints * gridPoints);
+	selectMostCommonBiomes(biome, biomeWeights, biomeData, gridPoints * gridPoints); */
 }
 
 OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
@@ -897,7 +907,7 @@ OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, Chunk &chunkNoise)
 	drawInfo->averageNormal = normalize(averageNormal / (float)edgeCount);
 	drawInfo->corners = corners;
 
-	setBiomeData(drawInfo->biome, drawInfo->biomeWeights, drawInfo->position, chunkNoise);
+	setBiomeData(drawInfo->biome, drawInfo->biomeWeights, drawInfo->position);
 
 	leaf->type = Node_Leaf;
 	leaf->drawInfo = drawInfo;

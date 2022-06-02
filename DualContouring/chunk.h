@@ -237,16 +237,21 @@ public:
                 std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
                 for (int dz = -8; dz <= 8; dz++) {
                     for (int dx = -8; dx <= 8; dx++) {
-                        biomeCounts[DualContouring::getBiome(ax + dx, az + dz)]++;
+                        vm::ivec2 iWorldPosition(ax + dx, az + dz);
+                        unsigned char b = DualContouring::getBiome(iWorldPosition);
+                        biomeCounts[b]++;
                     }
                 }
 
                 float elevationSum = 0.f;
+                vm::vec2 fWorldPosition(ax, az);
                 for (auto const &iter : biomeCounts) {
-                    elevationSum += iter.second * DualContouring::getBiomeHeight(iter.first, ax, az);
+                    elevationSum += iter.second * DualContouring::getBiomeHeight(iter.first, fWorldPosition);
                 }
                 constexpr int sampleWidth = 8 * 2 + 1;
-                float elevation = elevationSum / (sampleWidth * sampleWidth);
+                constexpr int numSamples = sampleWidth * sampleWidth;
+                float elevation = elevationSum / (float)numSamples;
+                // std::cout << "got elevation " << elevation << " : " << ax << " " << az << std::endl;
                 cachedHeightField[index2D] = elevation;
             }
         }
@@ -295,21 +300,6 @@ public:
     unsigned char getBiome(int lx, int lz) {
         int index = lx + lz * size;
         return cachedBiomesField[index];
-    }
-    float getBiomeHeight(unsigned char b, int ax, int az) {
-        int lx = ax - min.x + 1;
-        int lz = az - min.z + 1;
-
-        int indexBiomeHeightField = lx + lz * gridPoints + (int)b * gridPoints * gridPoints;
-        float &biomeHeight = cachedBiomeHeightField[indexBiomeHeightField];
-        if (!isfinite(biomeHeight)) { // cache miss
-            const Biome &biome = BIOMES[b];
-            biomeHeight = std::min<float>(biome.baseHeight +
-            DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-            DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-            DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
-        }
-        return biomeHeight;
     }
 
     // height

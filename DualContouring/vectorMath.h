@@ -206,8 +206,12 @@ namespace vm
     float distance(const vm::vec2 &v, const vm::ivec2 &o);
     float distance(const vm::ivec2 &v, const vm::ivec2 &o);
 
-    float clamp(const float v, const float min, const float max);
-    int clamp(const int v, const int min, const int max);
+    template <typename T>
+    T clamp(const T v, const T min, const T max) {
+       return std::max(min, std::min(v, max));
+    }
+    // template<>
+    // double clamp(const double v, const double min, const double max) = delete;
 
     // + operator
     vec2 operator+(const vec2 &v1, const vec2 &v2);
