@@ -1,5 +1,12 @@
 #include <string>
-#include <unordered_map>
+#include <tuple>
+
+extern std::tuple<float, float> groundColors[];
+extern std::tuple<float, float> groundNormals[];
+extern std::tuple<float, float> groundHeights[];
+extern std::tuple<float, float> groundEmissives[];
+
+constexpr int waterLevel = 5;
 
 enum class BIOME : unsigned char {
   biOcean = 0,
@@ -63,7 +70,23 @@ enum class BIOME : unsigned char {
   biMesaBryce = 58,
   biMesaPlateauFM = 59,
   biMesaPlateauM = 60,
-  NUM_BIOMES = 61,
+
+  dirt = 61,
+  gravel = 62,
+  grindstone = 63,
+  lightstone = 64,
+  darkstone = 65,
+  stone = 66,
+  oil = 67,
+  bedrock = 68,
+  lava = 69,
+
+  waterRiver = 70,
+  waterOcean = 71,
+  waterRiverFrozen = 72,
+  waterOceanFrozen = 73,
+
+  NUM_BIOMES = 74,
 };
 
 class Biome {

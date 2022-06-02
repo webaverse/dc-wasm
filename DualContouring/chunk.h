@@ -7,7 +7,7 @@
 #include "../hash.h"
 #include "../util.h"
 #include "../vector.h"
-#include "../biomes.h"
+#include "biomes.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -16,12 +16,21 @@
 #include <vector>
 #include <deque>
 
-constexpr float MAX_HEIGHT = 20.f;
-constexpr int numBiomes = (int)BIOME::NUM_BIOMES;
+const float MAX_HEIGHT = 20.f;
+const int numBiomes = (int)BIOME::NUM_BIOMES;
+
+enum GenerateFlags : int {
+    GF_NONE = 0,
+    GF_NOISE = 1 << 0,
+    GF_BIOMES = 1 << 1,
+    GF_HEIGHTFIELD = 1 << 2,
+    GF_SDF = 1 << 3,
+    GF_ALL = GF_NOISE | GF_BIOMES | GF_HEIGHTFIELD | GF_SDF
+};
 
 class NoiseField {
 public:
-    int size;
+    // int size;
     std::vector<float> temperature;
     std::vector<float> humidity;
     std::vector<float> ocean;
@@ -30,14 +39,14 @@ public:
     // NoiseField() = delete;
     NoiseField() {}
     NoiseField(int size) :
-        size(size),
+        // size(size),
         temperature(size * size),
         humidity(size * size),
         ocean(size * size),
         river(size * size)
         {}
     NoiseField(int size, std::vector<float> &&temperature, std::vector<float> &&humidity, std::vector<float> &&ocean, std::vector<float> &&river) :
-        size(size),
+        // size(size),
         temperature(std::move(temperature)),
         humidity(std::move(humidity)),
         ocean(std::move(ocean)),
@@ -45,7 +54,7 @@ public:
         {}
     // NoiseField(const NoiseField &other) = delete;
     NoiseField(const NoiseField &&other) :
-        size(other.size),
+        // size(other.size),
         temperature(std::move(other.temperature)),
         humidity(std::move(other.humidity)),
         ocean(std::move(other.ocean)),
@@ -53,12 +62,16 @@ public:
         {}
     NoiseField &operator=(const NoiseField &other) = delete;
     NoiseField &operator=(const NoiseField &&other) {
-        size = other.size;
+        // size = other.size;
         temperature = std::move(other.temperature);
         humidity = std::move(other.humidity);
         ocean = std::move(other.ocean);
         river = std::move(other.river);
         return *this;
+    }
+
+    size_t size() const {
+        return temperature.size() + humidity.size() + ocean.size() + river.size();
     }
 };
 
@@ -87,12 +100,12 @@ public:
         cachedSdf(std::move(other.cachedSdf))
         {}
     Chunk(const Chunk &other) = delete;
-    Chunk(const vm::ivec3 chunkMin) :
+    Chunk(const vm::ivec3 chunkMin, GenerateFlags flags) :
                                        min(chunkMin),
                                        size(DualContouring::chunkSize),
                                        gridPoints(size + 4)
     {
-        init();
+        generate(flags);
     };
     Chunk(const vm::ivec3 chunkMin, NoiseField &&cachedNoiseField, std::vector<uint8_t> &&cachedBiomesField, std::vector<float> &&cachedBiomeHeightField, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
         min(chunkMin),
@@ -100,7 +113,7 @@ public:
         gridPoints(size + 4),
         cachedNoiseField(std::move(cachedNoiseField)),
         cachedBiomesField(std::move(cachedBiomesField)),
-        cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
+        cachedBiomeHeightField(std::move(cachedBiomeHeightField)),
         cachedHeightField(std::move(cachedHeightField)),
         cachedSdf(std::move(cachedSdf))
     {
@@ -119,61 +132,69 @@ public:
         return *this;
     }
 
-    void init() {
-        initNoiseField();
-        initBiomesField();
-        initHeightField();
-        initSdf();
+    void generate(GenerateFlags flags) {
+        if ((flags & GF_NOISE) | (flags & GF_BIOMES) | (flags & GF_HEIGHTFIELD) | (flags & GF_SDF)) {
+            if (cachedNoiseField.size() == 0) {
+                initNoiseField();
+            }
+        }
+        if ((flags & GF_BIOMES) | (flags & GF_HEIGHTFIELD) | (flags & GF_SDF)) {
+            if (cachedBiomesField.size() == 0) {
+                initBiomesField();
+            }
+        }
+        if ((flags & GF_HEIGHTFIELD) | (flags & GF_SDF)) {
+            if (cachedHeightField.size() == 0) {
+                initHeightField();
+            }
+        }
+        if ((flags & GF_SDF)) {
+            if (cachedSdf.size() == 0) {
+                initSdf();
+            }
+        }
     }
     void initNoiseField() {
-        cachedNoiseField.temperature.resize(gridPoints * gridPoints);
-        cachedNoiseField.humidity.resize(gridPoints * gridPoints);
-        cachedNoiseField.ocean.resize(gridPoints * gridPoints);
-        cachedNoiseField.river.resize(gridPoints * gridPoints);
-        for (int dz = 0; dz < gridPoints; dz++)
+        cachedNoiseField.temperature.resize(size * size);
+        cachedNoiseField.humidity.resize(size * size);
+        cachedNoiseField.ocean.resize(size * size);
+        cachedNoiseField.river.resize(size * size);
+        for (int dz = 0; dz < size; dz++)
         {
-            for (int dx = 0; dx < gridPoints; dx++)
+            for (int dx = 0; dx < size; dx++)
             {
-                int index2D = dx + dz * gridPoints;
+                int index = dx + dz * size;
                 int ax = dx + min.x - 1;
                 int az = dz + min.z - 1;
 
                 float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(ax, az);
-                // tNoise = (tNoise + 1.f) / 2.f;
-                // tNoise = std::min(std::max(tNoise, 0.f), 1.f);
-                cachedNoiseField.temperature[index2D] = tNoise;
+                cachedNoiseField.temperature[index] = tNoise;
 
                 float hNoise = (float)DualContouring::noises->humidityNoise.in2D(ax, az);
-                // hNoise = (hNoise + 1.f) / 2.f;
-                // hNoise = std::min(std::max(hNoise, 0.f), 1.f);
-                cachedNoiseField.humidity[index2D] = hNoise;
+                cachedNoiseField.humidity[index] = hNoise;
 
                 float oNoise = (float)DualContouring::noises->oceanNoise.in2D(ax, az);
-                // oNoise = (oNoise + 1.f) / 2.f;
-                // oNoise = std::min(std::max(oNoise, 0.f), 1.f);
-                cachedNoiseField.ocean[index2D] = oNoise;
+                cachedNoiseField.ocean[index] = oNoise;
 
                 float rNoise = (float)DualContouring::noises->riverNoise.in2D(ax, az);
-                // rNoise = (rNoise + 1.f) / 2.f;
-                // rNoise = std::min(std::max(rNoise, 0.f), 1.f);
-                cachedNoiseField.river[index2D] = rNoise;
+                cachedNoiseField.river[index] = rNoise;
             }
         }
     }
     void initBiomesField() {
-        cachedBiomesField.resize(gridPoints * gridPoints);
-        for (int dz = 0; dz < gridPoints; dz++)
+        cachedBiomesField.resize(size * size);
+        for (int dz = 0; dz < size; dz++)
         {
-            for (int dx = 0; dx < gridPoints; dx++)
+            for (int dx = 0; dx < size; dx++)
             {
-                int index2D = dx + dz * gridPoints;
-                unsigned char &biome = cachedBiomesField[index2D];
+                int index = dx + dz * size;
+                unsigned char &biome = cachedBiomesField[index];
                 biome = 0xFF;
 
-                float temperatureNoise = cachedNoiseField.temperature[index2D];
-                float humidityNoise = cachedNoiseField.humidity[index2D];
-                float oceanNoise = cachedNoiseField.ocean[index2D];
-                float riverNoise = cachedNoiseField.river[index2D];
+                float temperatureNoise = cachedNoiseField.temperature[index];
+                float humidityNoise = cachedNoiseField.humidity[index];
+                float oceanNoise = cachedNoiseField.ocean[index];
+                float riverNoise = cachedNoiseField.river[index];
                 
                 if (oceanNoise < (80.0f / 255.0f)) {
                     biome = (unsigned char)BIOME::biOcean;
@@ -216,16 +237,16 @@ public:
                 std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
                 for (int dz = -8; dz <= 8; dz++) {
                     for (int dx = -8; dx <= 8; dx++) {
-                        biomeCounts[getBiome(x + dx, z + dz)]++;
+                        biomeCounts[DualContouring::getBiome(ax + dx, az + dz)]++;
                     }
                 }
 
                 float elevationSum = 0.f;
                 for (auto const &iter : biomeCounts) {
-                    elevationSum += iter.second * getBiomeHeight(iter.first, x, z);
+                    elevationSum += iter.second * DualContouring::getBiomeHeight(iter.first, ax, az);
                 }
-                elevation = elevationSum / ((8.f * 2.f + 1.f) * (8.f * 2.f + 1.f));
-
+                constexpr int sampleWidth = 8 * 2 + 1;
+                float elevation = elevationSum / (sampleWidth * sampleWidth);
                 cachedHeightField[index2D] = elevation;
             }
         }
@@ -260,25 +281,33 @@ public:
     }
 
     // noises
-    float getTemperatureLocal(int x, int z) {
-        int index2D = x + z * gridPoints;
-        return cachedNoiseField.temperature[index2D];
+    float getTemperatureLocal(int lx, int lz) {
+        int index = lx + lz * size;
+        return cachedNoiseField.temperature[index];
     }
-    float getHumidityLocal(int x, int z) {
-        int index2D = x + z * gridPoints;
-        return cachedNoiseField.humidity[index2D];
+    float getHumidityLocal(int lx, int lz) {
+        int index = lx + lz * size;
+        return cachedNoiseField.humidity[index];
     }
 
     // biomes
-    float getBiomeHeightLocal(unsigned char b, int x, int z) {
-        int indexBiomeHeightField = x + z * gridPoints + (int)b * gridPoints * gridPoints;
+
+    unsigned char getBiomeLocal(int lx, int lz) {
+        int index = lx + lz * size;
+        return cachedBiomesField[index];
+    }
+    float getBiomeHeight(unsigned char b, int ax, int az) {
+        int lx = ax - min.x + 1;
+        int lz = az - min.z + 1;
+
+        int indexBiomeHeightField = lx + lz * gridPoints + (int)b * gridPoints * gridPoints;
         float &biomeHeight = cachedBiomeHeightField[indexBiomeHeightField];
         if (!isfinite(biomeHeight)) {
             const Biome &biome = BIOMES[b];
             biomeHeight = std::min<float>(biome.baseHeight +
-            elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
-            elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
-            elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
+            DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+            DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+            DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
         }
         return biomeHeight;
     }
