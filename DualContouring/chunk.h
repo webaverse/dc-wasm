@@ -84,7 +84,7 @@ public:
     vm::ivec3 min;
     NoiseField cachedNoiseField;
     std::vector<uint8_t> cachedBiomesField;
-    std::vector<float> cachedBiomeHeightField; // computed on demand
+    // std::vector<float> cachedBiomeHeightField; // computed on demand
     std::vector<float> cachedHeightField;
     std::vector<float> cachedSdf;
     
@@ -95,7 +95,7 @@ public:
         min(other.min),
         cachedNoiseField(std::move(other.cachedNoiseField)),
         cachedBiomesField(std::move(other.cachedBiomesField)),
-        cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
+        // cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
         cachedHeightField(std::move(other.cachedHeightField)),
         cachedSdf(std::move(other.cachedSdf))
         {}
@@ -126,7 +126,7 @@ public:
         min = other.min;
         cachedNoiseField = std::move(other.cachedNoiseField);
         cachedBiomesField = std::move(other.cachedBiomesField);
-        cachedBiomeHeightField = std::move(other.cachedBiomeHeightField);
+        // cachedBiomeHeightField = std::move(other.cachedBiomeHeightField);
         cachedHeightField = std::move(other.cachedHeightField);
         cachedSdf = std::move(other.cachedSdf);
         return *this;
@@ -224,7 +224,7 @@ public:
         }
     }
     void initHeightField() {
-        cachedBiomeHeightField.resize(gridPoints * gridPoints * numBiomes, -std::numeric_limits<float>::infinity());
+        // cachedBiomeHeightField.resize(gridPoints * gridPoints * numBiomes, -std::numeric_limits<float>::infinity());
         cachedHeightField.resize(gridPoints * gridPoints, -std::numeric_limits<float>::infinity());
         for (int dz = 0; dz < gridPoints; dz++)
         {
