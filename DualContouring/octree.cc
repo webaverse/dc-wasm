@@ -91,7 +91,7 @@ ChunkOctree::ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, co
 }
 ChunkOctree::~ChunkOctree()
 {
-	destroyOctree(this->root);
+	// destroyOctree(this->root);
 }
 
 void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const BiomeData &samples, const int &n)
