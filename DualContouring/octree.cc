@@ -91,6 +91,7 @@ ChunkOctree::ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, co
 }
 ChunkOctree::~ChunkOctree()
 {
+	// std::cout << "Something Funny Happened" << std::endl;
 	// destroyOctree(this->root);
 }
 

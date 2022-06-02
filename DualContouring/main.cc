@@ -9,6 +9,32 @@
 //     OctreeNode *seamRoot;
 // };
 
+struct AllocationsMetrics
+{
+    uint32_t TotalAllocated = 0;
+    uint32_t TotalFreed = 0;
+    uint32_t CurrentUsage() { return TotalAllocated - TotalFreed; }
+};
+
+static AllocationsMetrics sAllocationsMetrics;
+
+void *operator new(size_t size)
+{
+    // std::cout << "ALLOCATING : " << size << std::endl;
+    sAllocationsMetrics.TotalAllocated += size;
+    return std::malloc(size);
+}
+void operator delete(void *memory, size_t size)
+{
+    // std::cout << "FREEING : " << size << std::endl;
+    sAllocationsMetrics.TotalFreed += size;
+    std::free(memory);
+}
+
+static void PrintMemoryUsage(){
+    std::cout << "Memory Usage : " << sAllocationsMetrics.CurrentUsage() << std::endl;
+}
+
 namespace DualContouring
 {
     // chunk settings
@@ -130,6 +156,7 @@ namespace DualContouring
             const OctreeNode *node = neighbourNodes[i];
             if (node->drawInfo)
             {
+                // std::cout << "Draw Info Dead : " << node->drawInfo << std::endl;
                 delete node->drawInfo;
             }
             delete node;
@@ -137,11 +164,14 @@ namespace DualContouring
         neighbourNodes.clear();
         removeOctreeFromHashMap(octreeMin, chunksListHashMap);
         destroyOctree(chunkRoot);
+        std::cout << "Chunk Deletion :" << std::endl;
+        PrintMemoryUsage();
     }
 
     uint8_t *createChunkMesh(float x, float y, float z, const int lod)
     {
         VertexBuffer vertexBuffer;
+        // PrintMemoryUsage();
 
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
@@ -168,6 +198,8 @@ namespace DualContouring
         }
 
         addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
+        std::cout << "Chunk Creation :" << std::endl;
+        PrintMemoryUsage();
 
         return constructOutputBuffer(vertexBuffer);
     }
