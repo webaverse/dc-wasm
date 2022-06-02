@@ -48,6 +48,15 @@ namespace DualContouring
         Chunk &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
         return chunkNoise;
     }
+    Chunk &getChunkAt(const float x, cosnt float y, const float z)
+    {
+        vm::ivec3 min = vm::ivec3(
+            (int)std::floor(x / (float)chunkSize),
+            (int)std::floor(y / (float)chunkSize),
+            (int)std::floor(z / (float)chunkSize)
+        ) * chunkSize;
+        return getChunkNoise(min);
+    }
     float *getChunkHeightField(float x, float y, float z) {
         const vm::ivec3 min = vm::ivec3(x, y, z);
         Chunk &chunkNoise = getChunkNoise(min);
