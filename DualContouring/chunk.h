@@ -107,7 +107,7 @@ public:
     {
         generate(flags);
     };
-    Chunk(const vm::ivec3 chunkMin, NoiseField &&cachedNoiseField, std::vector<uint8_t> &&cachedBiomesField, std::vector<float> &&cachedBiomeHeightField, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
+    /* Chunk(const vm::ivec3 chunkMin, NoiseField &&cachedNoiseField, std::vector<uint8_t> &&cachedBiomesField, std::vector<float> &&cachedBiomeHeightField, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
         min(chunkMin),
         size(DualContouring::chunkSize),
         gridPoints(size + 4),
@@ -118,7 +118,7 @@ public:
         cachedSdf(std::move(cachedSdf))
     {
         // nothing
-    }
+    } */
     Chunk &operator=(const Chunk &other) = delete;
     Chunk &operator=(const Chunk &&other) {
         size = other.size;
