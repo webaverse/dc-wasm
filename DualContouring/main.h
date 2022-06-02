@@ -5,9 +5,10 @@
 #include <cstdint>
 #include <ctime>
 #include <string.h>
+#include <memory>
 // #include "octree.h"
 // #include "cachedNoise.h"
-#include "FastNoise.h"
+#include "../FastNoise.h"
 #include "vectorMath.h"
 // #include "chunkDamageBuffer.h"
 
