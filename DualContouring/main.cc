@@ -9,30 +9,6 @@
 //     OctreeNode *seamRoot;
 // };
 
-struct AllocationsMetrics
-{
-    uint32_t TotalAllocated = 0;
-    uint32_t TotalFreed = 0;
-    uint32_t CurrentUsage() { return TotalAllocated - TotalFreed; }
-};
-
-static AllocationsMetrics sAllocationsMetrics;
-
-void *operator new(size_t size)
-{
-    sAllocationsMetrics.TotalAllocated += size;
-    return std::malloc(size);
-}
-void operator delete(void *memory, size_t size)
-{
-    sAllocationsMetrics.TotalFreed += size;
-    free(memory);
-}
-
-static void PrintMemoryUsage(){
-    std::cout << "Memory Usage : " << sAllocationsMetrics.CurrentUsage() << std::endl;
-}
-
 namespace DualContouring
 {
     // chunk settings
