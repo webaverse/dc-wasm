@@ -3,10 +3,11 @@
 
 #include "main.h"
 #include "vectorMath.h"
-#include "../FastNoise.h"
+// #include "../FastNoise.h"
 #include "../hash.h"
 #include "../util.h"
 #include "../vector.h"
+#include "../biomes.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -16,6 +17,50 @@
 #include <deque>
 
 constexpr float MAX_HEIGHT = 20.f;
+constexpr int numBiomes = (int)BIOME::NUM_BIOMES;
+
+class NoiseField {
+public:
+    int size;
+    std::vector<float> temperature;
+    std::vector<float> humidity;
+    std::vector<float> ocean;
+    std::vector<float> river;
+
+    // NoiseField() = delete;
+    NoiseField() {}
+    NoiseField(int size) :
+        size(size),
+        temperature(size * size),
+        humidity(size * size),
+        ocean(size * size),
+        river(size * size)
+        {}
+    NoiseField(int size, std::vector<float> &&temperature, std::vector<float> &&humidity, std::vector<float> &&ocean, std::vector<float> &&river) :
+        size(size),
+        temperature(std::move(temperature)),
+        humidity(std::move(humidity)),
+        ocean(std::move(ocean)),
+        river(std::move(river))
+        {}
+    // NoiseField(const NoiseField &other) = delete;
+    NoiseField(const NoiseField &&other) :
+        size(other.size),
+        temperature(std::move(other.temperature)),
+        humidity(std::move(other.humidity)),
+        ocean(std::move(other.ocean)),
+        river(std::move(other.river))
+        {}
+    NoiseField &operator=(const NoiseField &other) = delete;
+    NoiseField &operator=(const NoiseField &&other) {
+        size = other.size;
+        temperature = std::move(other.temperature);
+        humidity = std::move(other.humidity);
+        ocean = std::move(other.ocean);
+        river = std::move(other.river);
+        return *this;
+    }
+};
 
 class Chunk
 {
@@ -24,17 +69,23 @@ public:
     int size;
     int gridPoints;
     vm::ivec3 min;
+    NoiseField cachedNoiseField;
+    std::vector<uint8_t> cachedBiomesField;
+    std::vector<float> cachedBiomeHeightField; // computed on demand
     std::vector<float> cachedHeightField;
     std::vector<float> cachedSdf;
     
     Chunk() = delete;
-    Chunk(Chunk &&other) {
-        size = other.size;
-        gridPoints = other.gridPoints;
-        min = other.min;
-        cachedHeightField = std::move(other.cachedHeightField);
-        cachedSdf = std::move(other.cachedSdf);
-    }
+    Chunk(Chunk &&other) :
+        size(other.size),
+        gridPoints(other.gridPoints),
+        min(other.min),
+        cachedNoiseField(std::move(other.cachedNoiseField)),
+        cachedBiomesField(std::move(other.cachedBiomesField)),
+        cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
+        cachedHeightField(std::move(other.cachedHeightField)),
+        cachedSdf(std::move(other.cachedSdf))
+        {}
     Chunk(const Chunk &other) = delete;
     Chunk(const vm::ivec3 chunkMin) :
                                        min(chunkMin),
@@ -43,10 +94,13 @@ public:
     {
         init();
     };
-    Chunk(const vm::ivec3 chunkMin, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
+    Chunk(const vm::ivec3 chunkMin, NoiseField &&cachedNoiseField, std::vector<uint8_t> &&cachedBiomesField, std::vector<float> &&cachedBiomeHeightField, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
         min(chunkMin),
         size(DualContouring::chunkSize),
         gridPoints(size + 4),
+        cachedNoiseField(std::move(cachedNoiseField)),
+        cachedBiomesField(std::move(cachedBiomesField)),
+        cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
         cachedHeightField(std::move(cachedHeightField)),
         cachedSdf(std::move(cachedSdf))
     {
@@ -57,16 +111,99 @@ public:
         size = other.size;
         gridPoints = other.gridPoints;
         min = other.min;
+        cachedNoiseField = std::move(other.cachedNoiseField);
+        cachedBiomesField = std::move(other.cachedBiomesField);
+        cachedBiomeHeightField = std::move(other.cachedBiomeHeightField);
         cachedHeightField = std::move(other.cachedHeightField);
         cachedSdf = std::move(other.cachedSdf);
         return *this;
     }
 
     void init() {
+        initNoiseField();
+        initBiomesField();
         initHeightField();
         initSdf();
     }
+    void initNoiseField() {
+        cachedNoiseField.temperature.resize(gridPoints * gridPoints);
+        cachedNoiseField.humidity.resize(gridPoints * gridPoints);
+        cachedNoiseField.ocean.resize(gridPoints * gridPoints);
+        cachedNoiseField.river.resize(gridPoints * gridPoints);
+        for (int dz = 0; dz < gridPoints; dz++)
+        {
+            for (int dx = 0; dx < gridPoints; dx++)
+            {
+                int index2D = dx + dz * gridPoints;
+                int ax = dx + min.x - 1;
+                int az = dz + min.z - 1;
+
+                float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(ax, az);
+                // tNoise = (tNoise + 1.f) / 2.f;
+                // tNoise = std::min(std::max(tNoise, 0.f), 1.f);
+                cachedNoiseField.temperature[index2D] = tNoise;
+
+                float hNoise = (float)DualContouring::noises->humidityNoise.in2D(ax, az);
+                // hNoise = (hNoise + 1.f) / 2.f;
+                // hNoise = std::min(std::max(hNoise, 0.f), 1.f);
+                cachedNoiseField.humidity[index2D] = hNoise;
+
+                float oNoise = (float)DualContouring::noises->oceanNoise.in2D(ax, az);
+                // oNoise = (oNoise + 1.f) / 2.f;
+                // oNoise = std::min(std::max(oNoise, 0.f), 1.f);
+                cachedNoiseField.ocean[index2D] = oNoise;
+
+                float rNoise = (float)DualContouring::noises->riverNoise.in2D(ax, az);
+                // rNoise = (rNoise + 1.f) / 2.f;
+                // rNoise = std::min(std::max(rNoise, 0.f), 1.f);
+                cachedNoiseField.river[index2D] = rNoise;
+            }
+        }
+    }
+    void initBiomesField() {
+        cachedBiomesField.resize(gridPoints * gridPoints);
+        for (int dz = 0; dz < gridPoints; dz++)
+        {
+            for (int dx = 0; dx < gridPoints; dx++)
+            {
+                int index2D = dx + dz * gridPoints;
+                unsigned char &biome = cachedBiomesField[index2D];
+                biome = 0xFF;
+
+                float temperatureNoise = cachedNoiseField.temperature[index2D];
+                float humidityNoise = cachedNoiseField.humidity[index2D];
+                float oceanNoise = cachedNoiseField.ocean[index2D];
+                float riverNoise = cachedNoiseField.river[index2D];
+                
+                if (oceanNoise < (80.0f / 255.0f)) {
+                    biome = (unsigned char)BIOME::biOcean;
+                }
+                if (biome == 0xFF) {
+                    const float range = 0.022f;
+                    if (riverNoise > 0.5f - range && riverNoise < 0.5f + range) {
+                        biome = (unsigned char)BIOME::biRiver;
+                    }
+                }
+                if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f)) {
+                    if (biome == (unsigned char)BIOME::biOcean) {
+                        biome = (unsigned char)BIOME::biFrozenOcean;
+                    } else if (biome == (unsigned char)BIOME::biRiver) {
+                        biome = (unsigned char)BIOME::biFrozenRiver;
+                    }
+                }
+                if (biome == 0xFF) {
+                    float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
+                    float humidityNoise2 = vm::clamp(std::pow(humidityNoise, 1.3f), 0.f, 1.f);
+                    
+                    int t = (int)std::floor(temperatureNoise2 * 16.0f);
+                    int h = (int)std::floor(humidityNoise2 * 16.0f);
+                    biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
+                }
+            }
+        }
+    }
     void initHeightField() {
+        cachedBiomeHeightField.resize(gridPoints * gridPoints * numBiomes, -std::numeric_limits<float>::infinity());
         cachedHeightField.resize(gridPoints * gridPoints, -std::numeric_limits<float>::infinity());
         for (int dz = 0; dz < gridPoints; dz++)
         {
@@ -75,9 +212,21 @@ public:
                 int index2D = dx + dz * gridPoints;
                 int ax = dx + min.x - 1;
                 int az = dz + min.z - 1;
-                float heightNoise = (float)DualContouring::fastNoise->GetSimplexFractal(ax, az);
-                float height = MAX_HEIGHT * heightNoise;
-                cachedHeightField[index2D] = height;
+
+                std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
+                for (int dz = -8; dz <= 8; dz++) {
+                    for (int dx = -8; dx <= 8; dx++) {
+                        biomeCounts[getBiome(x + dx, z + dz)]++;
+                    }
+                }
+
+                float elevationSum = 0.f;
+                for (auto const &iter : biomeCounts) {
+                    elevationSum += iter.second * getBiomeHeight(iter.first, x, z);
+                }
+                elevation = elevationSum / ((8.f * 2.f + 1.f) * (8.f * 2.f + 1.f));
+
+                cachedHeightField[index2D] = elevation;
             }
         }
     }
@@ -110,6 +259,31 @@ public:
         }
     }
 
+    // noises
+    float getTemperatureLocal(int x, int z) {
+        int index2D = x + z * gridPoints;
+        return cachedNoiseField.temperature[index2D];
+    }
+    float getHumidityLocal(int x, int z) {
+        int index2D = x + z * gridPoints;
+        return cachedNoiseField.humidity[index2D];
+    }
+
+    // biomes
+    float getBiomeHeightLocal(unsigned char b, int x, int z) {
+        int indexBiomeHeightField = x + z * gridPoints + (int)b * gridPoints * gridPoints;
+        float &biomeHeight = cachedBiomeHeightField[indexBiomeHeightField];
+        if (!isfinite(biomeHeight)) {
+            const Biome &biome = BIOMES[b];
+            biomeHeight = std::min<float>(biome.baseHeight +
+            elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
+            elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
+            elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
+        }
+        return biomeHeight;
+    }
+
+    // height
     float interpolateHeight1D(const float &x, const float &z)
     {
         const int xf = std::floor(x);
@@ -141,6 +315,7 @@ public:
         return interpolateHeight2D(localX, localZ);
     }
 
+    // sdf
     float getInterpolatedSdf(const float &x, const float &y, const float &z) {
         const float localX = x - min.x + 1;
         const float localY = y - min.y + 1;

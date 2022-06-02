@@ -71,9 +71,10 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
 {
 	unsigned char biome = 0xFF;
-	const float noiseValue = chunkNoise.getRawHeight(worldPosition.x, worldPosition.y);
-	const int t = (int)std::floor(noiseValue * 16.0);
-	const int h = (int)std::floor(noiseValue * 16.0);
+	float tNoise = chunkNoise.getTemperature(worldPosition.x, worldPosition.y);
+	float hNoise = chunkNoise.getHumidity(worldPosition.x, worldPosition.y);
+	const int t = (int)std::floor(tNoise * 16.0);
+	const int h = (int)std::floor(hValue * 16.0);
 	biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
 
 	return biome;

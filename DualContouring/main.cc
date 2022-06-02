@@ -13,7 +13,7 @@ namespace DualContouring
 {
     // chunk settings
     int chunkSize = 16;
-    FastNoise *fastNoise = nullptr;
+    Noises *noises = nullptr;
 
     // storing the octrees that we would delete after mesh construction
     std::vector<OctreeNode *> neighbourNodes;
@@ -26,10 +26,7 @@ namespace DualContouring
     {
         chunkSize = newChunkSize;
 
-        std::mt19937 rng(seed);
-        fastNoise = new FastNoise(rng());
-        fastNoise->SetFrequency(0.02);
-        fastNoise->SetFractalOctaves(4);
+        noises = new Noises(seed);
     }
     uint8_t *constructOutputBuffer(VertexBuffer &vertexBuffer)
     {
@@ -358,13 +355,14 @@ namespace DualContouring
             Chunk &chunkNoise = iter->second;
             chunkNoise.injectDamage(damageBuffer);
         } else {
+            NoiseField cachedNoiseField;
             std::vector<float> cachedHeightField;
 
             int gridSize = chunkSize + 3;
             std::vector<float> cachedSdf(gridSize * gridSize * gridSize);
             memcpy(cachedSdf.data(), damageBuffer, cachedSdf.size() * sizeof(float));
             
-            Chunk chunkNoise(min, std::move(cachedHeightField), std::move(cachedSdf));
+            Chunk chunkNoise(min, std::move(cachedNoiseField), std::move(cachedHeightField), std::move(cachedSdf));
             chunkNoise.initHeightField();
             
             chunksNoiseHashMap.emplace(std::make_pair(minHash, std::move(chunkNoise)));

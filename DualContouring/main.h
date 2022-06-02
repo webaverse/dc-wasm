@@ -9,14 +9,14 @@
 // #include "cachedNoise.h"
 #include "FastNoise.h"
 #include "vectorMath.h"
-// #include "chunkDamageBuffer.h"
+#include "noises.h"
 
 class ChunkDamageBuffer;
 
 namespace DualContouring
 {
     extern int chunkSize;
-    extern FastNoise *fastNoise;
+    extern Noises *noises;
 
     // class Chunk
     // {
