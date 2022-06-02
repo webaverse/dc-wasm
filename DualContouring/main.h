@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <ctime>
 #include <string.h>
+#include <memory>
 // #include "octree.h"
 // #include "cachedNoise.h"
 #include "../FastNoise.h"
