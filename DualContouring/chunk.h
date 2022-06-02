@@ -17,7 +17,7 @@
 
 constexpr float MAX_HEIGHT = 20.f;
 
-class CachedNoise
+class Chunk
 {
 public:
     // private:
@@ -27,33 +27,33 @@ public:
     std::vector<float> cachedHeightField;
     std::vector<float> cachedSdf;
     
-    CachedNoise() = delete;
-    CachedNoise(CachedNoise &&other) {
+    Chunk() = delete;
+    Chunk(Chunk &&other) {
         size = other.size;
         gridPoints = other.gridPoints;
         min = other.min;
         cachedHeightField = std::move(other.cachedHeightField);
         cachedSdf = std::move(other.cachedSdf);
     }
-    CachedNoise(const CachedNoise &other) = delete;
-    CachedNoise(const vm::ivec3 chunkMin) :
+    Chunk(const Chunk &other) = delete;
+    Chunk(const vm::ivec3 chunkMin) :
                                        min(chunkMin),
                                        size(DualContouring::chunkSize),
-                                       gridPoints(size + 3)
+                                       gridPoints(size + 4)
     {
         init();
     };
-    CachedNoise(const vm::ivec3 chunkMin, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
+    Chunk(const vm::ivec3 chunkMin, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
         min(chunkMin),
         size(DualContouring::chunkSize),
-        gridPoints(size + 3),
+        gridPoints(size + 4),
         cachedHeightField(std::move(cachedHeightField)),
         cachedSdf(std::move(cachedSdf))
     {
         // nothing
     }
-    CachedNoise &operator=(const CachedNoise &other) = delete;
-    CachedNoise &operator=(const CachedNoise &&other) {
+    Chunk &operator=(const Chunk &other) = delete;
+    Chunk &operator=(const Chunk &&other) {
         size = other.size;
         gridPoints = other.gridPoints;
         min = other.min;
