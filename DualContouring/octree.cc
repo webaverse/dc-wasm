@@ -91,7 +91,7 @@ ChunkOctree::ChunkOctree(Chunk &chunk, const vm::ivec3 &min, const int &size, co
 }
 ChunkOctree::~ChunkOctree()
 {
-	// destroyOctree(this->root);
+	destroyOctree(this->root);
 }
 
 void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const BiomeData &samples, const int &n)
@@ -605,19 +605,19 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	// if (isSeam)
-	// {
-	// 	std::vector<vm::ivec3> chunkRoots;
-	// 	for (int i = 0; i < 4; i++)
-	// 	{
-	// 		const uint64_t chunkIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
-	// 		chunkRoots.push_back(chunkMinForPosition(node[i]->min));
-	// 	}
-	// 	if (chunkRoots.size() == 1)
-	// 	{
-	// 		return;
-	// 	}
-	// }
+	if (isSeam)
+	{
+		std::vector<vm::ivec3> chunkRoots;
+		for (int i = 0; i < 4; i++)
+		{
+			const uint64_t chunkIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
+			chunkRoots.push_back(chunkMinForPosition(node[i]->min));
+		}
+		if (chunkRoots.size() == 1)
+		{
+			return;
+		}
+	}
 
 	const bool isBranch[4] =
 		{
@@ -668,13 +668,13 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	// if (isSeam == true)
-	// {
-	// 	if (chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min))
-	// 	{
-	// 		return;
-	// 	}
-	// }
+	if (isSeam == true)
+	{
+		if (chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min))
+		{
+			return;
+		}
+	}
 
 	const bool isBranch[2] =
 		{
@@ -936,30 +936,34 @@ std::vector<OctreeNode *> findOctreeNodes(OctreeNode *root, FilterNodesFunc filt
 	return nodes;
 }
 
+OctreeNode *constructSeamNode(Chunk &chunk, const vm::ivec3 &min, const int &lod)
+{
+	OctreeNode *seamNode = new OctreeNode;
+	seamNode->size = lod;
+	seamNode->min = min;
+	seamNode->type = Node_Internal;
+	seamNode = constructLeaf(seamNode, lod, chunk);
+	return seamNode;
+}
+
 std::vector<OctreeNode *> constructChunkSeamNodes(Chunk &chunk, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
 {
 	std::vector<OctreeNode *> nodes;
+	const int lod = 1; // ! this should be the min lod of the chunks that make up the seam (8 chunks)
+	const vm::ivec3 chunkMax = chunkMin + chunkSize;
 
-	for (int x = chunkMin.x; x < chunkSize + chunkMin.x; x++)
-		for (int y = chunkMin.y; y < chunkSize + chunkMin.y; y++)
-			for (int z = chunkMin.z; z < chunkSize + chunkMin.z; z++)
+	for (int x = chunkMin.x; x < chunkMax.x; x++)
+		for (int y = chunkMin.y; y < chunkMax.y; y++)
+			for (int z = chunkMin.z; z < chunkMax.z; z++)
 			{
 				const vm::ivec3 min = vm::ivec3(x, y, z);
 				const vm::ivec3 max = min + vm::ivec3(1);
-				if (!filterFunc(min, max))
+				if (filterFunc(min, max))
 				{
-					continue;
+					OctreeNode *seamNode = constructSeamNode(chunk, min, lod);
+					if (seamNode)
+						nodes.push_back(seamNode);
 				}
-				OctreeNode *seamNode = new OctreeNode;
-				seamNode->size = 1;
-				seamNode->min = min;
-				seamNode->type = Node_Internal;
-				seamNode = constructLeaf(seamNode, 1, chunk);
-				if (!seamNode)
-				{
-					continue;
-				}
-				nodes.push_back(seamNode);
 			}
 	return nodes;
 }
