@@ -1,5 +1,5 @@
-#ifndef CHACHEDNOISE_H
-#define CHACHEDNOISE_H
+#ifndef _CHUNK_H_
+#define _CHUNK_H_
 
 #include "main.h"
 #include "vectorMath.h"
@@ -419,4 +419,4 @@ public:
         memcpy(cachedSdf.data(), this->cachedSdf.data(), sizeof(float) * gridPoints * gridPoints * gridPoints);
     }
 };
-#endif // CHACHEDNOISE_H
+#endif // _CHUNK_H_
