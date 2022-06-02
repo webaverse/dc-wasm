@@ -86,15 +86,17 @@ namespace DualContouring
         return heightfieldOut;
     }
 
-    unsigned char getBiome(int x, int z) {
-        Chunk &chunkNoise = getChunkAt(x, z, GF_BIOMES);
-        int lx = int(x) - chunkNoise.min.x;
-        int lz = int(z) - chunkNoise.min.z;
-        return chunkNoise.getBiomeLocal(lx, lz);
+    unsigned char getBiome(const vm::ivec2 &worldPosition) {
+        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES);
+        int lx = int(worldPosition.x) - chunkNoise.min.x;
+        int lz = int(worldPosition.y) - chunkNoise.min.z;
+        return chunkNoise.getBiome(lx, lz);
     }
-    float getBiomeHeight(unsigned char biome, int x, int z) {
-        Chunk &chunkNoise = getChunkAt(x, z, GF_BIOMES);
-        return chunkNoise.getBiomeHeight(biome, x, z);
+    float getBiomeHeight(unsigned char biome, const vm::ivec2 &worldPosition) {
+        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES);
+        int lx = int(worldPosition.x) - chunkNoise.min.x;
+        int lz = int(worldPosition.y) - chunkNoise.min.z;
+        return chunkNoise.getBiomeHeight(biome, lx, lz);
     }
 
     // octrees

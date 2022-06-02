@@ -292,7 +292,7 @@ public:
 
     // biomes
 
-    unsigned char getBiomeLocal(int lx, int lz) {
+    unsigned char getBiome(int lx, int lz) {
         int index = lx + lz * size;
         return cachedBiomesField[index];
     }
@@ -302,7 +302,7 @@ public:
 
         int indexBiomeHeightField = lx + lz * gridPoints + (int)b * gridPoints * gridPoints;
         float &biomeHeight = cachedBiomeHeightField[indexBiomeHeightField];
-        if (!isfinite(biomeHeight)) {
+        if (!isfinite(biomeHeight)) { // cache miss
             const Biome &biome = BIOMES[b];
             biomeHeight = std::min<float>(biome.baseHeight +
             DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +

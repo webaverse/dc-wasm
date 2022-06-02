@@ -68,7 +68,7 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 // 	// return a - falloffMap(vm::vec2(position.x + 100, position.y - 100));
 // }
 
-unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
+/* unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
 {
 	unsigned char biome = 0xFF;
 	float tNoise = chunkNoise.getTemperature(worldPosition.x, worldPosition.y);
@@ -78,7 +78,7 @@ unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
 	biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
 
 	return biome;
-}
+} */
 
 float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
 {
