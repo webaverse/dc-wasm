@@ -37,7 +37,7 @@ namespace DualContouring
 {
     // chunk settings
     int chunkSize = 16;
-    FastNoise *fastNoise = nullptr;
+    Noises *noises = nullptr;
 
     // storing the octrees that we would delete after mesh construction
     std::vector<OctreeNode *> neighbourNodes;
@@ -50,32 +50,52 @@ namespace DualContouring
     {
         chunkSize = newChunkSize;
 
-        std::mt19937 rng(seed);
-        fastNoise = new FastNoise(rng());
-        fastNoise->SetFrequency(0.02);
-        fastNoise->SetFractalOctaves(4);
+        noises = new Noises(seed);
     }
+
+    // geometries
     uint8_t *constructOutputBuffer(VertexBuffer &vertexBuffer)
     {
         return vertexBuffer.getBuffer();
     }
-    Chunk &getChunk(const vm::ivec3 &min)
+
+    // chunks
+    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags)
     {
         uint64_t minHash = hashOctreeMin(min);
 
         const auto &iter = chunksNoiseHashMap.find(minHash);
         if (iter == chunksNoiseHashMap.end())
         {
-            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min)));
+            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min, GF_NONE)));
         }
 
         Chunk &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
+        chunkNoise.generate(flags);
         return chunkNoise;
     }
-    float *getChunkHeightField(float x, float y, float z)
+    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags)
     {
+        vm::ivec3 min = vm::ivec3(
+            (int)std::floor(x / (float)chunkSize),
+            (int)std::floor(y / (float)chunkSize),
+            (int)std::floor(z / (float)chunkSize)
+        ) * chunkSize;
+        return getChunk(min, flags);
+    }
+    Chunk &getChunkAt(int x, int z, GenerateFlags flags)
+    {
+        vm::ivec3 min = vm::ivec3(
+            (int)std::floor((float)x / (float)chunkSize),
+            0,
+            (int)std::floor((float)z / (float)chunkSize)
+        ) * chunkSize;
+        return getChunk(min, flags);
+    }
+    float *getChunkHeightField(float x, float y, float z) {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        Chunk &chunkNoise = getChunk(min);
+        Chunk &chunkNoise = getChunk(min, GF_HEIGHTFIELD);
+        
         std::vector<float> &heightfieldRaw = chunkNoise.cachedHeightField;
         float *heightfieldOut = (float *)malloc(chunkSize * chunkSize * chunkSize * sizeof(float));
         int gridSize = chunkSize + 3;
@@ -98,6 +118,25 @@ namespace DualContouring
         return heightfieldOut;
     }
 
+    unsigned char getBiome(const vm::ivec2 &worldPosition) {
+        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES);
+        int lx = int(worldPosition.x) - chunkNoise.min.x;
+        int lz = int(worldPosition.y) - chunkNoise.min.z;
+        return chunkNoise.getBiome(lx, lz);
+    }
+    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
+        const Biome &biome = BIOMES[b];
+        float ax = worldPosition.x;
+        float az = worldPosition.y;
+        
+        float biomeHeight = std::min<float>(biome.baseHeight +
+        DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+        DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+        DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
+        return biomeHeight;
+    }
+
+    // octrees
     void clearChunkRoot(float x, float y, float z)
     {
         // we destroy the chunk root separately because we might need it for LOD switch if it's already generated
@@ -131,7 +170,7 @@ namespace DualContouring
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        Chunk &chunk = getChunk(octreeMin);
+        Chunk &chunk = getChunk(octreeMin, GF_ALL);
         ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lod);
         if (!chunkOctree.root)
         {
@@ -179,7 +218,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL);
                         if (chunkNoise.addSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -226,7 +265,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL);
                         if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -282,7 +321,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL);
                         if (chunkNoise.addCubeDamage(
                                 x, y, z,
                                 qx, qy, qz, qw,
@@ -341,7 +380,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL);
                         if (chunkNoise.removeCubeDamage(
                                 x, y, z,
                                 qx, qy, qz, qw,
@@ -372,25 +411,11 @@ namespace DualContouring
     void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer)
     {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        uint64_t minHash = hashOctreeMin(min);
-        const auto &iter = chunksNoiseHashMap.find(minHash);
-        if (iter != chunksNoiseHashMap.end())
-        {
-            Chunk &chunkNoise = iter->second;
-            chunkNoise.injectDamage(damageBuffer);
-        }
-        else
-        {
-            std::vector<float> cachedHeightField;
+        Chunk &chunk = getChunk(min, GF_NONE);
 
-            int gridSize = chunkSize + 3;
-            std::vector<float> cachedSdf(gridSize * gridSize * gridSize);
-            memcpy(cachedSdf.data(), damageBuffer, cachedSdf.size() * sizeof(float));
-
-            Chunk chunkNoise(min, std::move(cachedHeightField), std::move(cachedSdf));
-            chunkNoise.initHeightField();
-
-            chunksNoiseHashMap.emplace(std::make_pair(minHash, std::move(chunkNoise)));
-        }
+        int gridSize = chunkSize + 3;
+        std::vector<float> sdf(gridSize * gridSize * gridSize);
+        memcpy(sdf.data(), damageBuffer, sdf.size() * sizeof(float));
+        chunk.cachedSdf = std::move(sdf);
     }
 }

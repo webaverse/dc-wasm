@@ -1,3 +1,6 @@
+#ifndef _BIOMES_H_
+#define _BIOMES_H_
+
 #include <string>
 #include <tuple>
 
@@ -85,6 +88,8 @@ enum class BIOME : unsigned char {
   waterOcean = 71,
   waterRiverFrozen = 72,
   waterOceanFrozen = 73,
+
+  NUM_BIOMES = 74,
 };
 
 class Biome {
@@ -1276,3 +1281,5 @@ const BIOME BIOMES_TEMPERATURE_HUMIDITY[] {
 		/* 14 */ BIOME::biTaiga,  BIOME::biTaiga,  BIOME::biTaiga,        BIOME::biTaiga,        BIOME::biJungle,       BIOME::biJungle,       BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle,       BIOME::biJungle,      BIOME::biSwampland,    BIOME::biSwampland,    BIOME::biSwampland,   BIOME::biSwampland,
 		/* 15 */ BIOME::biTaiga,  BIOME::biTaiga,  BIOME::biTaiga,        BIOME::biTaiga,        BIOME::biJungle,       BIOME::biJungle,       BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle,       BIOME::biJungle,      BIOME::biSwampland,    BIOME::biSwampland,    BIOME::biSwampland,   BIOME::biSwampland,
 	};
+
+#endif // _BIOMES_H_

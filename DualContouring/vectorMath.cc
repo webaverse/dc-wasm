@@ -204,15 +204,6 @@ float vm::distance(const vm::ivec2 &v, const vm::ivec2 &o)
 	return std::sqrt(dx * dx + dy * dy);
 }
 
-float vm::clamp(const float v, const float min, const float max)
-{
-    return std::max(min, std::min(v, max));
-};
-int vm::clamp(const int v, const int min, const int max)
-{
-    return std::max(min, std::min(v, max));
-};
-
 // + operator
 vm::vec2 vm::operator+(const vm::vec2 &v1, const vm::vec2 &v2)
 {

@@ -10,14 +10,14 @@
 // #include "cachedNoise.h"
 #include "../FastNoise.h"
 #include "vectorMath.h"
-// #include "chunkDamageBuffer.h"
+#include "noises.h"
 
 class ChunkDamageBuffer;
 
 namespace DualContouring
 {
     extern int chunkSize;
-    extern FastNoise *fastNoise;
+    extern Noises *noises;
 
     // class Chunk
     // {
@@ -51,6 +51,8 @@ namespace DualContouring
         float *outDamages
     );
     void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer);
+    unsigned char getBiome(const vm::ivec2 &worldPosition);
+    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
 };
 
 #endif // MAIN_H

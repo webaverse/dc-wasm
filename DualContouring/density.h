@@ -10,6 +10,5 @@
 #include "chunk.h"
 
 float Density_Func(const vm::vec3 &worldPosition, Chunk &chunkNoise);
-unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise);
 
 #endif //	DENSITY_H

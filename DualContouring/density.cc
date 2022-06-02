@@ -1,6 +1,6 @@
 #include "main.h"
 #include "density.h"
-#include "../biomes.h"
+#include "./biomes.h"
 
 float sphere(const vm::vec3 &worldPosition, const vm::vec3 &origin, float radius)
 {
@@ -68,16 +68,17 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 // 	// return a - falloffMap(vm::vec2(position.x + 100, position.y - 100));
 // }
 
-unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
+/* unsigned char getBiome(const vm::ivec2 &worldPosition, Chunk &chunkNoise)
 {
 	unsigned char biome = 0xFF;
-	const float noiseValue = chunkNoise.getRawHeight(worldPosition.x, worldPosition.y);
-	const int t = (int)std::floor(noiseValue * 16.0);
-	const int h = (int)std::floor(noiseValue * 16.0);
+	float tNoise = chunkNoise.getTemperature(worldPosition.x, worldPosition.y);
+	float hNoise = chunkNoise.getHumidity(worldPosition.x, worldPosition.y);
+	const int t = (int)std::floor(tNoise * 16.0);
+	const int h = (int)std::floor(hValue * 16.0);
 	biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
 
 	return biome;
-}
+} */
 
 float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
 {
@@ -91,8 +92,7 @@ float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
 	// noise += mask * fbmNoise / 2.0;
 	// const float terrain = chunkNoise.getNoise(position.x, position.y);
 	const float terrain = chunkNoise.getInterpolatedSdf(position.x, position.y, position.z);
-	// std::cout << noise << std::endl;
-	// const float damage = damageBuffer.getInterpolated(position.x, position.y, position.z);
+	// std::cout << "terrain " << terrain << " : " << position.x << " " << position.y << " " << position.z << std::endl;
 
   return terrain;
 
