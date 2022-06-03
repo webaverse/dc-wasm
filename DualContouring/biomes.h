@@ -74,22 +74,14 @@ enum class BIOME : unsigned char {
   biMesaPlateauFM = 59,
   biMesaPlateauM = 60,
 
-  dirt = 61,
-  gravel = 62,
-  grindstone = 63,
-  lightstone = 64,
-  darkstone = 65,
-  stone = 66,
-  oil = 67,
-  bedrock = 68,
-  lava = 69,
+  /* lava = 61,
 
-  waterRiver = 70,
-  waterOcean = 71,
-  waterRiverFrozen = 72,
-  waterOceanFrozen = 73,
+  waterRiver = 62,
+  waterOcean = 63,
+  waterRiverFrozen = 64,
+  waterOceanFrozen = 65, */
 
-  NUM_BIOMES = 74,
+  NUM_BIOMES = 61,
 };
 
 class Biome {
