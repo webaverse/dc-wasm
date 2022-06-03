@@ -321,8 +321,7 @@ public:
         memcpy((float *)(&biomeWeights), &cachedBiomesWeightsVectorField[index2D * 4], 4 * sizeof(float));
     }
     std::vector<unsigned char> getBiomesContainedInChunk() {
-        std::vector<unsigned char> biomes;
-        biomes.reserve(gridPoints * gridPoints);
+        std::unordered_map<unsigned char, bool> seenBiomes;
         for (int dz = 0; dz < gridPoints; dz++)
         {
             for (int dx = 0; dx < gridPoints; dx++)
@@ -330,15 +329,17 @@ public:
                 int index2D = dx + dz * gridPoints;
                 for (int i = 0; i < 4; i++) {
                     unsigned char b = cachedBiomesVectorField[index2D * 4 + i];
-                    // if (b != 0) {
-                        biomes.push_back(b);
-                    // }
+                    seenBiomes[b] = true;
                 }
             }
         }
-        std::sort(biomes.begin(), biomes.end());
-        biomes.erase(std::unique(biomes.begin(), biomes.end()), biomes.end());
-        return std::move(biomes);
+        // convert the unordered_map to a vector
+        std::vector<unsigned char> biomesVector;
+        biomesVector.reserve(seenBiomes.size());
+        for(auto kv : seenBiomes) {
+            biomesVector.push_back(kv.first);
+        }
+        return std::move(biomesVector);
     }
 
     // height
