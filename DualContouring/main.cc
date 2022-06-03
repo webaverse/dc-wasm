@@ -36,42 +36,42 @@ namespace DualContouring
     }
 
     // chunks
-    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags)
+    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int &lod)
     {
         uint64_t minHash = hashOctreeMin(min);
 
         const auto &iter = chunksNoiseHashMap.find(minHash);
         if (iter == chunksNoiseHashMap.end())
         {
-            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min, GF_NONE)));
+            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min, lod, GF_NONE)));
         }
 
         Chunk &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
         chunkNoise.generate(flags);
         return chunkNoise;
     }
-    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags)
+    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int &lod)
     {
         vm::ivec3 min = vm::ivec3(
-            (int)std::floor(x / (float)chunkSize),
-            (int)std::floor(y / (float)chunkSize),
-            (int)std::floor(z / (float)chunkSize)
-        ) * chunkSize;
-        return getChunk(min, flags);
+                            (int)std::floor(x / (float)chunkSize),
+                            (int)std::floor(y / (float)chunkSize),
+                            (int)std::floor(z / (float)chunkSize)) *
+                        chunkSize;
+        return getChunk(min, flags, lod);
     }
-    Chunk &getChunkAt(const float x, const float z, GenerateFlags flags)
+    Chunk &getChunkAt(const float x, const float z, GenerateFlags flags, const int &lod)
     {
         vm::ivec3 min = vm::ivec3(
             (int)std::floor(x / (float)chunkSize),
             0,
             (int)std::floor(z / (float)chunkSize)
         ) * chunkSize;
-        return getChunk(min, flags);
+        return getChunk(min, flags, lod);
     }
     /* float *getChunkHeightField(float x, float y, float z) {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        Chunk &chunkNoise = getChunk(min, GF_HEIGHTFIELD);
-        
+        Chunk &chunkNoise = getChunk(min, GF_HEIGHTFIELD, lod);
+
         std::vector<float> &heightfieldRaw = chunkNoise.cachedHeightField;
         float *heightfieldOut = (float *)malloc(chunkSize * chunkSize * chunkSize * sizeof(float));
         int gridSize = chunkSize + 3;
@@ -93,40 +93,41 @@ namespace DualContouring
         }
         return heightfieldOut;
     } */
-    float getHeight(float x, float z) {
-        Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD);
+    float getHeight(float x, float z, const int &lod) {
+        Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
         float height = chunkNoise.getInterpolatedHeight(x, z);
         return height;
     }
-    void getHeights(float *vec2s, int count, float *heights) {
+    void getHeights(float *vec2s, int count, float *heights, const int &lod) {
         for (int i = 0; i < count; i++) {
             float x = vec2s[i * 2 + 0];
             float z = vec2s[i * 2 + 1];
-            Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD);
+            Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
             heights[i] = chunkNoise.getInterpolatedHeight(x, z);
         }        
     }
 
     // biomes
-    unsigned char getComputedBiome(const vm::ivec2 &worldPosition) {
-        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES);
+    unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod) {
+        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
         int lx = int(worldPosition.x) - chunkNoise.min.x;
         int lz = int(worldPosition.y) - chunkNoise.min.z;
         return chunkNoise.getBiome(lx, lz);
     }
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod) {
         const Biome &biome = BIOMES[b];
         float ax = worldPosition.x;
         float az = worldPosition.y;
-        
+
         float biomeHeight = std::min<float>(biome.baseHeight +
-        DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-        DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-        DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
+                                                DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+                                                DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+                                                DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1],
+                                            128 - 0.1);
         return biomeHeight;
     }
-    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
-        Chunk &chunk = getChunk(vm::ivec3(x, 0, z), GF_BIOMES);
+    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod) {
+        Chunk &chunk = getChunk(vm::ivec3(x, 0, z), GF_BIOMES, lod);
         const std::vector<unsigned char> &result = chunk.getBiomesContainedInChunk();
 
         for (int i = 0; i < result.size(); i++) {
@@ -162,15 +163,18 @@ namespace DualContouring
         destroyOctree(chunkRoot);
     }
 
-    uint8_t *createChunkMesh(float x, float y, float z, const int lod)
+    uint8_t *createChunkMesh(float x, float y, float z, const int &lod)
     {
         VertexBuffer vertexBuffer;
+        // TODO : pass the lod array to here from JS (8 lods = chunk lod + 7 neighbour chunks lod)
+        const int lodArray[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+        const int maxLodNumber = *std::max_element(std::begin(lodArray), std::end(lodArray));
 
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        Chunk &chunk = getChunk(octreeMin, GF_ALL);
-        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lod);
+        Chunk &chunk = getChunk(octreeMin, GF_ALL, maxLodNumber);
+        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
         if (!chunkOctree.root)
         {
             // printf("Chunk Has No Data\n");
@@ -179,7 +183,7 @@ namespace DualContouring
 
         generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
 
-        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, chunkOctree, neighbourNodes);
+        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
         OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkOctree.root->min, chunkOctree.root->size * 2);
         generateMeshFromOctree(seamRoot, lod, true, vertexBuffer);
 
@@ -195,7 +199,9 @@ namespace DualContouring
         return constructOutputBuffer(vertexBuffer);
     }
 
-    bool drawSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages)
+    bool drawSphereDamage(const float &x, const float &y, const float &z,
+                          const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                          const int &lod)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -217,7 +223,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.addSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -242,7 +248,9 @@ namespace DualContouring
         return drew;
     }
 
-    bool eraseSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages)
+    bool eraseSphereDamage(const float &x, const float &y, const float &z,
+                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                           const int &lod)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -264,7 +272,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -295,7 +303,8 @@ namespace DualContouring
         float sx, float sy, float sz,
         float *outPositions,
         unsigned int *outPositionsCount,
-        float *outDamages)
+        float *outDamages,
+        const int &lod)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -320,7 +329,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.addCubeDamage(
                                 x, y, z,
                                 qx, qy, qz, qw,
@@ -354,7 +363,8 @@ namespace DualContouring
         float sx, float sy, float sz,
         float *outPositions,
         unsigned int *outPositionsCount,
-        float *outDamages)
+        float *outDamages,
+        const int &lod)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -379,7 +389,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.removeCubeDamage(
                                 x, y, z,
                                 qx, qy, qz, qw,
@@ -407,10 +417,10 @@ namespace DualContouring
         return drew;
     }
 
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer)
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
     {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        Chunk &chunk = getChunk(min, GF_NONE);
+        Chunk &chunk = getChunk(min, GF_NONE, lod);
 
         int gridSize = chunkSize + 3;
         std::vector<float> sdf(gridSize * gridSize * gridSize);

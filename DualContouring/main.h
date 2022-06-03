@@ -26,21 +26,27 @@ namespace DualContouring
     // };
     void initialize(int newChunkSize, int seed);
     // float *getChunkHeightField(float x, float y, float z);
-    float getHeight(float x, float z);
-    void getHeights(float *vec2s, int count, float *heights);
+    float getHeight(float x, float z, const int &lod);
+    void getHeights(float *vec2s, int count, float *heights, const int &lod);
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
-    uint8_t *createChunkMesh(float x, float y, float z, const int lod);
+    uint8_t *createChunkMesh(float x, float y, float z, const int &lod);
     ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min);
-    bool drawSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
-    bool eraseSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
+    bool drawSphereDamage(const float &x, const float &y, const float &z,
+                          const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                          const int &lod);
+    bool eraseSphereDamage(const float &x, const float &y, const float &z,
+                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                           const int &lod);
     bool drawCubeDamage(
         float x, float y, float z,
         float qx, float qy, float qz, float qw,
         float sx, float sy, float sz,
         float *outPositions,
         unsigned int *outPositionsCount,
-        float *outDamages
+        float *outDamages,
+        const int &lod
+
     );
     bool eraseCubeDamage(
         float x, float y, float z,
@@ -48,13 +54,15 @@ namespace DualContouring
         float sx, float sy, float sz,
         float *outPositions,
         unsigned int *outPositionsCount,
-        float *outDamages
-    );
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer);
+        float *outDamages,
+        const int &lod
 
-    unsigned char getComputedBiome(const vm::ivec2 &worldPosition);
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
-    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount);
+    );
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
+
+    unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod);
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
+    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod);
 };
 
 #endif // MAIN_H
