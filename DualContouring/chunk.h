@@ -85,7 +85,8 @@ public:
     vm::ivec3 min;
     NoiseField cachedNoiseField;
     std::vector<uint8_t> cachedBiomesField;
-    // std::vector<float> cachedBiomeHeightField; // computed on demand
+    std::vector<unsigned char> cachedBiomesVectorField;
+    std::vector<float> cachedBiomesWeightsVectorField;
     std::vector<float> cachedHeightField;
     std::vector<float> cachedSdf;
     
@@ -97,7 +98,8 @@ public:
         lod(other.lod),
         cachedNoiseField(std::move(other.cachedNoiseField)),
         cachedBiomesField(std::move(other.cachedBiomesField)),
-        // cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
+        cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
+        cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
         cachedHeightField(std::move(other.cachedHeightField)),
         cachedSdf(std::move(other.cachedSdf))
         {}
@@ -110,18 +112,6 @@ public:
     {
         generate(flags);
     };
-    /* Chunk(const vm::ivec3 chunkMin, NoiseField &&cachedNoiseField, std::vector<uint8_t> &&cachedBiomesField, std::vector<float> &&cachedBiomeHeightField, std::vector<float> &&cachedHeightField, std::vector<float> &&cachedSdf) :
-        min(chunkMin),
-        size(DualContouring::chunkSize),
-        gridPoints(size + 4),
-        cachedNoiseField(std::move(cachedNoiseField)),
-        cachedBiomesField(std::move(cachedBiomesField)),
-        cachedBiomeHeightField(std::move(cachedBiomeHeightField)),
-        cachedHeightField(std::move(cachedHeightField)),
-        cachedSdf(std::move(cachedSdf))
-    {
-        // nothing
-    } */
     Chunk &operator=(const Chunk &other) = delete;
     Chunk &operator=(const Chunk &&other) {
         size = other.size;
@@ -130,7 +120,8 @@ public:
         lod = other.lod;
         cachedNoiseField = std::move(other.cachedNoiseField);
         cachedBiomesField = std::move(other.cachedBiomesField);
-        // cachedBiomeHeightField = std::move(other.cachedBiomeHeightField);
+        cachedBiomesVectorField = std::move(other.cachedBiomesVectorField);
+        cachedBiomesWeightsVectorField = std::move(other.cachedBiomesWeightsVectorField);
         cachedHeightField = std::move(other.cachedHeightField);
         cachedSdf = std::move(other.cachedSdf);
         return *this;
@@ -228,7 +219,8 @@ public:
         }
     }
     void initHeightField() {
-        // cachedBiomeHeightField.resize(gridPoints * gridPoints * numBiomes, -std::numeric_limits<float>::infinity());
+        cachedBiomesVectorField.resize(gridPoints * gridPoints * 4);
+        cachedBiomesWeightsVectorField.resize(gridPoints * gridPoints * 4);
         cachedHeightField.resize(gridPoints * gridPoints, -std::numeric_limits<float>::infinity());
         for (int dz = 0; dz < gridPoints; dz++)
         {
@@ -238,24 +230,44 @@ public:
                 int ax = dx + min.x - 1;
                 int az = dz + min.z - 1;
 
+                constexpr int sampleWidth = 8 * 2 + 1;
+                constexpr int numSamples = sampleWidth * sampleWidth;
+
                 std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
                 for (int dz = -8; dz <= 8; dz++) {
                     for (int dx = -8; dx <= 8; dx++) {
                         vm::ivec2 iWorldPosition(ax + dx, az + dz);
-                        unsigned char b = DualContouring::getBiome(iWorldPosition, lod);
+                        unsigned char b = DualContouring::getComputedBiome(iWorldPosition, lod);
                         biomeCounts[b]++;
+                    }
+                }
+
+                std::vector<unsigned char> biomes;
+                biomes.reserve(biomeCounts.size());
+                for(auto kv : biomeCounts) {
+                    biomes.push_back(kv.first);
+                }
+                std::sort(biomes.begin(), biomes.end(), [&](const unsigned char &a, const unsigned char &b) -> bool {
+                    return biomeCounts[b] - biomeCounts[a]; 
+                });
+
+                for (size_t i = 0; i < 4; i++) {
+                    if (i < biomes.size()) {
+                        cachedBiomesVectorField[index2D * 4 + i] = biomes[i];
+                        cachedBiomesWeightsVectorField[index2D * 4 + i] = (float)biomeCounts[biomes[i]] / (float)numSamples;
+                    } else {
+                        cachedBiomesVectorField[index2D * 4 + i] = 0;
+                        cachedBiomesWeightsVectorField[index2D * 4 + i] = 0;
                     }
                 }
 
                 float elevationSum = 0.f;
                 vm::vec2 fWorldPosition(ax, az);
                 for (auto const &iter : biomeCounts) {
-                    elevationSum += iter.second * DualContouring::getBiomeHeight(iter.first, fWorldPosition);
+                    elevationSum += iter.second * DualContouring::getComputedBiomeHeight(iter.first, fWorldPosition, lod);
                 }
-                constexpr int sampleWidth = 8 * 2 + 1;
-                constexpr int numSamples = sampleWidth * sampleWidth;
+                
                 float elevation = elevationSum / (float)numSamples;
-                // std::cout << "got elevation " << elevation << " : " << ax << " " << az << std::endl;
                 cachedHeightField[index2D] = elevation;
             }
         }
@@ -290,24 +302,52 @@ public:
     }
 
     // noises
-    float getTemperatureLocal(int lx, int lz) {
+    float getTemperatureLocal(const int lx, const int lz) {
         int index = lx + lz * size;
         return cachedNoiseField.temperature[index];
     }
-    float getHumidityLocal(int lx, int lz) {
+    float getHumidityLocal(const int lx, const int lz) {
         int index = lx + lz * size;
         return cachedNoiseField.humidity[index];
     }
 
     // biomes
-
-    unsigned char getBiome(int lx, int lz) {
+    unsigned char getBiome(const int lx, const int lz) {
         int index = lx + lz * size;
         return cachedBiomesField[index];
     }
+    void getInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
+        int lx = int(x) - min.x + 1;
+        int lz = int(z) - min.z + 1;
+        int index2D = lx + lz * gridPoints;
+
+        memcpy((float *)(&biome), &cachedBiomesVectorField[index2D * 4], 4 * sizeof(float));
+        memcpy((float *)(&biomeWeights), &cachedBiomesWeightsVectorField[index2D * 4], 4 * sizeof(float));
+    }
+    std::vector<unsigned char> getBiomesContainedInChunk() {
+        std::unordered_map<unsigned char, bool> seenBiomes;
+        for (int dz = 0; dz < gridPoints; dz++)
+        {
+            for (int dx = 0; dx < gridPoints; dx++)
+            {
+                int index2D = dx + dz * gridPoints;
+                for (int i = 0; i < 4; i++) {
+                    unsigned char b = cachedBiomesVectorField[index2D * 4 + i];
+                    seenBiomes[b] = true;
+                }
+            }
+        }
+        // convert the unordered_map to a vector
+        std::vector<unsigned char> biomesVector;
+        biomesVector.reserve(seenBiomes.size());
+        for(auto kv : seenBiomes) {
+            biomesVector.push_back(kv.first);
+        }
+        return std::move(biomesVector);
+    }
 
     // height
-    float interpolateHeight1D(const float &x, const float &z)
+    float interpolateHeight1D(const float x, const float z)
     {
         const int xf = std::floor(x);
         const int xc = std::ceil(x);
@@ -316,7 +356,7 @@ public:
         const float dx = x - xf;
         return lerp(cachedHeightField.at(indexF), cachedHeightField.at(indexC), dx);
     }
-    float interpolateHeight2D(const float &x, const float &z)
+    float interpolateHeight2D(const float x, const float z)
     {
         const int zf = std::floor(z);
         const int zc = std::ceil(z);
@@ -324,14 +364,14 @@ public:
         return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
     }
 
-    float getRawHeight(const int &x, const int &z)
+    float getRawHeight(const int x, const int z)
     {
         const int localX = x - min.x + 1;
         const int localZ = z - min.z + 1;
         const int index = localX + localZ * gridPoints;
         return (cachedHeightField.at(index) + 1.f) / 2.f;
     }
-    float getInterpolatedHeight(const float &x, const float &z)
+    float getInterpolatedHeight(const float x, const float z)
     {
         const float localX = x - min.x + 1;
         const float localZ = z - min.z + 1;
@@ -339,7 +379,7 @@ public:
     }
 
     // sdf
-    float getInterpolatedSdf(const float &x, const float &y, const float &z) {
+    float getInterpolatedSdf(const float x, const float y, const float z) {
         const float localX = x - min.x + 1;
         const float localY = y - min.y + 1;
         const float localZ = z - min.z + 1;

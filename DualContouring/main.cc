@@ -59,17 +59,16 @@ namespace DualContouring
                         chunkSize;
         return getChunk(min, flags, lod);
     }
-    Chunk &getChunkAt(int x, int z, const int &lod, GenerateFlags flags)
+    Chunk &getChunkAt(const float x, const float z, GenerateFlags flags, const int &lod)
     {
         vm::ivec3 min = vm::ivec3(
-                            (int)std::floor((float)x / (float)chunkSize),
-                            0,
-                            (int)std::floor((float)z / (float)chunkSize)) *
-                        chunkSize;
+            (int)std::floor(x / (float)chunkSize),
+            0,
+            (int)std::floor(z / (float)chunkSize)
+        ) * chunkSize;
         return getChunk(min, flags, lod);
     }
-    float *getChunkHeightField(float x, float y, float z, const int &lod)
-    {
+    /* float *getChunkHeightField(float x, float y, float z) {
         const vm::ivec3 min = vm::ivec3(x, y, z);
         Chunk &chunkNoise = getChunk(min, GF_HEIGHTFIELD, lod);
 
@@ -93,17 +92,29 @@ namespace DualContouring
             }
         }
         return heightfieldOut;
+    } */
+    float getHeight(float x, float z, const int &lod) {
+        Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+        float height = chunkNoise.getInterpolatedHeight(x, z);
+        return height;
+    }
+    void getHeights(float *vec2s, int count, float *heights, const int &lod) {
+        for (int i = 0; i < count; i++) {
+            float x = vec2s[i * 2 + 0];
+            float z = vec2s[i * 2 + 1];
+            Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+            heights[i] = chunkNoise.getInterpolatedHeight(x, z);
+        }        
     }
 
-    unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod)
-    {
-        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
+    // biomes
+    unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod) {
+        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
         int lx = int(worldPosition.x) - chunkNoise.min.x;
         int lz = int(worldPosition.y) - chunkNoise.min.z;
         return chunkNoise.getBiome(lx, lz);
     }
-    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition)
-    {
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod) {
         const Biome &biome = BIOMES[b];
         float ax = worldPosition.x;
         float az = worldPosition.y;
@@ -114,6 +125,15 @@ namespace DualContouring
                                                 DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1],
                                             128 - 0.1);
         return biomeHeight;
+    }
+    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod) {
+        Chunk &chunk = getChunk(vm::ivec3(x, 0, z), GF_BIOMES, lod);
+        const std::vector<unsigned char> &result = chunk.getBiomesContainedInChunk();
+
+        for (int i = 0; i < result.size(); i++) {
+            biomes[i] = result[i];
+        }
+        *biomesCount = result.size();
     }
 
     // octrees

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <ctime>
 #include <string.h>
+#include <memory>
 // #include "octree.h"
 // #include "cachedNoise.h"
 #include "../FastNoise.h"
@@ -24,11 +25,11 @@ namespace DualContouring
     //     vec3 getMin();
     // };
     void initialize(int newChunkSize, int seed);
-    float *getChunkHeightField(float x, float y, float z, const int &lod);
+    // float *getChunkHeightField(float x, float y, float z);
+    float getHeight(float x, float z, const int &lod);
+    void getHeights(float *vec2s, int count, float *heights, const int &lod);
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
-    // void generateChunkData(float x, float y, float z, const int lod);
-    // void setChunkLod(float x, float y, float z, const int lod);
     uint8_t *createChunkMesh(float x, float y, float z, const int &lod);
     ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min);
     bool drawSphereDamage(const float &x, const float &y, const float &z,
@@ -57,9 +58,11 @@ namespace DualContouring
         const int &lod
 
     );
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
-    unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod);
-    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer);
+
+    unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod);
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
+    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod);
 };
 
 #endif // MAIN_H
