@@ -71,8 +71,9 @@ const int edgeProcEdgeMask[3][2][5] = {
 
 const int processEdgeMask[3][4] = {{3, 2, 1, 0}, {7, 5, 6, 4}, {11, 10, 9, 8}};
 
-const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[7] =
+const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[8] =
 	{
+		vm::ivec3(0, 0, 0),
 		vm::ivec3(1, 0, 0),
 		vm::ivec3(0, 0, 1),
 		vm::ivec3(1, 0, 1),
@@ -615,18 +616,13 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	if (isSeam)
+	// prevents seams geometry from overlapping with the chunk geometry
+	if (isSeam &&
+		chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min) &&
+		chunkMinForPosition(node[1]->min) == chunkMinForPosition(node[2]->min) &&
+		chunkMinForPosition(node[2]->min) == chunkMinForPosition(node[3]->min))
 	{
-		std::vector<vm::ivec3> chunkRoots;
-		for (int i = 0; i < 4; i++)
-		{
-			const uint64_t chunkIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
-			chunkRoots.push_back(chunkMinForPosition(node[i]->min));
-		}
-		if (chunkRoots.size() == 1)
-		{
-			return;
-		}
+		return;
 	}
 
 	const bool isBranch[4] =
@@ -678,12 +674,10 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	if (isSeam == true)
+	// prevents seams geometry from overlapping with the chunk geometry
+	if (isSeam && chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min))
 	{
-		if (chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min))
-		{
-			return;
-		}
+		return;
 	}
 
 	const bool isBranch[2] =
@@ -956,15 +950,14 @@ OctreeNode *constructSeamNode(Chunk &chunk, const vm::ivec3 &min, const int &lod
 	return seamNode;
 }
 
-std::vector<OctreeNode *> constructChunkSeamNodes(Chunk &chunk, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
+std::vector<OctreeNode *> constructChunkSeamNodes(Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
 {
 	std::vector<OctreeNode *> nodes;
-	const int lod = 1; // ! this should be the min lod of the chunks that make up the seam (8 chunks)
 	const vm::ivec3 chunkMax = chunkMin + chunkSize;
 
-	for (int x = chunkMin.x; x < chunkMax.x; x++)
-		for (int y = chunkMin.y; y < chunkMax.y; y++)
-			for (int z = chunkMin.z; z < chunkMax.z; z++)
+	for (int x = chunkMin.x; x < chunkMax.x; x += lod)
+		for (int y = chunkMin.y; y < chunkMax.y; y += lod)
+			for (int z = chunkMin.z; z < chunkMax.z; z += lod)
 			{
 				const vm::ivec3 min = vm::ivec3(x, y, z);
 				const vm::ivec3 max = min + vm::ivec3(1);
@@ -978,61 +971,59 @@ std::vector<OctreeNode *> constructChunkSeamNodes(Chunk &chunk, const vm::ivec3 
 	return nodes;
 }
 
-std::vector<OctreeNode *> generateSeamNodes(Chunk &chunk, ChunkOctree &chunkOctree, std::vector<OctreeNode *> &neighbourNodes)
+std::vector<OctreeNode *> generateSeamNodes(Chunk &chunk, const int lodArray[], ChunkOctree &chunkOctree, std::vector<OctreeNode *> &neighbourNodes)
 {
 	const vm::ivec3 baseChunkMin = vm::ivec3(chunkOctree.min);
 	const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunkOctree.size);
 
 	std::vector<OctreeNode *> seamNodes;
 
-	FilterNodesFunc rootSeamNodesFinder = [&](const vm::ivec3 &min, const vm::ivec3 &max)
-	{
-		return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
-	};
+	FilterNodesFunc selectionFuncs[8] =
+		{[&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.x == seamValues.x;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.z == seamValues.z;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.x == seamValues.x && min.z == seamValues.z;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.y == seamValues.y;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.x == seamValues.x && min.y == seamValues.y;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.y == seamValues.y && min.z == seamValues.z;
+		 },
+		 [&](const vm::ivec3 &min, const vm::ivec3 &max)
+		 {
+			 return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
+		 }};
 
-	std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(chunkOctree.root, rootSeamNodesFinder);
+	std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(chunkOctree.root, selectionFuncs[0]);
 
 	// adding root chunk seam nodes
 	seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
 
-	FilterNodesFunc selectionFuncs[7] =
-		{
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.x == seamValues.x;
-			},
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.z == seamValues.z;
-			},
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.x == seamValues.x && min.z == seamValues.z;
-			},
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.y == seamValues.y;
-			},
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.x == seamValues.x && min.y == seamValues.y;
-			},
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.y == seamValues.y && min.z == seamValues.z;
-			},
-			[&](const vm::ivec3 &min, const vm::ivec3 &max)
-			{
-				return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
-			}};
-
 	// creating the seam nodes of the neighbouring chunks
 	// NEIGHBOUR_CHUNKS_OFFSETS[i]
-	for (int i = 0; i < 7; i++)
+	for (int i = 1; i < 8; i++)
 	{
 		const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkOctree.size;
 		const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-		std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(chunk, chunkMin, selectionFuncs[i], chunkOctree.size);
+		std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(chunk, lodArray[i], chunkMin, selectionFuncs[i], chunkOctree.size);
 		neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
 	}
 

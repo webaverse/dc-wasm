@@ -10,7 +10,7 @@ EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
 }
 
 EMSCRIPTEN_KEEPALIVE float *getChunkHeightField(float x, float y, float z) {
-    return DualContouring::getChunkHeightField(x, y, z);
+    return DualContouring::getChunkHeightField(x, y, z, 1);
 }
 
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
@@ -22,11 +22,11 @@ EMSCRIPTEN_KEEPALIVE uint8_t *createChunkMeshDualContouring(float x, float y, fl
 }
 
 EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
-    return DualContouring::drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages);
+    return DualContouring::drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages, 1);
 }
 
 EMSCRIPTEN_KEEPALIVE bool eraseSphereDamage(float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
-    return DualContouring::eraseSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages);
+    return DualContouring::eraseSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages, 1);
 }
 
 EMSCRIPTEN_KEEPALIVE bool drawCubeDamage(
@@ -43,7 +43,8 @@ EMSCRIPTEN_KEEPALIVE bool drawCubeDamage(
         sx, sy, sz,
         outPositions,
         outPositionsCount,
-        outDamages
+        outDamages,
+        1
     );
 }
 
@@ -61,12 +62,13 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
         sx, sy, sz,
         outPositions,
         outPositionsCount,
-        outDamages
+        outDamages,
+        1
     );
 }
 
 EMSCRIPTEN_KEEPALIVE void injectDamage(float x, float y, float z, float *damageBuffer) {
-    DualContouring::injectDamage(x, y, z, damageBuffer);
+    DualContouring::injectDamage(x, y, z, damageBuffer, 1);
 }
 
 EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {

@@ -36,48 +36,52 @@ namespace DualContouring
     }
 
     // chunks
-    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags)
+    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int &lod)
     {
         uint64_t minHash = hashOctreeMin(min);
 
         const auto &iter = chunksNoiseHashMap.find(minHash);
         if (iter == chunksNoiseHashMap.end())
         {
-            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min, GF_NONE)));
+            chunksNoiseHashMap.emplace(std::make_pair(minHash, Chunk(min, lod, GF_NONE)));
         }
 
         Chunk &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
         chunkNoise.generate(flags);
         return chunkNoise;
     }
-    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags)
+    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int &lod)
     {
         vm::ivec3 min = vm::ivec3(
-            (int)std::floor(x / (float)chunkSize),
-            (int)std::floor(y / (float)chunkSize),
-            (int)std::floor(z / (float)chunkSize)
-        ) * chunkSize;
-        return getChunk(min, flags);
+                            (int)std::floor(x / (float)chunkSize),
+                            (int)std::floor(y / (float)chunkSize),
+                            (int)std::floor(z / (float)chunkSize)) *
+                        chunkSize;
+        return getChunk(min, flags, lod);
     }
-    Chunk &getChunkAt(int x, int z, GenerateFlags flags)
+    Chunk &getChunkAt(int x, int z, const int &lod, GenerateFlags flags)
     {
         vm::ivec3 min = vm::ivec3(
-            (int)std::floor((float)x / (float)chunkSize),
-            0,
-            (int)std::floor((float)z / (float)chunkSize)
-        ) * chunkSize;
-        return getChunk(min, flags);
+                            (int)std::floor((float)x / (float)chunkSize),
+                            0,
+                            (int)std::floor((float)z / (float)chunkSize)) *
+                        chunkSize;
+        return getChunk(min, flags, lod);
     }
-    float *getChunkHeightField(float x, float y, float z) {
+    float *getChunkHeightField(float x, float y, float z, const int &lod)
+    {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        Chunk &chunkNoise = getChunk(min, GF_HEIGHTFIELD);
-        
+        Chunk &chunkNoise = getChunk(min, GF_HEIGHTFIELD, lod);
+
         std::vector<float> &heightfieldRaw = chunkNoise.cachedHeightField;
         float *heightfieldOut = (float *)malloc(chunkSize * chunkSize * chunkSize * sizeof(float));
         int gridSize = chunkSize + 3;
-        for (int x = 0; x < chunkSize; x++) {
-            for (int z = 0; z < chunkSize; z++) {
-                for (int y = 0; y < chunkSize; y++) {
+        for (int x = 0; x < chunkSize; x++)
+        {
+            for (int z = 0; z < chunkSize; z++)
+            {
+                for (int y = 0; y < chunkSize; y++)
+                {
                     int lx = x + 1;
                     int ly = y + 1;
                     int lz = z + 1;
@@ -91,21 +95,24 @@ namespace DualContouring
         return heightfieldOut;
     }
 
-    unsigned char getBiome(const vm::ivec2 &worldPosition) {
-        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES);
+    unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod)
+    {
+        Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
         int lx = int(worldPosition.x) - chunkNoise.min.x;
         int lz = int(worldPosition.y) - chunkNoise.min.z;
         return chunkNoise.getBiome(lx, lz);
     }
-    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
+    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition)
+    {
         const Biome &biome = BIOMES[b];
         float ax = worldPosition.x;
         float az = worldPosition.y;
-        
+
         float biomeHeight = std::min<float>(biome.baseHeight +
-        DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
-        DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
-        DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
+                                                DualContouring::noises->elevationNoise1.in2D(ax * biome.amps[0][0], az * biome.amps[0][0]) * biome.amps[0][1] +
+                                                DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
+                                                DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1],
+                                            128 - 0.1);
         return biomeHeight;
     }
 
@@ -136,15 +143,18 @@ namespace DualContouring
         destroyOctree(chunkRoot);
     }
 
-    uint8_t *createChunkMesh(float x, float y, float z, const int lod)
+    uint8_t *createChunkMesh(float x, float y, float z, const int &lod)
     {
         VertexBuffer vertexBuffer;
+        // TODO : pass the lod array to here from JS (8 lods = chunk lod + 7 neighbour chunks lod)
+        const int lodArray[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+        const int maxLodNumber = *std::max_element(std::begin(lodArray), std::end(lodArray));
 
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        Chunk &chunk = getChunk(octreeMin, GF_ALL);
-        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lod);
+        Chunk &chunk = getChunk(octreeMin, GF_ALL, maxLodNumber);
+        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
         if (!chunkOctree.root)
         {
             // printf("Chunk Has No Data\n");
@@ -153,23 +163,25 @@ namespace DualContouring
 
         generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
 
-        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, chunkOctree,neighbourNodes);
+        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
         OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkOctree.root->min, chunkOctree.root->size * 2);
         generateMeshFromOctree(seamRoot, lod, true, vertexBuffer);
 
         // mesh is not valid
-        if (vertexBuffer.indices.size() == 0) {
+        if (vertexBuffer.indices.size() == 0)
+        {
             // printf("Generated Mesh Is Not Valid\n");
             return nullptr;
         }
 
         addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
 
-
         return constructOutputBuffer(vertexBuffer);
     }
 
-    bool drawSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages)
+    bool drawSphereDamage(const float &x, const float &y, const float &z,
+                          const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                          const int &lod)
     {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
@@ -191,7 +203,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.addSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -200,9 +212,9 @@ namespace DualContouring
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
-                                outPositions[(*outPositionsCount)*3] = min.x;
-                                outPositions[(*outPositionsCount)*3+1] = min.y;
-                                outPositions[(*outPositionsCount)*3+2] = min.z;
+                                outPositions[(*outPositionsCount) * 3] = min.x;
+                                outPositions[(*outPositionsCount) * 3 + 1] = min.y;
+                                outPositions[(*outPositionsCount) * 3 + 2] = min.z;
 
                                 (*outPositionsCount)++;
                             }
@@ -215,11 +227,14 @@ namespace DualContouring
         }
         return drew;
     }
-    
-    bool eraseSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
+
+    bool eraseSphereDamage(const float &x, const float &y, const float &z,
+                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                           const int &lod)
+    {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
-        
+
         bool drew = false;
         std::set<uint64_t> seenHashes;
         for (float dx = -1; dx <= 1; dx += 2)
@@ -237,7 +252,7 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
                         {
                             if (*outPositionsCount < maxPositionsCount)
@@ -246,10 +261,10 @@ namespace DualContouring
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
-                                outPositions[(*outPositionsCount)*3] = min.x;
-                                outPositions[(*outPositionsCount)*3+1] = min.y;
-                                outPositions[(*outPositionsCount)*3+2] = min.z;
-                                
+                                outPositions[(*outPositionsCount) * 3] = min.x;
+                                outPositions[(*outPositionsCount) * 3 + 1] = min.y;
+                                outPositions[(*outPositionsCount) * 3 + 2] = min.z;
+
                                 (*outPositionsCount)++;
                             }
 
@@ -268,8 +283,9 @@ namespace DualContouring
         float sx, float sy, float sz,
         float *outPositions,
         unsigned int *outPositionsCount,
-        float *outDamages
-    ) {
+        float *outDamages,
+        const int &lod)
+    {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
 
@@ -293,21 +309,21 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.addCubeDamage(
-                            x, y, z,
-                            qx, qy, qz, qw,
-                            sx, sy, sz
-                        )) {
+                                x, y, z,
+                                qx, qy, qz, qw,
+                                sx, sy, sz))
+                        {
                             if (*outPositionsCount < maxPositionsCount)
                             {
                                 int gridSize = chunkSize + 3;
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
-                                outPositions[(*outPositionsCount)*3] = min.x;
-                                outPositions[(*outPositionsCount)*3+1] = min.y;
-                                outPositions[(*outPositionsCount)*3+2] = min.z;
+                                outPositions[(*outPositionsCount) * 3] = min.x;
+                                outPositions[(*outPositionsCount) * 3 + 1] = min.y;
+                                outPositions[(*outPositionsCount) * 3 + 2] = min.z;
 
                                 (*outPositionsCount)++;
                             }
@@ -320,15 +336,16 @@ namespace DualContouring
         }
         return drew;
     }
-    
+
     bool eraseCubeDamage(
         float x, float y, float z,
         float qx, float qy, float qz, float qw,
         float sx, float sy, float sz,
         float *outPositions,
         unsigned int *outPositionsCount,
-        float *outDamages
-    ) {
+        float *outDamages,
+        const int &lod)
+    {
         unsigned int maxPositionsCount = *outPositionsCount;
         *outPositionsCount = 0;
 
@@ -352,22 +369,22 @@ namespace DualContouring
                     {
                         seenHashes.insert(minHash);
 
-                        Chunk &chunkNoise = getChunk(min, GF_ALL);
+                        Chunk &chunkNoise = getChunk(min, GF_ALL, lod);
                         if (chunkNoise.removeCubeDamage(
-                            x, y, z,
-                            qx, qy, qz, qw,
-                            sx, sy, sz
-                        )) {
+                                x, y, z,
+                                qx, qy, qz, qw,
+                                sx, sy, sz))
+                        {
                             if (*outPositionsCount < maxPositionsCount)
                             {
                                 int gridSize = chunkSize + 3;
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
-                                outPositions[(*outPositionsCount)*3] = min.x;
-                                outPositions[(*outPositionsCount)*3+1] = min.y;
-                                outPositions[(*outPositionsCount)*3+2] = min.z;
-                                
+                                outPositions[(*outPositionsCount) * 3] = min.x;
+                                outPositions[(*outPositionsCount) * 3 + 1] = min.y;
+                                outPositions[(*outPositionsCount) * 3 + 2] = min.z;
+
                                 (*outPositionsCount)++;
                             }
 
@@ -380,9 +397,10 @@ namespace DualContouring
         return drew;
     }
 
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer) {
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
+    {
         const vm::ivec3 min = vm::ivec3(x, y, z);
-        Chunk &chunk = getChunk(min, GF_NONE);
+        Chunk &chunk = getChunk(min, GF_NONE, lod);
 
         int gridSize = chunkSize + 3;
         std::vector<float> sdf(gridSize * gridSize * gridSize);

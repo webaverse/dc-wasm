@@ -92,7 +92,7 @@ void removeOctreeFromHashMap(vm::ivec3 octreeMin, std::unordered_map<uint64_t, O
 void addChunkRootToHashMap(OctreeNode *root, std::unordered_map<uint64_t, OctreeNode *> &hashMap);
 uint64_t hashOctreeMin(const vm::ivec3 &min);
 
-std::vector<OctreeNode *> generateSeamNodes(Chunk &chunk,ChunkOctree &chunkOctree,std::vector<OctreeNode *> &neighbourNodes);
+std::vector<OctreeNode *> generateSeamNodes(Chunk &chunk, const int lodArray[] ,ChunkOctree &chunkOctree,std::vector<OctreeNode *> &neighbourNodes);
 OctreeNode *constructOctreeUpwards(
     OctreeNode *octree,
     const std::vector<OctreeNode *> &inputNodes,

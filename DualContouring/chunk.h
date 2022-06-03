@@ -81,6 +81,7 @@ public:
     // private:
     int size;
     int gridPoints;
+    int lod;
     vm::ivec3 min;
     NoiseField cachedNoiseField;
     std::vector<uint8_t> cachedBiomesField;
@@ -93,6 +94,7 @@ public:
         size(other.size),
         gridPoints(other.gridPoints),
         min(other.min),
+        lod(other.lod),
         cachedNoiseField(std::move(other.cachedNoiseField)),
         cachedBiomesField(std::move(other.cachedBiomesField)),
         // cachedBiomeHeightField(std::move(other.cachedBiomeHeightField)),
@@ -100,10 +102,11 @@ public:
         cachedSdf(std::move(other.cachedSdf))
         {}
     Chunk(const Chunk &other) = delete;
-    Chunk(const vm::ivec3 chunkMin, GenerateFlags flags) :
+    Chunk(const vm::ivec3 chunkMin, const int &lod, GenerateFlags flags) :
                                        min(chunkMin),
                                        size(DualContouring::chunkSize),
-                                       gridPoints(size + 4)
+                                       gridPoints(size + 3 + lod),
+                                       lod(lod)
     {
         generate(flags);
     };
@@ -124,6 +127,7 @@ public:
         size = other.size;
         gridPoints = other.gridPoints;
         min = other.min;
+        lod = other.lod;
         cachedNoiseField = std::move(other.cachedNoiseField);
         cachedBiomesField = std::move(other.cachedBiomesField);
         // cachedBiomeHeightField = std::move(other.cachedBiomeHeightField);
@@ -238,7 +242,7 @@ public:
                 for (int dz = -8; dz <= 8; dz++) {
                     for (int dx = -8; dx <= 8; dx++) {
                         vm::ivec2 iWorldPosition(ax + dx, az + dz);
-                        unsigned char b = DualContouring::getBiome(iWorldPosition);
+                        unsigned char b = DualContouring::getBiome(iWorldPosition, lod);
                         biomeCounts[b]++;
                     }
                 }
