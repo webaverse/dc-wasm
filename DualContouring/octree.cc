@@ -94,7 +94,7 @@ ChunkOctree::~ChunkOctree()
 	// destroyOctree(this->root);
 }
 
-void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const BiomeData &samples, const int &n)
+void selectMostCommonBiomes(vm::bvec4 &biome, vm::vec4 &biomeWeights, const BiomeData &samples, const int &n)
 {
 	BiomeData sortedSamples = samples;
 
@@ -168,7 +168,7 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 	biomeWeights.w = selectedBiomesWeights[3];
 }
 
-void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
+void setBiomeData(vm::bvec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
 {
   chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
 }

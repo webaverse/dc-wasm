@@ -9,7 +9,7 @@
 
 typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
-typedef std::vector<vm::ivec4> BiomeBuffer;
+typedef std::vector<vm::bvec4> BiomeBuffer;
 typedef std::vector<vm::vec4> BiomeWeightBuffer;
 typedef std::vector<int> IndexBuffer;
 
