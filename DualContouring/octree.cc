@@ -168,17 +168,9 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 	biomeWeights.w = selectedBiomesWeights[3];
 }
 
-void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position)
+void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
 {
-	biome.x = 0;
-	biome.y = 0;
-	biome.z = 0;
-	biome.w = 0;
-
-	biomeWeights.x = 0;
-	biomeWeights.y = 0;
-	biomeWeights.z = 0;
-	biomeWeights.w = 0;
+  chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
 
 	/* const int gridSize = 2;
 	// +1 is for fence post error
@@ -907,7 +899,7 @@ OctreeNode *constructLeaf(OctreeNode *leaf, const int lod, Chunk &chunkNoise)
 	drawInfo->averageNormal = normalize(averageNormal / (float)edgeCount);
 	drawInfo->corners = corners;
 
-	setBiomeData(drawInfo->biome, drawInfo->biomeWeights, drawInfo->position);
+	setBiomeData(drawInfo->biome, drawInfo->biomeWeights, drawInfo->position, chunkNoise);
 
 	leaf->type = Node_Leaf;
 	leaf->drawInfo = drawInfo;

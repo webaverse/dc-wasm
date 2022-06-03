@@ -24,11 +24,11 @@ namespace DualContouring
     //     vec3 getMin();
     // };
     void initialize(int newChunkSize, int seed);
-    float *getChunkHeightField(float x, float y, float z);
+    // float *getChunkHeightField(float x, float y, float z);
+    float getHeight(float x, float z);
+    void getHeights(float *vec2s, int count, float *heights);
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
-    // void generateChunkData(float x, float y, float z, const int lod);
-    // void setChunkLod(float x, float y, float z, const int lod);
     uint8_t *createChunkMesh(float x, float y, float z, const int lod);
     ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min);
     bool drawSphereDamage(const float &x, const float &y, const float &z, const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
