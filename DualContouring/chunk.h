@@ -316,13 +316,15 @@ public:
         int index = lx + lz * size;
         return cachedBiomesField[index];
     }
-    void getInterpolatedBiome2D(const float x, const float z, vm::bvec4 &biome, vm::vec4 &biomeWeights) {
+    void getInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
         int lx = int(x) - min.x + 1;
         int lz = int(z) - min.z + 1;
         int index2D = lx + lz * gridPoints;
 
-        memcpy(&biome, &cachedBiomesVectorField[index2D * 4], 4 * sizeof(unsigned char));
-        memcpy(&biomeWeights, &cachedBiomesWeightsVectorField[index2D * 4], 4 * sizeof(float));
+        for (int i = 0; i < 4; i++) {
+            ((int *)(&biome))[i] = cachedBiomesVectorField[index2D * 4 + i];
+            ((float *)(&biomeWeights))[i] = cachedBiomesWeightsVectorField[index2D * 4 + i];
+        }
     }
     std::vector<unsigned char> getBiomesContainedInChunk() {
         std::unordered_map<unsigned char, bool> seenBiomes;

@@ -36,7 +36,7 @@ struct OctreeDrawInfo
 
     int index;
     int corners;
-    vm::bvec4 biome;
+    vm::ivec4 biome;
     vm::vec4 biomeWeights;
     vm::vec3 position;
     vm::vec3 averageNormal;

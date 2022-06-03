@@ -151,34 +151,6 @@ namespace vm
         int z;
         int w;
     };
-    struct bvec4
-    {
-        bvec4()
-        {
-            x = 0;
-            y = 0;
-            z = 0;
-            w = 0;
-        }
-        bvec4(const unsigned char &_x, const unsigned char &_y, const unsigned char &_z, const unsigned char &_w)
-        {
-            x = _x;
-            y = _y;
-            z = _z;
-            w = _w;
-        }
-        bvec4(const unsigned char &_v)
-        {
-            x = _v;
-            y = _v;
-            z = _v;
-            w = _v;
-        }
-        unsigned char x;
-        unsigned char y;
-        unsigned char z;
-        unsigned char w;
-    };
 
     vec2 min(const vec2 &v1, const vec2 &v2);
     vec3 min(const vec3 &v1, const vec3 &v2);
