@@ -58,7 +58,7 @@ namespace DualContouring
         const int &lod
 
     );
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer);
+    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
 
     unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod);
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
