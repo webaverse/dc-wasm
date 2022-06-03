@@ -609,13 +609,13 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, boo
 
 	if (isSeam)
 	{
-		std::vector<vm::ivec3> chunkRoots;
+		std::unordered_set<uint64_t> chunks;
 		for (int i = 0; i < 4; i++)
 		{
 			const uint64_t chunkIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
-			chunkRoots.push_back(chunkMinForPosition(node[i]->min));
+			chunks.insert(chunkIndex);
 		}
-		if (chunkRoots.size() == 1)
+		if (chunks.size() == 1)
 		{
 			return;
 		}
