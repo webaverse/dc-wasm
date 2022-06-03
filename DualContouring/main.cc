@@ -107,13 +107,14 @@ namespace DualContouring
         }        
     }
 
-    unsigned char getBiome(const vm::ivec2 &worldPosition) {
+    // biomes
+    unsigned char getComputedBiome(const vm::ivec2 &worldPosition) {
         Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES);
         int lx = int(worldPosition.x) - chunkNoise.min.x;
         int lz = int(worldPosition.y) - chunkNoise.min.z;
         return chunkNoise.getBiome(lx, lz);
     }
-    float getBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
         const Biome &biome = BIOMES[b];
         float ax = worldPosition.x;
         float az = worldPosition.y;
@@ -123,6 +124,15 @@ namespace DualContouring
         DualContouring::noises->elevationNoise2.in2D(ax * biome.amps[1][0], az * biome.amps[1][0]) * biome.amps[1][1] +
         DualContouring::noises->elevationNoise3.in2D(ax * biome.amps[2][0], az * biome.amps[2][0]) * biome.amps[2][1], 128 - 0.1);
         return biomeHeight;
+    }
+    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
+        Chunk &chunk = getChunk(vm::ivec3(x, 0, z), GF_BIOMES);
+        const std::vector<unsigned char> &result = chunk.getBiomesContainedInChunk();
+
+        for (int i = 0; i < result.size(); i++) {
+            biomes[i] = result[i];
+        }
+        *biomesCount = result.size();
     }
 
     // octrees

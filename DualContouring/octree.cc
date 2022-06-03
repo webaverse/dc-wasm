@@ -171,24 +171,6 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
 {
   chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
-
-	/* const int gridSize = 2;
-	// +1 is for fence post error
-	const int gridPoints = gridSize + 1;
-	BiomeData biomeData;
-	biomeData.resize(gridPoints * gridPoints);
-
-	vm::ivec2 minPoint = vm::ivec2(std::floor(position.x), std::floor(position.z)) - 1;
-
-	for (int y = 0; y < gridPoints; y++)
-		for (int x = 0; x < gridPoints; x++)
-		{
-			const vm::ivec2 pointPosition = minPoint + vm::ivec2(x, y);
-			biomeData[x + y * gridPoints].first = DualContouring::getBiome(pointPosition, chunkNoise);
-			biomeData[x + y * gridPoints].second = 1.f / (vm::distance(minPoint + 1, pointPosition) + 1.f);
-		}
-
-	selectMostCommonBiomes(biome, biomeWeights, biomeData, gridPoints * gridPoints); */
 }
 
 OctreeNode *switchChunkLod(OctreeNode *node, const int lod)

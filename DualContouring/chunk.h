@@ -233,7 +233,7 @@ public:
                 for (int dz = -8; dz <= 8; dz++) {
                     for (int dx = -8; dx <= 8; dx++) {
                         vm::ivec2 iWorldPosition(ax + dx, az + dz);
-                        unsigned char b = DualContouring::getBiome(iWorldPosition);
+                        unsigned char b = DualContouring::getComputedBiome(iWorldPosition);
                         biomeCounts[b]++;
                     }
                 }
@@ -260,7 +260,7 @@ public:
                 float elevationSum = 0.f;
                 vm::vec2 fWorldPosition(ax, az);
                 for (auto const &iter : biomeCounts) {
-                    elevationSum += iter.second * DualContouring::getBiomeHeight(iter.first, fWorldPosition);
+                    elevationSum += iter.second * DualContouring::getComputedBiomeHeight(iter.first, fWorldPosition);
                 }
                 
                 float elevation = elevationSum / (float)numSamples;
@@ -308,7 +308,6 @@ public:
     }
 
     // biomes
-
     unsigned char getBiome(const int lx, const int lz) {
         int index = lx + lz * size;
         return cachedBiomesField[index];
@@ -320,6 +319,26 @@ public:
 
         memcpy((float *)(&biome), &cachedBiomesVectorField[index2D * 4], 4 * sizeof(float));
         memcpy((float *)(&biomeWeights), &cachedBiomesWeightsVectorField[index2D * 4], 4 * sizeof(float));
+    }
+    std::vector<unsigned char> getBiomesContainedInChunk() {
+        std::vector<unsigned char> biomes;
+        biomes.reserve(gridPoints * gridPoints);
+        for (int dz = 0; dz < gridPoints; dz++)
+        {
+            for (int dx = 0; dx < gridPoints; dx++)
+            {
+                int index2D = dx + dz * gridPoints;
+                for (int i = 0; i < 4; i++) {
+                    unsigned char b = cachedBiomesVectorField[index2D * 4 + i];
+                    // if (b != 0) {
+                        biomes.push_back(b);
+                    // }
+                }
+            }
+        }
+        std::sort(biomes.begin(), biomes.end());
+        biomes.erase(std::unique(biomes.begin(), biomes.end()), biomes.end());
+        return std::move(biomes);
     }
 
     // height
