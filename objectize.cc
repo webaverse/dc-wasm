@@ -19,9 +19,9 @@ EMSCRIPTEN_KEEPALIVE float getHeight(float x, float z) {
 EMSCRIPTEN_KEEPALIVE void getHeights(float *vec2s, int count, float *heights) {
     return DualContouring::getHeights(vec2s, count, heights, 1);        
 }
-EMSCRIPTEN_KEEPALIVE void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
+/* EMSCRIPTEN_KEEPALIVE void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
     return DualContouring::getBiomesContainedInChunk(x, z, biomes, biomesCount, 1);        
-}
+} */
 
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
     return DualContouring::clearChunkRoot(x, y, z);
