@@ -163,13 +163,10 @@ namespace DualContouring
         destroyOctree(chunkRoot);
     }
 
-    uint8_t *createChunkMesh(float x, float y, float z, const int &lod)
+    uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8])
     {
-        VertexBuffer vertexBuffer;
-        // TODO : pass the lod array to here from JS (8 lods = chunk lod + 7 neighbour chunks lod)
-        const int lodArray[8] = {1, 1, 1, 1, 1, 1, 1, 1};
-        const int maxLodNumber = *std::max_element(std::begin(lodArray), std::end(lodArray));
-
+        int lod = lodArray[0];
+        const int maxLodNumber = *std::max_element(lodArray, lodArray + 8);
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
@@ -181,6 +178,7 @@ namespace DualContouring
             return nullptr;
         }
 
+        VertexBuffer vertexBuffer;
         generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
 
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);

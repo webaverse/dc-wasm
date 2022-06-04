@@ -30,7 +30,7 @@ namespace DualContouring
     void getHeights(float *vec2s, int count, float *heights, const int &lod);
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
-    uint8_t *createChunkMesh(float x, float y, float z, const int &lod);
+    uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8]);
     ChunkDamageBuffer &getChunkDamageBuffer(vm::ivec3 min);
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
