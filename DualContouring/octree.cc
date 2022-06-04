@@ -174,7 +174,7 @@ void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &posi
   chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
 }
 
-OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
+OctreeNode *switchChunkLod(OctreeNode *node, const int lod, Chunk &chunkNoise)
 {
 
 	if (!node)
@@ -196,7 +196,7 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 
 	for (int i = 0; i < 8; i++)
 	{
-		node->children[i] = switchChunkLod(node->children[i], lod);
+		node->children[i] = switchChunkLod(node->children[i], lod, chunkNoise);
 		if (node->children[i])
 		{
 			OctreeNode *child = node->children[i];
@@ -248,11 +248,6 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 
 	drawInfo->averageNormal = vm::vec3(0.f);
 
-	const int numberOfBiomeData = 8 * 4;
-
-	BiomeData biomeData;
-	biomeData.resize(numberOfBiomeData);
-
 	for (int i = 0; i < 8; i++)
 	{
 		if (signs[i] == -1)
@@ -271,16 +266,6 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 				child->type == Node_Leaf)
 			{
 				drawInfo->averageNormal += child->drawInfo->averageNormal;
-
-				biomeData[i].first = child->drawInfo->biome.x;
-				biomeData[i + 1].first = child->drawInfo->biome.y;
-				biomeData[i + 2].first = child->drawInfo->biome.z;
-				biomeData[i + 3].first = child->drawInfo->biome.w;
-
-				biomeData[i].second = child->drawInfo->biomeWeights.x;
-				biomeData[i + 1].second = child->drawInfo->biomeWeights.y;
-				biomeData[i + 2].second = child->drawInfo->biomeWeights.z;
-				biomeData[i + 3].second = child->drawInfo->biomeWeights.w;
 			}
 		}
 	}
@@ -288,7 +273,7 @@ OctreeNode *switchChunkLod(OctreeNode *node, const int lod)
 	drawInfo->averageNormal = vm::normalize(drawInfo->averageNormal);
 	drawInfo->position = position;
 	drawInfo->qef = qef.getData();
-	selectMostCommonBiomes(drawInfo->biome, drawInfo->biomeWeights, biomeData, numberOfBiomeData);
+	setBiomeData(drawInfo->biome, drawInfo->biomeWeights, drawInfo->position, chunkNoise);
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -336,21 +321,21 @@ void cloneNode(OctreeNode *sourceNode, OctreeNode *node)
 	}
 }
 
-OctreeNode *createChunkWithLod(OctreeNode *chunkRoot)
-{
-	if (!chunkRoot)
-	{
-		return nullptr;
-	}
-	// set the active lod of the root
-	OctreeNode *chunk = new OctreeNode;
-	// clone chunk root data
-	cloneNode(chunkRoot, chunk);
-	// apply lod to chunk clone
-	chunk = switchChunkLod(chunk, chunkRoot->lod);
+// OctreeNode *createChunkWithLod(OctreeNode *chunkRoot)
+// {
+// 	if (!chunkRoot)
+// 	{
+// 		return nullptr;
+// 	}
+// 	// set the active lod of the root
+// 	OctreeNode *chunk = new OctreeNode;
+// 	// clone chunk root data
+// 	cloneNode(chunkRoot, chunk);
+// 	// apply lod to chunk clone
+// 	chunk = switchChunkLod(chunk, chunkRoot->lod);
 
-	return chunk;
-}
+// 	return chunk;
+// }
 
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
 {
@@ -1050,7 +1035,7 @@ OctreeNode *constructOctreeDownwards(Chunk &chunkNoise, const vm::ivec3 &min, co
 	root->lod = lod;
 
 	OctreeNode *octreeRootNode = constructOctreeNodes(root, lod, chunkNoise);
-	octreeRootNode = switchChunkLod(octreeRootNode, lod);
+	octreeRootNode = switchChunkLod(octreeRootNode, lod, chunkNoise);
 
 	return octreeRootNode;
 }

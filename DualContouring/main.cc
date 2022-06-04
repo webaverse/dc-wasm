@@ -188,7 +188,7 @@ namespace DualContouring
         // mesh is not valid
         if (vertexBuffer.indices.size() == 0)
         {
-            // printf("Generated Mesh Is Not Valid\n");
+            printf("Generated Mesh Is Not Valid\n");
             return nullptr;
         }
 

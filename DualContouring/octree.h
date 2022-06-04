@@ -100,7 +100,7 @@ OctreeNode *constructOctreeUpwards(
     const int rootNodeSize);
 
 OctreeNode *constructOctreeDownwards(Chunk &chunkNoise , const vm::ivec3 &min, const int &size, const int &lod);
-OctreeNode *switchChunkLod(OctreeNode *node,const int lod);
+OctreeNode *switchChunkLod(OctreeNode *node,const int lod, Chunk &chunkNoise);
 void destroyOctree(OctreeNode *node);
 void generateMeshFromOctree(OctreeNode *node,const int lod , bool isSeam, VertexBuffer &vertexBuffer);
 
