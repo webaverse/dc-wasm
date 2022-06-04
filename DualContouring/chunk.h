@@ -243,12 +243,14 @@ public:
                 }
 
                 std::vector<unsigned char> biomes;
-                biomes.reserve(biomeCounts.size());
+                biomes.resize(biomeCounts.size());
+                int index = 0;
                 for(auto kv : biomeCounts) {
-                    biomes.push_back(kv.first);
+                    biomes[index++] = kv.first;
                 }
-                std::sort(biomes.begin(), biomes.end(), [&](const unsigned char &a, const unsigned char &b) -> bool {
-                    return biomeCounts[b] - biomeCounts[a]; 
+                // sort by increasing occurence count of the biome
+                std::sort(biomes.begin(), biomes.end(), [&biomeCounts](unsigned char b1, unsigned char b2) {
+                    return biomeCounts[b1] > biomeCounts[b2];
                 });
 
                 for (size_t i = 0; i < 4; i++) {
@@ -321,10 +323,15 @@ public:
         int lz = int(z) - min.z + 1;
         int index2D = lx + lz * gridPoints;
 
-        for (int i = 0; i < 4; i++) {
-            ((int *)(&biome))[i] = cachedBiomesVectorField[index2D * 4 + i];
-            ((float *)(&biomeWeights))[i] = cachedBiomesWeightsVectorField[index2D * 4 + i];
-        }
+        biome.x = cachedBiomesVectorField[index2D * 4];
+        biome.y = cachedBiomesVectorField[index2D * 4 + 1];
+        biome.z = cachedBiomesVectorField[index2D * 4 + 2];
+        biome.w = cachedBiomesVectorField[index2D * 4 + 3];
+
+        biomeWeights.x = cachedBiomesWeightsVectorField[index2D * 4];
+        biomeWeights.y = cachedBiomesWeightsVectorField[index2D * 4 + 1];
+        biomeWeights.z = cachedBiomesWeightsVectorField[index2D * 4 + 2];
+        biomeWeights.w = cachedBiomesWeightsVectorField[index2D * 4 + 3];
     }
     std::vector<unsigned char> getBiomesContainedInChunk() {
         std::unordered_map<unsigned char, bool> seenBiomes;
