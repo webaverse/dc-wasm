@@ -95,6 +95,11 @@ ChunkOctree::~ChunkOctree()
 	// destroyOctree(this->root);
 }
 
+OctreeNode::~OctreeNode()
+{
+	// destroyOctree(this);
+}
+
 void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const BiomeData &samples, const int &n)
 {
 	BiomeData sortedSamples = samples;
@@ -171,7 +176,7 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 
 void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
 {
-  chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
+	chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
 }
 
 OctreeNode *switchChunkLod(OctreeNode *node, const int lod, Chunk &chunkNoise)
@@ -489,7 +494,13 @@ void generateVertexIndices(OctreeNode *node, const int lod, VertexBuffer &vertex
 		return;
 	}
 
-	if (node->type == Node_Internal)
+	bool hasChildren = false;
+	for (int i = 0; i < 8; i++)
+	{
+		hasChildren |= node->children[i] != nullptr;
+	}
+
+	if (hasChildren)
 	{
 		for (int i = 0; i < 8; i++)
 		{
@@ -522,25 +533,35 @@ void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 
 	for (int i = 0; i < 4; i++)
 	{
-		const int edge = processEdgeMask[dir][i];
-		const int c1 = edgevmap[edge][0];
-		const int c2 = edgevmap[edge][1];
-
-		const int m1 = (node[i]->drawInfo->corners >> c1) & 1;
-		const int m2 = (node[i]->drawInfo->corners >> c2) & 1;
-
-		if (node[i]->size < minSize)
+		if (node[i]->type != Node_Internal)
 		{
-			minSize = node[i]->size;
-			minIndex = i;
-			flip = m1 != MATERIAL_AIR;
+			// if (node[i]->drawInfo->position.x > (chunkMinForPosition(node[i]->min).x + DualContouring::chunkSize) ||
+			// 	node[i]->drawInfo->position.y > (chunkMinForPosition(node[i]->min).y + DualContouring::chunkSize) ||
+			// 	node[i]->drawInfo->position.z > (chunkMinForPosition(node[i]->min).z + DualContouring::chunkSize))
+			// {
+			// 	return;
+			// }
+			// 	std::cout << (node[i]->drawInfo->position.x > (chunkMinForPosition(node[i]->min).x + DualContouring::chunkSize)) << std::endl;
+			const int edge = processEdgeMask[dir][i];
+			const int c1 = edgevmap[edge][0];
+			const int c2 = edgevmap[edge][1];
+
+			const int m1 = (node[i]->drawInfo->corners >> c1) & 1;
+			const int m2 = (node[i]->drawInfo->corners >> c2) & 1;
+
+			if (node[i]->size < minSize)
+			{
+				minSize = node[i]->size;
+				minIndex = i;
+				flip = m1 != MATERIAL_AIR;
+			}
+
+			indices[i] = node[i]->drawInfo->index;
+
+			signChange[i] =
+				(m1 == MATERIAL_AIR && m2 != MATERIAL_AIR) ||
+				(m1 != MATERIAL_AIR && m2 == MATERIAL_AIR);
 		}
-
-		indices[i] = node[i]->drawInfo->index;
-
-		signChange[i] =
-			(m1 == MATERIAL_AIR && m2 != MATERIAL_AIR) ||
-			(m1 != MATERIAL_AIR && m2 == MATERIAL_AIR);
 	}
 
 	if (signChange[minIndex])
@@ -575,14 +596,17 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	// prevents seams geometry from overlapping with the chunk geometry
-	if (isSeam &&
-		chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min) &&
-		chunkMinForPosition(node[1]->min) == chunkMinForPosition(node[2]->min) &&
-		chunkMinForPosition(node[2]->min) == chunkMinForPosition(node[3]->min))
-	{
-		return;
-	}
+	// if (isSeam)
+	// {
+	// 	std::unordered_set<uint64_t> chunks;
+	// 	for (int i = 0; i < 4; i++)
+	// 	{
+	// 		uint64_t hashIndex = hashOctreeMin(chunkMinForPosition(node[i]->min));
+	// 		chunks.insert(hashIndex);
+	// 	}
+	// 	if (chunks.size() == 1)
+	// 		return;
+	// }
 
 	const bool isBranch[4] =
 		{
@@ -594,6 +618,14 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, boo
 
 	if (!isBranch[0] && !isBranch[1] && !isBranch[2] && !isBranch[3])
 	{
+		// prevents seams geometry from overlapping with the chunk geometry
+		// if (isSeam &&
+		// 	chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min) &&
+		// 	chunkMinForPosition(node[1]->min) == chunkMinForPosition(node[2]->min) &&
+		// 	chunkMinForPosition(node[2]->min) == chunkMinForPosition(node[3]->min))
+		// {
+		// 	return;
+		// }
 		contourProcessEdge(node, dir, indexBuffer);
 	}
 	else
@@ -633,12 +665,6 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, boo
 		return;
 	}
 
-	// prevents seams geometry from overlapping with the chunk geometry
-	if (isSeam && chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min))
-	{
-		return;
-	}
-
 	const bool isBranch[2] =
 		{
 			node[0]->type == Node_Internal,
@@ -647,6 +673,11 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, boo
 
 	if (isBranch[0] || isBranch[1])
 	{
+		// // prevents seams geometry from overlapping with the chunk geometry
+		// if (isSeam && chunkMinForPosition(node[0]->min) == chunkMinForPosition(node[1]->min))
+		// {
+		// 	return;
+		// }
 		for (int i = 0; i < 4; i++)
 		{
 			OctreeNode *faceNodes[2];
@@ -707,7 +738,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, boo
 
 void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, bool isSeam)
 {
-	if (!node || node->type == Node_Leaf)
+	if (!node)
 	{
 		return;
 	}
@@ -988,6 +1019,16 @@ std::vector<OctreeNode *> generateSeamNodes(Chunk &chunk, const int lodArray[], 
 
 	seamNodes.insert(std::end(seamNodes), std::begin(neighbourNodes), std::end(neighbourNodes));
 
+	// std::remove_if(seamNodes.begin(), seamNodes.end(), [&](const OctreeNode* a)
+	// {
+	// 	return (
+	// 		a->drawInfo->position.x >= (chunkMinForPosition(a->min).x+DualContouring::chunkSize) ||
+	// 		a->drawInfo->position.y >= (chunkMinForPosition(a->min).y+DualContouring::chunkSize) ||
+	// 		a->drawInfo->position.z >= (chunkMinForPosition(a->min).z+DualContouring::chunkSize) 
+	// 	 );
+	// });
+	// seamNodes.erase(duplicateRemoverIterator, seamNodes.end());
+
 	return seamNodes;
 }
 
@@ -1035,7 +1076,7 @@ OctreeNode *constructOctreeDownwards(Chunk &chunkNoise, const vm::ivec3 &min, co
 	root->lod = lod;
 
 	OctreeNode *octreeRootNode = constructOctreeNodes(root, lod, chunkNoise);
-	octreeRootNode = switchChunkLod(octreeRootNode, lod, chunkNoise);
+	// octreeRootNode = switchChunkLod(octreeRootNode, lod, chunkNoise);
 
 	return octreeRootNode;
 }

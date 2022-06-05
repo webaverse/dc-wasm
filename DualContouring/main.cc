@@ -139,15 +139,16 @@ namespace DualContouring
     // octrees
     void clearChunkRoot(float x, float y, float z)
     {
-        // we destroy the chunk root separately because we might need it for LOD switch if it's already generated
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
+
         if (!chunkRoot)
         {
             return;
         }
+        // std::cout << chunkRoot->lod << std::endl;
         // sort and remove duplicates
-        std::sort(neighbourNodes.begin(), neighbourNodes.end());
+        // std::sort(neighbourNodes.begin(), neighbourNodes.end());
         neighbourNodes.erase(std::unique(neighbourNodes.begin(), neighbourNodes.end()), neighbourNodes.end());
         for (int i = 0; i < neighbourNodes.size(); i++)
         {
@@ -159,8 +160,8 @@ namespace DualContouring
             delete node;
         }
         neighbourNodes.clear();
-        removeOctreeFromHashMap(octreeMin, chunksListHashMap);
         destroyOctree(chunkRoot);
+        removeOctreeFromHashMap(octreeMin, chunksListHashMap);
     }
 
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8])
@@ -169,7 +170,7 @@ namespace DualContouring
         const int maxLodNumber = *std::max_element(lodArray, lodArray + 8);
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
-
+    
         Chunk &chunk = getChunk(octreeMin, GF_ALL, maxLodNumber);
         ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
         if (!chunkOctree.root)
@@ -182,13 +183,14 @@ namespace DualContouring
         generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
 
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
-        OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunkOctree.root->min, chunkOctree.root->size * 2);
-        generateMeshFromOctree(seamRoot, lod, true, vertexBuffer);
+        OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+        generateMeshFromOctree(seamRoot, lod, false, vertexBuffer);
 
         // mesh is not valid
         if (vertexBuffer.indices.size() == 0)
         {
-            printf("Generated Mesh Is Not Valid\n");
+            // printf("Generated Mesh Is Not Valid\n");
+            destroyOctree(chunkOctree.root);
             return nullptr;
         }
 

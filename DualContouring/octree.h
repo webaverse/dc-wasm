@@ -34,6 +34,10 @@ struct OctreeDrawInfo
     {
     }
 
+    // ~OctreeDrawInfo(){
+    //     delete this;
+    // };
+
     int index;
     int corners;
     vm::ivec4 biome;
@@ -63,6 +67,8 @@ public:
             children[i] = nullptr;
         }
     }
+
+    ~OctreeNode();
 
     OctreeNodeType type;
     vm::ivec3 min;
