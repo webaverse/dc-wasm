@@ -13,11 +13,11 @@ EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
     return DualContouring::getChunkHeightField(x, y, z);
 } */
 
-EMSCRIPTEN_KEEPALIVE float getHeight(float x, float z) {
+/* EMSCRIPTEN_KEEPALIVE float getHeight(float x, float z) {
     return DualContouring::getHeight(x, z, 1);
-}
-EMSCRIPTEN_KEEPALIVE void getHeights(float *vec2s, int count, float *heights) {
-    return DualContouring::getHeights(vec2s, count, heights, 1);        
+} */
+EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights) {
+    return DualContouring::getHeightfieldRange(x, z, w, h, lod, heights);
 }
 /* EMSCRIPTEN_KEEPALIVE void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
     return DualContouring::getBiomesContainedInChunk(x, z, biomes, biomesCount, 1);        

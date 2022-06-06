@@ -93,7 +93,7 @@ namespace DualContouring
         }
         return heightfieldOut;
     } */
-    float getHeight(float x, float z, const int &lod) {
+    /* float getHeight(float x, float z, const int &lod) {
         Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
         float height = chunkNoise.getInterpolatedHeight(x, z);
         return height;
@@ -105,6 +105,17 @@ namespace DualContouring
             Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
             heights[i] = chunkNoise.getInterpolatedHeight(x, z);
         }        
+    } */
+    void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights) {
+      for (int dz = 0; dz < h; dz++) {
+        for (int dx = 0; dx < w; dx++) {
+          int ax = x + dx;
+          int az = z + dz;
+          Chunk &chunkNoise = getChunkAt(ax, az, GF_HEIGHTFIELD, lod);
+          float height = chunkNoise.getInterpolatedHeight(ax, az);
+          heights[dz * w + dx] = height;
+        }
+      }
     }
 
     // biomes

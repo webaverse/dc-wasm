@@ -26,8 +26,9 @@ namespace DualContouring
     // };
     void initialize(int newChunkSize, int seed);
     // float *getChunkHeightField(float x, float y, float z);
-    float getHeight(float x, float z, const int &lod);
-    void getHeights(float *vec2s, int count, float *heights, const int &lod);
+    // float getHeight(float x, float z, const int &lod);
+    // void getHeights(float *vec2s, int count, float *heights, const int &lod);
+    void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights);
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8]);
