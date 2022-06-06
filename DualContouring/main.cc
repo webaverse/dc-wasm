@@ -158,28 +158,28 @@ namespace DualContouring
     void clearChunkRoot(float x, float y, float z)
     {
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-        OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
+        // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        if (!chunkRoot)
-        {
-            return;
-        }
-        // std::cout << chunkRoot->lod << std::endl;
-        // sort and remove duplicates
-        // std::sort(neighbourNodes.begin(), neighbourNodes.end());
-        neighbourNodes.erase(std::unique(neighbourNodes.begin(), neighbourNodes.end()), neighbourNodes.end());
-        for (int i = 0; i < neighbourNodes.size(); i++)
-        {
-            const OctreeNode *node = neighbourNodes[i];
-            if (node->drawInfo)
-            {
-                delete node->drawInfo;
-            }
-            delete node;
-        }
-        neighbourNodes.clear();
-        destroyOctree(chunkRoot);
-        removeOctreeFromHashMap(octreeMin, chunksListHashMap);
+        // if (!chunkRoot)
+        // {
+        //     return;
+        // }
+        // // std::cout << chunkRoot->lod << std::endl;
+        // // sort and remove duplicates
+        // // std::sort(neighbourNodes.begin(), neighbourNodes.end());
+        // neighbourNodes.erase(std::unique(neighbourNodes.begin(), neighbourNodes.end()), neighbourNodes.end());
+        // for (int i = 0; i < neighbourNodes.size(); i++)
+        // {
+        //     const OctreeNode *node = neighbourNodes[i];
+        //     if (node->drawInfo)
+        //     {
+        //         delete node->drawInfo;
+        //     }
+        //     delete node;
+        // }
+        // neighbourNodes.clear();
+        // destroyOctree(chunkRoot);
+        // removeOctreeFromHashMap(octreeMin, chunksListHashMap);
     }
 
     // ChunkOctree &getChunkOctree(const vm::ivec3 &min)
