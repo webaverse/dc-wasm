@@ -29,6 +29,9 @@ namespace DualContouring
     // float getHeight(float x, float z, const int &lod);
     // void getHeights(float *vec2s, int count, float *heights, const int &lod);
     void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights);
+    void createGrassSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count);
+    void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count);
+    void createMobSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count);
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8]);

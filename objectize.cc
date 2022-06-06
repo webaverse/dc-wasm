@@ -23,6 +23,16 @@ EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(int x, int z, int w, int h, int lo
     return DualContouring::getBiomesContainedInChunk(x, z, biomes, biomesCount, 1);        
 } */
 
+EMSCRIPTEN_KEEPALIVE void createGrassSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
+    return DualContouring::createGrassSplat(x, z, lod, ps, qs, count);
+}
+EMSCRIPTEN_KEEPALIVE void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
+    return DualContouring::createVegetationSplat(x, z, lod, ps, qs, count);
+}
+EMSCRIPTEN_KEEPALIVE void createMobSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
+    return DualContouring::createMobSplat(x, z, lod, ps, qs, count);
+}
+
 EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
     return DualContouring::clearChunkRoot(x, y, z);
 }

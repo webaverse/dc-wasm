@@ -107,15 +107,116 @@ namespace DualContouring
         }        
     } */
     void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights) {
-      for (int dz = 0; dz < h; dz++) {
-        for (int dx = 0; dx < w; dx++) {
-          int ax = x + dx;
-          int az = z + dz;
-          Chunk &chunkNoise = getChunkAt(ax, az, GF_HEIGHTFIELD, lod);
-          float height = chunkNoise.getInterpolatedHeight(ax, az);
-          heights[dz * w + dx] = height;
+        for (int dz = 0; dz < h; dz++) {
+            for (int dx = 0; dx < w; dx++) {
+                int ax = x + dx;
+                int az = z + dz;
+
+                Chunk &chunkNoise = getChunkAt(ax, az, GF_HEIGHTFIELD, lod);
+                float height = chunkNoise.getInterpolatedHeight(ax, az);
+                heights[dz * w + dx] = height;
+            }
         }
-      }
+    }
+    void createGrassSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
+        *count = 0;
+
+        Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+
+        float seed = DualContouring::noises->grassNoise.in2D(chunk.min.x, chunk.min.z);
+        std::mt19937 rng(seed);
+
+        const int maxNumGrasses = 4 * 1024;
+        for (int i = 0; i < maxNumGrasses; i++) {
+            float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+            float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+
+            float ax = (float)chunk.min.x + dx;
+            float az = (float)chunk.min.z + dz;
+
+            float height = chunk.getInterpolatedHeight(ax, az);
+            ps[i * 3] = ax;
+            ps[i * 3 + 1] = height;
+            ps[i * 3 + 2] = az;
+
+            Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
+            qs[i * 4] = q.x;
+            qs[i * 4 + 1] = q.y;
+            qs[i * 4 + 2] = q.z;
+            qs[i * 4 + 3] = q.w;
+
+            (*count)++;
+        }
+    }
+    void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
+        *count = 0;
+
+        Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+
+        const float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.z);
+        std::mt19937 rng(seed);
+
+        const int maxNumVeggies = 16;
+        const float veggieRate = 0.3;
+        for (int i = 0; i < maxNumVeggies; i++) {
+            float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+            float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+
+            float ax = (float)chunk.min.x + dx;
+            float az = (float)chunk.min.z + dz;
+
+            float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
+
+            if (noiseValue < veggieRate) {
+                float height = chunk.getInterpolatedHeight(ax, az);
+                ps[i * 3] = ax;
+                ps[i * 3 + 1] = height;
+                ps[i * 3 + 2] = az;
+
+                Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
+                qs[i * 4] = q.x;
+                qs[i * 4 + 1] = q.y;
+                qs[i * 4 + 2] = q.z;
+                qs[i * 4 + 3] = q.w;
+
+                (*count)++;
+            }
+        }
+    }
+    void createMobSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
+        *count = 0;
+
+        Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+
+        float seed = DualContouring::noises->mobNoise.in2D(chunk.min.x, chunk.min.z);
+        std::mt19937 rng(seed);
+
+        const int maxNumMobs = 2;
+        const float mobRate = 0.1;
+        for (int i = 0; i < maxNumMobs; i++) {
+            float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+            float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+            
+            float ax = (float)chunk.min.x + dx;
+            float az = (float)chunk.min.z + dz;
+            
+            float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
+            
+            if (noiseValue < mobRate) {
+                ps[i * 3] = ax;
+                float height = chunk.getInterpolatedHeight(ax, az);
+                ps[i * 3 + 1] = height;
+                ps[i * 3 + 2] = az;
+
+                Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
+                qs[i * 4] = q.x;
+                qs[i * 4 + 1] = q.y;
+                qs[i * 4 + 2] = q.z;
+                qs[i * 4 + 3] = q.w;
+
+                (*count)++;
+            }
+        }
     }
 
     // biomes
@@ -137,7 +238,7 @@ namespace DualContouring
                                             128 - 0.1);
         return biomeHeight;
     }
-    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod) {
+    /* void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod) {
         Chunk &chunk = getChunk(vm::ivec3(x, 0, z), GF_BIOMES, lod);
         const std::vector<unsigned char> &result = chunk.getBiomesContainedInChunk();
 
@@ -145,7 +246,7 @@ namespace DualContouring
             biomes[i] = result[i];
         }
         *biomesCount = result.size();
-    }
+    } */
 
     // octrees
     void clearChunkRoot(float x, float y, float z)
