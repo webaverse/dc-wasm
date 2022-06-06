@@ -16,6 +16,9 @@ public:
   Noise oceanNoise;
   Noise riverNoise;
   Noise lavaNoise;
+  Noise grassNoise;
+  Noise vegetationNoise;
+  Noise mobNoise;
 
   Noises() = delete;
   Noises(int seed) :
@@ -28,7 +31,10 @@ public:
     humidityNoise(rng(), 0.001, 4),
     oceanNoise(rng(), 0.001, 4),
     riverNoise(rng(), 0.001, 4),
-    lavaNoise(rng(), 0.01, 4)
+    lavaNoise(rng(), 0.01, 4),
+    grassNoise(rng(), 0.01, 4),
+    vegetationNoise(rng(), 0.01, 4),
+    mobNoise(rng(), 0.01, 4)
   {}
   Noises(const Noises&) = delete;
 };
