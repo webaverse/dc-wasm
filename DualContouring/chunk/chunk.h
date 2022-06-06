@@ -1,12 +1,12 @@
 #ifndef _CHUNK_H_
 #define _CHUNK_H_
 
-#include "main.h"
-#include "vectorMath.h"
+#include "../main.h"
+#include "../math/vectorMath.h"
 // #include "../FastNoise.h"
-#include "../hash.h"
-#include "../util.h"
-#include "../vector.h"
+#include "../math/hash.h"
+#include "../math/util.h"
+#include "../math/vector.h"
 #include "biomes.h"
 #include <iostream>
 #include <algorithm>

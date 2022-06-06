@@ -1,7 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "vectorMath.h"
+#include "../math/vectorMath.h"
 
 #include <vector>
 #include <stdint.h>

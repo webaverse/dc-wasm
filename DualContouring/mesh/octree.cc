@@ -1,5 +1,5 @@
 #include "octree.h"
-#include "density.h"
+#include "../chunk/density.h"
 
 #define PI 3.14159265358979323846
 

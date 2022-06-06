@@ -1,5 +1,5 @@
 #include "main.h"
-#include "octree.h"
+#include "mesh/newOctree.h"
 
 // namespace ChunkMesh
 // {
@@ -147,6 +147,13 @@ namespace DualContouring
         *biomesCount = result.size();
     }
 
+
+
+
+
+
+
+
     // octrees
     void clearChunkRoot(float x, float y, float z)
     {
@@ -175,6 +182,21 @@ namespace DualContouring
         removeOctreeFromHashMap(octreeMin, chunksListHashMap);
     }
 
+    // ChunkOctree &getChunkOctree(const vm::ivec3 &min)
+    // {
+    //     uint64_t minHash = hashOctreeMin(min);
+
+    //     const auto &iter = chunksNoiseHashMap.find(minHash);
+    //     if (iter == chunksNoiseHashMap.end())
+    //     {
+    //         chunksNoiseHashMap.emplace(std::make_pair(minHash, ChunkOctree(min, lod, GF_NONE)));
+    //     }
+
+    //     ChunkOctree &chunkNoise = chunksNoiseHashMap.find(minHash)->second;
+    //     chunkNoise.generate(flags);
+    //     return chunkNoise;
+    // }
+
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8])
     {
         int lod = lodArray[0];
@@ -183,32 +205,39 @@ namespace DualContouring
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
     
         Chunk &chunk = getChunk(octreeMin, GF_ALL, maxLodNumber);
-        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
-        if (!chunkOctree.root)
-        {
-            // printf("Chunk Has No Data\n");
-            return nullptr;
-        }
 
+
+
+        //  ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
+        // if (!chunkOctree.root)
+        // {
+        //     // printf("Chunk Has No Data\n");
+        //     return nullptr;
+        // }
         VertexBuffer vertexBuffer;
-        generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
+        // generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
 
-        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
-        OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
-        generateMeshFromOctree(seamRoot, lod, false, vertexBuffer);
+        // std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
+        // OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+        // generateMeshFromOctree(seamRoot, lod, false, vertexBuffer);
 
-        // mesh is not valid
-        if (vertexBuffer.indices.size() == 0)
-        {
-            // printf("Generated Mesh Is Not Valid\n");
-            destroyOctree(chunkOctree.root);
-            return nullptr;
-        }
+        // // mesh is not valid
+        // if (vertexBuffer.indices.size() == 0)
+        // {
+        //     // printf("Generated Mesh Is Not Valid\n");
+        //     destroyOctree(chunkOctree.root);
+        //     return nullptr;
+        // }
 
-        addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
+        // addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
 
         return constructOutputBuffer(vertexBuffer);
     }
+
+
+
+
+
 
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,

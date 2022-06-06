@@ -1,6 +1,6 @@
-#include "main.h"
+#include "../main.h"
 #include "density.h"
-#include "./biomes.h"
+#include "biomes.h"
 
 float sphere(const vm::vec3 &worldPosition, const vm::vec3 &origin, float radius)
 {

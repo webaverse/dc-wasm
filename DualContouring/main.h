@@ -8,9 +8,9 @@
 #include <memory>
 // #include "octree.h"
 // #include "cachedNoise.h"
-#include "../FastNoise.h"
-#include "vectorMath.h"
-#include "noises.h"
+#include "math/FastNoise.h"
+#include "math/vectorMath.h"
+#include "chunk/noises.h"
 
 class ChunkDamageBuffer;
 

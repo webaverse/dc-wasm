@@ -1,10 +1,10 @@
 #ifndef OCTREE_H
 #define OCTREE_H
 
-#include "vectorMath.h"
 #define _USE_MATH_DEFINES
+#include "../math/vectorMath.h"
 
-#include "qef.h"
+#include "../math/qef.h"
 #include "mesh.h"
 #include <iostream>
 #include <vector>
@@ -16,8 +16,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
-// #include "../vm/glm.hpp"
-#include "chunk.h"
+
+#include "../chunk/chunk.h"
 
 enum OctreeNodeType
 {
