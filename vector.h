@@ -562,6 +562,22 @@ class Quat {
     Quat &premultiply(const Quat &q) {
       return multiply(q, *this);
     }
+
+    Quat &setFromAxisAngle(const Vec &axis, float angle) {
+      // http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
+
+      // assumes axis is normalized
+
+      const float halfAngle = angle / 2;
+      const float s = std::sin(halfAngle);
+
+      this->x = axis.x * s;
+      this->y = axis.y * s;
+      this->z = axis.z * s;
+      this->w = std::cos(halfAngle);
+
+      return *this;
+	  }
 };
 
 class Tri {
