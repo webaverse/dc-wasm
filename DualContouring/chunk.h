@@ -333,7 +333,7 @@ public:
         biomeWeights.z = cachedBiomesWeightsVectorField[index2D * 4 + 2];
         biomeWeights.w = cachedBiomesWeightsVectorField[index2D * 4 + 3];
     }
-    std::vector<unsigned char> getBiomesContainedInChunk() {
+    /* std::vector<unsigned char> getBiomesContainedInChunk() {
         std::unordered_map<unsigned char, bool> seenBiomes;
         for (int dz = 0; dz < gridPoints; dz++)
         {
@@ -353,7 +353,7 @@ public:
             biomesVector.push_back(kv.first);
         }
         return std::move(biomesVector);
-    }
+    } */
 
     // height
     float interpolateHeight1D(const float x, const float z) const
