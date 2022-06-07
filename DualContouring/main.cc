@@ -118,8 +118,9 @@ namespace DualContouring
             }
         }
     }
-    void createGrassSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
-        *count = 0;
+    void createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+        unsigned int &countBinding = *count;
+        countBinding = 0;
 
         Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
@@ -135,28 +136,31 @@ namespace DualContouring
             float az = (float)chunk.min.z + dz;
 
             float height = chunk.getInterpolatedHeight(ax, az);
-            ps[i * 3] = ax;
-            ps[i * 3 + 1] = height;
-            ps[i * 3 + 2] = az;
+            ps[countBinding * 3] = ax;
+            ps[countBinding * 3 + 1] = height;
+            ps[countBinding * 3 + 2] = az;
 
             Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-            qs[i * 4] = q.x;
-            qs[i * 4 + 1] = q.y;
-            qs[i * 4 + 2] = q.z;
-            qs[i * 4 + 3] = q.w;
+            qs[countBinding * 4] = q.x;
+            qs[countBinding * 4 + 1] = q.y;
+            qs[countBinding * 4 + 2] = q.z;
+            qs[countBinding * 4 + 3] = q.w;
 
-            (*count)++;
+            instances[countBinding] = rng() / (float)0xFFFFFFFF;
+
+            countBinding++;
         }
     }
-    void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
-        *count = 0;
+    void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+        unsigned int &countBinding = *count;
+        countBinding = 0;
 
         Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
         const float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.z);
         std::mt19937 rng(seed);
 
-        const int maxNumVeggies = 16;
+        const int maxNumVeggies = 128;
         const float veggieRate = 0.3;
         for (int i = 0; i < maxNumVeggies; i++) {
             float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
@@ -168,23 +172,28 @@ namespace DualContouring
             float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
 
             if (noiseValue < veggieRate) {
+                int index = 0;
+
                 float height = chunk.getInterpolatedHeight(ax, az);
-                ps[i * 3] = ax;
-                ps[i * 3 + 1] = height;
-                ps[i * 3 + 2] = az;
+                ps[countBinding * 3] = ax;
+                ps[countBinding * 3 + 1] = height;
+                ps[countBinding * 3 + 2] = az;
 
                 Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-                qs[i * 4] = q.x;
-                qs[i * 4 + 1] = q.y;
-                qs[i * 4 + 2] = q.z;
-                qs[i * 4 + 3] = q.w;
+                qs[countBinding * 4] = q.x;
+                qs[countBinding * 4 + 1] = q.y;
+                qs[countBinding * 4 + 2] = q.z;
+                qs[countBinding * 4 + 3] = q.w;
 
-                (*count)++;
+                instances[countBinding] = rng() / (float)0xFFFFFFFF;
+
+                countBinding++;
             }
         }
     }
-    void createMobSplat(float x, float z, int lod, float *ps, float *qs, unsigned int *count) {
-        *count = 0;
+    void createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+        unsigned int &countBinding = *count;
+        countBinding = 0;
 
         Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
@@ -203,18 +212,20 @@ namespace DualContouring
             float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
             
             if (noiseValue < mobRate) {
-                ps[i * 3] = ax;
                 float height = chunk.getInterpolatedHeight(ax, az);
-                ps[i * 3 + 1] = height;
-                ps[i * 3 + 2] = az;
+                ps[countBinding * 3] = ax;
+                ps[countBinding * 3 + 1] = height;
+                ps[countBinding * 3 + 2] = az;
 
                 Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-                qs[i * 4] = q.x;
-                qs[i * 4 + 1] = q.y;
-                qs[i * 4 + 2] = q.z;
-                qs[i * 4 + 3] = q.w;
+                qs[countBinding * 4] = q.x;
+                qs[countBinding * 4 + 1] = q.y;
+                qs[countBinding * 4 + 2] = q.z;
+                qs[countBinding * 4 + 3] = q.w;
 
-                (*count)++;
+                instances[countBinding] = rng() / (float)0xFFFFFFFF;
+
+                countBinding++;
             }
         }
     }
