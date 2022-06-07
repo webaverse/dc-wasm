@@ -7,7 +7,6 @@
 #include <functional>
 #ifndef OCTREE_H
 #define OCTREE_H
-
 #include <algorithm>
 #include <stdint.h>
 #include <cstdlib>
@@ -16,6 +15,7 @@
 #include <unordered_set>
 #include <set>
 #include "../chunk/chunk.h"
+#include "../chunk/density.h"
 
 #define PI 3.14159265358979323846
 
@@ -99,11 +99,22 @@ const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[8] =
         vm::ivec3(1, 1, 1),
 };
 
-uint64_t hashOctreeMin(const vm::ivec3 &min);
+uint64_t hashOctreeMin(const vm::ivec3 &min)
+{
+    uint64_t result = uint16_t(min.x);
+    result = (result << 16) + uint16_t(min.y);
+    result = (result << 16) + uint16_t(min.z);
+    return result;
+}
 
 struct VertexData
 {
+    VertexData()
+        : index(-1), corners(0)
+    {
+    }
     int index;
+    int corners;
     vm::ivec4 biome;
     vm::vec4 biomeWeights;
     vm::vec3 position;
@@ -113,49 +124,418 @@ struct VertexData
 class OctreeNode
 {
 public:
+    OctreeNode(){};
     OctreeNode(const vm::ivec3 &min, const int &size) : min(min), size(size){};
-    OctreeNode(const vm::ivec3 &min, const int &size, std::weak_ptr<OctreeNode> root) : min(min), size(size), root(root) {};
-    std::vector<OctreeNode> children[8];    // only internal nodes have children
-    std::unique_ptr<VertexData> vertexData; // only leaf nodes (our voxels) have vertex data
-    std::weak_ptr<OctreeNode> root;         // reference to the root node
+    std::vector<std::unique_ptr<OctreeNode>> children; // only internal nodes have children
+    std::unique_ptr<VertexData> vertexData;            // only leaf nodes (our voxels) have vertex data
     vm::ivec3 min;
     int size;
 };
 
-void constructOctreeNodes(OctreeNode &node, std::weak_ptr<OctreeNode> rootNode , int &minVoxelSize)
+vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, Chunk &chunk)
 {
-    if(node.size == minVoxelSize){
-        // constructVoxel();
-    }
-    const int childSize = node.size / 2;
-    for (int i = 0; i < 8; i++)
+    // approximate the zero crossing by finding the min value along the edge
+    float minValue = 100000.f;
+    float t = 0.0;
+    const int steps = 8; // sample 8 times
+    for (int i = 0; i < steps; i++)
     {
-        const vm::ivec3 childMin = node.min + (CHILD_MIN_OFFSETS[i] * childSize);
-        OctreeNode childNode(childMin, childSize, rootNode);
-        node.children->emplace_back(childNode);
-        constructOctreeNodes(node.children->at(i), rootNode, minVoxelSize);
+        const float percentage = i / steps;
+        const vm::vec3 p = p0 + ((p1 - p0) * percentage);
+        const float density = abs(Density_Func(p, chunk));
+        if (density < minValue)
+        {
+            minValue = density;
+            t = percentage;
+        }
+    }
+
+    return p0 + ((p1 - p0) * t);
+}
+
+vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, Chunk &chunkNoise)
+{
+    // finding the surface normal with the derivative
+    const float H = 0.001f;
+    const float dx = Density_Func(p + vm::vec3(H, 0.f, 0.f), chunkNoise) -
+                     Density_Func(p - vm::vec3(H, 0.f, 0.f), chunkNoise);
+    const float dy = Density_Func(p + vm::vec3(0.f, H, 0.f), chunkNoise) -
+                     Density_Func(p - vm::vec3(0.f, H, 0.f), chunkNoise);
+    const float dz = Density_Func(p + vm::vec3(0.f, 0.f, H), chunkNoise) -
+                     Density_Func(p - vm::vec3(0.f, 0.f, H), chunkNoise);
+    return vm::normalize(vm::vec3(dx, dy, dz));
+}
+
+void clampPositionToMassPoint(std::unique_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
+{
+
+    const vm::vec3 min = vm::vec3(voxelNode->min.x, voxelNode->min.y, voxelNode->min.z);
+    const vm::vec3 max = vm::vec3(voxelNode->min.x + vm::ivec3(voxelNode->size).x,
+                                  voxelNode->min.y + vm::ivec3(voxelNode->size).y,
+                                  voxelNode->min.z + vm::ivec3(voxelNode->size).z);
+    if (vertexPosition.x < min.x || vertexPosition.x > max.x ||
+        vertexPosition.y < min.y || vertexPosition.y > max.y ||
+        vertexPosition.z < min.z || vertexPosition.z > max.z)
+    {
+        const auto &mp = qef.getMassPoint();
+        vertexPosition = vm::vec3(mp.x, mp.y, mp.z);
     }
 }
 
-OctreeNode constructOctree(vm::ivec3 &min, int &size, int &minVoxelSize)
+int findEdgeIntersection(std::unique_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, Chunk &chunk)
 {
-    OctreeNode octreeRootNode(min, size); 
-    std::weak_ptr<OctreeNode> rootRef = std::make_shared<OctreeNode>(octreeRootNode);
-    constructOctreeNodes(octreeRootNode, rootRef, minVoxelSize);
-    return octreeRootNode;
+    const int MAX_CROSSINGS = 6;
+    int edgeCount = 0;
+    for (int i = 0; i < 12 && edgeCount < MAX_CROSSINGS; i++)
+    {
+        const int c1 = edgevmap[i][0];
+        const int c2 = edgevmap[i][1];
+        const int m1 = (corners >> c1) & 1;
+        const int m2 = (corners >> c2) & 1;
+        if ((m1 == MATERIAL_AIR && m2 == MATERIAL_AIR) ||
+            (m1 == MATERIAL_SOLID && m2 == MATERIAL_SOLID))
+        {
+            continue;
+        }
+        const vm::ivec3 ip1 = voxelNode->min + CHILD_MIN_OFFSETS[c1];
+        const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2];
+        const vm::vec3 p1 = vm::vec3(ip1.x, ip1.y, ip1.z);
+        const vm::vec3 p2 = vm::vec3(ip2.x, ip2.y, ip2.z);
+        const vm::vec3 p = approximateZeroCrossingPosition(p1, p2, chunk);
+        const vm::vec3 n = calculateSurfaceNormal(p, chunk);
+        qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
+        averageNormal += n;
+        edgeCount++;
+    }
+    return edgeCount;
 }
 
 class ChunkOctree
 {
 public:
-    ChunkOctree(Chunk &chunk)
+    ChunkOctree(Chunk &chunk) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
     {
-        rootNode = std::make_unique<OctreeNode>(constructOctree(chunk.min, chunk.size, chunk.lod));
+        root = std::make_unique<OctreeNode>(OctreeNode(min, size));
+        root = constructOctreeNodes(root, chunk);
     }
-    std::unique_ptr<OctreeNode> rootNode;
+    std::unique_ptr<OctreeNode> root;
     vm::ivec3 min;
     int minVoxelSize; // determined by level of detail
     int size;         // influenced by level of detail
+
+private:
+    VertexData generateVoxelData(std::unique_ptr<OctreeNode> &voxelNode, int &corners, Chunk &chunk)
+    {
+        svd::QefSolver qef;
+        vm::vec3 averageNormal(0.f);
+        int edgeCount = findEdgeIntersection(voxelNode, qef, averageNormal, corners, chunk);
+        svd::Vec3 qefPosition;
+        qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
+        vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
+        // if the generated position is outside of the voxel bounding box :
+        clampPositionToMassPoint(voxelNode, qef, vertexPosition);
+        VertexData vertexData;
+        vertexData.position = vertexPosition;
+        vertexData.normal = vm::normalize(averageNormal / (float)edgeCount);
+        vertexData.corners = corners;
+        chunk.getInterpolatedBiome2D(vertexData.position.x, vertexData.position.z, vertexData.biome, vertexData.biomeWeights);
+        return vertexData;
+    }
+
+    std::unique_ptr<OctreeNode> constructVoxel(std::unique_ptr<OctreeNode> &voxelNode, Chunk &chunk)
+    {
+        int corners = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i];
+            const float density = Density_Func(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), chunk);
+            const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
+            corners |= (material << i);
+        }
+        if (corners == 0 || corners == 255)
+        {
+            return nullptr;
+        }
+        else
+        {
+            // voxel is touching the surface
+            voxelNode->vertexData = std::make_unique<VertexData>(generateVoxelData(voxelNode, corners, chunk));
+            return std::move(voxelNode);
+        }
+    }
+
+    std::unique_ptr<OctreeNode> constructOctreeNodes(std::unique_ptr<OctreeNode> &node, Chunk &chunk)
+    {
+        if (node->size == minVoxelSize)
+        {
+            return constructVoxel(node, chunk);
+        }
+        bool hasChildren = false;
+        const int childSize = node->size / 2;
+        for (int i = 0; i < 8; i++)
+        {
+            const vm::ivec3 childMin = node->min + (CHILD_MIN_OFFSETS[i] * childSize);
+            std::unique_ptr<OctreeNode> childNode = std::make_unique<OctreeNode>(OctreeNode(childMin, childSize));
+            node->children.push_back(constructOctreeNodes(childNode, chunk));
+            hasChildren |= (node->children[i] != nullptr);
+        }
+        if (!hasChildren)
+        {
+            return nullptr;
+        }
+
+        return std::move(node);
+    }
 };
+
+void generateVertexIndices(std::unique_ptr<OctreeNode> &node, const int &minVoxelSize, VertexBuffer &vertexBuffer)
+{
+    if (node->size == minVoxelSize)
+    {
+        if (!node->vertexData)
+        {
+            printf("Error! Could not add vertex!\n");
+            return;
+        }
+        node->vertexData->index = vertexBuffer.positions.size();
+        vertexBuffer.positions.push_back(node->vertexData->position);
+        vertexBuffer.normals.push_back(node->vertexData->normal);
+        vertexBuffer.biomes.push_back(node->vertexData->biome);
+        vertexBuffer.biomesWeights.push_back(node->vertexData->biomeWeights);
+    }
+    else
+    {
+        for (int i = 0; i < node->children.size(); i++)
+        {
+            generateVertexIndices(node->children.at(i), minVoxelSize, vertexBuffer);
+        }
+    }
+}
+
+void contourProcessEdge(std::unique_ptr<OctreeNode> node[4], int dir, const int &minVoxelSize, IndexBuffer &indexBuffer)
+{
+    int minSize = 2147483647; // arbitrary big number
+    int minIndex = 0;
+    int indices[4] = {-1, -1, -1, -1};
+    bool flip = false;
+    bool signChange[4] = {false, false, false, false};
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (node[i]->size == minVoxelSize)
+        {
+            const int edge = processEdgeMask[dir][i];
+            const int c1 = edgevmap[edge][0];
+            const int c2 = edgevmap[edge][1];
+
+            const int m1 = (node[i]->vertexData->corners >> c1) & 1;
+            const int m2 = (node[i]->vertexData->corners >> c2) & 1;
+
+            if (node[i]->size < minSize)
+            {
+                minSize = node[i]->size;
+                minIndex = i;
+                flip = m1 != MATERIAL_AIR;
+            }
+
+            indices[i] = node[i]->vertexData->index;
+
+            signChange[i] =
+                (m1 == MATERIAL_AIR && m2 != MATERIAL_AIR) ||
+                (m1 != MATERIAL_AIR && m2 == MATERIAL_AIR);
+        }
+    }
+
+    if (signChange[minIndex])
+    {
+        if (!flip)
+        {
+            indexBuffer.push_back(indices[0]);
+            indexBuffer.push_back(indices[1]);
+            indexBuffer.push_back(indices[3]);
+
+            indexBuffer.push_back(indices[0]);
+            indexBuffer.push_back(indices[3]);
+            indexBuffer.push_back(indices[2]);
+        }
+        else
+        {
+            indexBuffer.push_back(indices[0]);
+            indexBuffer.push_back(indices[3]);
+            indexBuffer.push_back(indices[1]);
+
+            indexBuffer.push_back(indices[0]);
+            indexBuffer.push_back(indices[2]);
+            indexBuffer.push_back(indices[3]);
+        }
+    }
+}
+
+void contourEdgeProc(std::unique_ptr<OctreeNode> node[4], int dir, const int &minVoxelSize, IndexBuffer &indexBuffer)
+{
+    if (!node[0] || !node[1] || !node[2] || !node[3])
+    {
+        return;
+    }
+
+    const bool isBranch[4] =
+        {
+            node[0]->size > minVoxelSize,
+            node[1]->size > minVoxelSize,
+            node[2]->size > minVoxelSize,
+            node[3]->size > minVoxelSize,
+        };
+
+    if (!isBranch[0] && !isBranch[1] && !isBranch[2] && !isBranch[3])
+    {
+        contourProcessEdge(node, dir, minVoxelSize, indexBuffer);
+    }
+    else
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            std::unique_ptr<OctreeNode> edgeNodes[4];
+            const int c[4] =
+                {
+                    edgeProcEdgeMask[dir][i][0],
+                    edgeProcEdgeMask[dir][i][1],
+                    edgeProcEdgeMask[dir][i][2],
+                    edgeProcEdgeMask[dir][i][3],
+                };
+
+            for (int j = 0; j < 4; j++)
+            {
+                if (!isBranch[j])
+                {
+                    edgeNodes[j] = std::move(node[j]);
+                }
+                else
+                {
+                    edgeNodes[j] = std::move(node[j]->children[c[j]]);
+                }
+            }
+
+            contourEdgeProc(edgeNodes, edgeProcEdgeMask[dir][i][4], minVoxelSize, indexBuffer);
+        }
+    }
+}
+
+void contourFaceProc(std::unique_ptr<OctreeNode> node[2], int dir, const int &minVoxelSize, IndexBuffer &indexBuffer)
+{
+    const bool isBranch[2] =
+        {
+            node[0]->size > minVoxelSize,
+            node[1]->size > minVoxelSize,
+        };
+
+    if (isBranch[0] || isBranch[1])
+    {
+
+        for (int i = 0; i < 4; i++)
+        {
+            std::unique_ptr<OctreeNode> faceNodes[2];
+            const int c[2] =
+                {
+                    faceProcFaceMask[dir][i][0],
+                    faceProcFaceMask[dir][i][1],
+                };
+
+            for (int j = 0; j < 2; j++)
+            {
+                if (!isBranch[j])
+                {
+                    faceNodes[j] = std::move(node[j]);
+                }
+                else
+                {
+                    faceNodes[j] = std::move(node[j]->children[c[j]]);
+                }
+            }
+
+            contourFaceProc(faceNodes, faceProcFaceMask[dir][i][2], minVoxelSize, indexBuffer);
+        }
+
+        const int orders[2][4] =
+            {
+                {0, 0, 1, 1},
+                {0, 1, 0, 1},
+            };
+        for (int i = 0; i < 4; i++)
+        {
+            std::unique_ptr<OctreeNode> edgeNodes[4];
+            const int c[4] =
+                {
+                    faceProcEdgeMask[dir][i][1],
+                    faceProcEdgeMask[dir][i][2],
+                    faceProcEdgeMask[dir][i][3],
+                    faceProcEdgeMask[dir][i][4],
+                };
+
+            const int *order = orders[faceProcEdgeMask[dir][i][0]];
+            for (int j = 0; j < 4; j++)
+            {
+                if (!isBranch[order[j]])
+                {
+                    edgeNodes[j] = std::move(node[order[j]]);
+                }
+                else
+                {
+                    edgeNodes[j] = std::move(node[order[j]]->children[c[j]]);
+                }
+            }
+
+            contourEdgeProc(edgeNodes, faceProcEdgeMask[dir][i][5], minVoxelSize, indexBuffer);
+        }
+    }
+}
+
+void contourCellProc(std::unique_ptr<OctreeNode> &node, const int &minVoxelSize, IndexBuffer &indexBuffer)
+{
+    if (!node)
+    {
+        return;
+    }
+
+    for (int i = 0; i < 8; i++)
+    {
+        contourCellProc(node->children[i], minVoxelSize, indexBuffer);
+    }
+
+    for (int i = 0; i < 12; i++)
+    {
+        std::unique_ptr<OctreeNode> faceNodes[2];
+        const int c[2] = {cellProcFaceMask[i][0], cellProcFaceMask[i][1]};
+
+        faceNodes[0] = std::move(node->children[c[0]]);
+        faceNodes[1] = std::move(node->children[c[1]]);
+
+        contourFaceProc(faceNodes, cellProcFaceMask[i][2], minVoxelSize, indexBuffer);
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        std::unique_ptr<OctreeNode> edgeNodes[4];
+        const int c[4] =
+            {
+                cellProcEdgeMask[i][0],
+                cellProcEdgeMask[i][1],
+                cellProcEdgeMask[i][2],
+                cellProcEdgeMask[i][3],
+            };
+
+        for (int j = 0; j < 4; j++)
+        {
+            edgeNodes[j] = std::move(node->children[c[j]]);
+        }
+
+        contourEdgeProc(edgeNodes, cellProcEdgeMask[i][4], minVoxelSize, indexBuffer);
+    }
+}
+
+void generateMeshFromOctree(std::unique_ptr<OctreeNode> &node, const int &minVoxelSize, VertexBuffer &vertexBuffer)
+{
+    generateVertexIndices(node, minVoxelSize, vertexBuffer);
+    contourCellProc(node, minVoxelSize, vertexBuffer.indices);
+}
 
 #endif // OCTREE_H

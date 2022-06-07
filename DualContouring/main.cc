@@ -62,10 +62,10 @@ namespace DualContouring
     Chunk &getChunkAt(const float x, const float z, GenerateFlags flags, const int &lod)
     {
         vm::ivec3 min = vm::ivec3(
-            (int)std::floor(x / (float)chunkSize),
-            0,
-            (int)std::floor(z / (float)chunkSize)
-        ) * chunkSize;
+                            (int)std::floor(x / (float)chunkSize),
+                            0,
+                            (int)std::floor(z / (float)chunkSize)) *
+                        chunkSize;
         return getChunk(min, flags, lod);
     }
     /* float *getChunkHeightField(float x, float y, float z) {
@@ -104,28 +104,33 @@ namespace DualContouring
             float z = vec2s[i * 2 + 1];
             Chunk &chunkNoise = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
             heights[i] = chunkNoise.getInterpolatedHeight(x, z);
-        }        
-    } */
-    void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights) {
-      for (int dz = 0; dz < h; dz++) {
-        for (int dx = 0; dx < w; dx++) {
-          int ax = x + dx;
-          int az = z + dz;
-          Chunk &chunkNoise = getChunkAt(ax, az, GF_HEIGHTFIELD, lod);
-          float height = chunkNoise.getInterpolatedHeight(ax, az);
-          heights[dz * w + dx] = height;
         }
-      }
+    } */
+    void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights)
+    {
+        for (int dz = 0; dz < h; dz++)
+        {
+            for (int dx = 0; dx < w; dx++)
+            {
+                int ax = x + dx;
+                int az = z + dz;
+                Chunk &chunkNoise = getChunkAt(ax, az, GF_HEIGHTFIELD, lod);
+                float height = chunkNoise.getInterpolatedHeight(ax, az);
+                heights[dz * w + dx] = height;
+            }
+        }
     }
 
     // biomes
-    unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod) {
+    unsigned char getComputedBiome(const vm::ivec2 &worldPosition, const int &lod)
+    {
         Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
         int lx = int(worldPosition.x) - chunkNoise.min.x;
         int lz = int(worldPosition.y) - chunkNoise.min.z;
         return chunkNoise.getBiome(lx, lz);
     }
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod) {
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod)
+    {
         const Biome &biome = BIOMES[b];
         float ax = worldPosition.x;
         float az = worldPosition.y;
@@ -137,22 +142,17 @@ namespace DualContouring
                                             128 - 0.1);
         return biomeHeight;
     }
-    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod) {
+    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod)
+    {
         Chunk &chunk = getChunk(vm::ivec3(x, 0, z), GF_BIOMES, lod);
         const std::vector<unsigned char> &result = chunk.getBiomesContainedInChunk();
 
-        for (int i = 0; i < result.size(); i++) {
+        for (int i = 0; i < result.size(); i++)
+        {
             biomes[i] = result[i];
         }
         *biomesCount = result.size();
     }
-
-
-
-
-
-
-
 
     // octrees
     void clearChunkRoot(float x, float y, float z)
@@ -203,41 +203,35 @@ namespace DualContouring
         const int maxLodNumber = *std::max_element(lodArray, lodArray + 8);
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
-    
+
         Chunk &chunk = getChunk(octreeMin, GF_ALL, maxLodNumber);
 
-
-
-        //  ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
-        // if (!chunkOctree.root)
-        // {
-        //     // printf("Chunk Has No Data\n");
-        //     return nullptr;
-        // }
+        ChunkOctree chunkOctree(chunk);
+        if (!chunkOctree.root)
+        {
+            // printf("Chunk Has No Data\n");
+            return nullptr;
+        }
         VertexBuffer vertexBuffer;
-        // generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
+        // std::cout << chunkOctree.root->children.size() << std::endl;
+        generateMeshFromOctree(chunkOctree.root, lod, vertexBuffer);
 
         // std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
         // OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
         // generateMeshFromOctree(seamRoot, lod, false, vertexBuffer);
 
         // // mesh is not valid
-        // if (vertexBuffer.indices.size() == 0)
-        // {
-        //     // printf("Generated Mesh Is Not Valid\n");
-        //     destroyOctree(chunkOctree.root);
-        //     return nullptr;
-        // }
+        if (vertexBuffer.indices.size() == 0)
+        {
+            printf("Generated Mesh Is Not Valid\n");
+            // destroyOctree(chunkOctree.root);
+            return nullptr;
+        }
 
         // addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
 
         return constructOutputBuffer(vertexBuffer);
     }
-
-
-
-
-
 
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,

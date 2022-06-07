@@ -8,7 +8,7 @@ emcc -s WASM=1 -s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=52428800 -D__linux__ -s ALLO
   DualContouring/math/FastNoise.cpp DualContouring/math/vectorMath.cc DualContouring/math/util.cc DualContouring/math/vector.cc \
   DualContouring/math/qef.cc DualContouring/math/svd.cc  \
   DualContouring/chunk/noise.cc DualContouring/chunk/density.cc \
-  DualContouring/mesh/octree.cc DualContouring/mesh/mesh.cc \
+  DualContouring/mesh/mesh.cc \
   DualContouring/main.cc \
   -I. \
   -o bin/dc.js
