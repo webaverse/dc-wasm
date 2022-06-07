@@ -304,21 +304,21 @@ public:
     }
 
     // noises
-    float getTemperatureLocal(const int lx, const int lz) {
+    float getTemperatureLocal(const int lx, const int lz) const {
         int index = lx + lz * size;
         return cachedNoiseField.temperature[index];
     }
-    float getHumidityLocal(const int lx, const int lz) {
+    float getHumidityLocal(const int lx, const int lz) const {
         int index = lx + lz * size;
         return cachedNoiseField.humidity[index];
     }
 
     // biomes
-    unsigned char getBiome(const int lx, const int lz) {
+    unsigned char getBiome(const int lx, const int lz) const {
         int index = lx + lz * size;
         return cachedBiomesField[index];
     }
-    void getInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
+    void getInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
         int lx = int(x) - min.x + 1;
         int lz = int(z) - min.z + 1;
         int index2D = lx + lz * gridPoints;
@@ -356,7 +356,7 @@ public:
     }
 
     // height
-    float interpolateHeight1D(const float x, const float z)
+    float interpolateHeight1D(const float x, const float z) const
     {
         const int xf = std::floor(x);
         const int xc = std::ceil(x);
@@ -365,7 +365,7 @@ public:
         const float dx = x - xf;
         return lerp(cachedHeightField.at(indexF), cachedHeightField.at(indexC), dx);
     }
-    float interpolateHeight2D(const float x, const float z)
+    float interpolateHeight2D(const float x, const float z) const
     {
         const int zf = std::floor(z);
         const int zc = std::ceil(z);
@@ -373,14 +373,14 @@ public:
         return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
     }
 
-    float getRawHeight(const int x, const int z)
+    float getRawHeight(const int x, const int z) const
     {
         const int localX = x - min.x + 1;
         const int localZ = z - min.z + 1;
         const int index = localX + localZ * gridPoints;
         return (cachedHeightField.at(index) + 1.f) / 2.f;
     }
-    float getInterpolatedHeight(const float x, const float z)
+    float getInterpolatedHeight(const float x, const float z) const
     {
         const float localX = x - min.x + 1;
         const float localZ = z - min.z + 1;
@@ -388,7 +388,7 @@ public:
     }
 
     // sdf
-    float getInterpolatedSdf(const float x, const float y, const float z) {
+    float getInterpolatedSdf(const float x, const float y, const float z) const {
         const float localX = x - min.x + 1;
         const float localY = y - min.y + 1;
         const float localZ = z - min.z + 1;
@@ -403,7 +403,7 @@ public:
     // returns negative for points inside the box, zero at the box's surface, and positive for points outside the box
     // sx sy sz is the size of the box. the box goes from -sx/2 to sx/2, -sy/2 to sy/2, -sz/2 to sz/2
     // px py pz is the point to check
-    float signedDistanceToBox(float sx, float sy, float sz, float px, float py, float pz) {
+    static float signedDistanceToBox(float sx, float sy, float sz, float px, float py, float pz) {
         float dx = std::abs(px) - sx / 2;
         float dy = std::abs(py) - sy / 2;
         float dz = std::abs(pz) - sz / 2;
@@ -411,10 +411,10 @@ public:
         return d;
     }
 
-    // signed distance to box.
+    // signed distance to sphere
     // returns negative for points inside the sphere, zero at the sphere's surface, and positive for points outside the sphere
     // cx, cy, cz is the center of the sphere. r is the radius. px, py, pz is the point to check
-    float signedDistanceToSphere(float cx, float cy, float cz, float r, float px, float py, float pz) {
+    static float signedDistanceToSphere(float cx, float cy, float cz, float r, float px, float py, float pz) {
         float dx = px - cx;
         float dy = py - cy;
         float dz = pz - cz;
