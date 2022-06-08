@@ -53,7 +53,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+extern "C" {
+
 void Worley(double at[3], size_t max_order,
 	    double *F, double (*delta)[3], uint32_t *ID);
+
+}
 
 #endif /* __WORLEY__NOISE__ */
