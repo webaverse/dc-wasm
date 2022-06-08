@@ -7,6 +7,7 @@
 #include "../hash.h"
 #include "../util.h"
 #include "../vector.h"
+#include "../worley.h"
 #include "biomes.h"
 #include <iostream>
 #include <algorithm>
@@ -274,6 +275,48 @@ public:
             }
         }
     }
+    float getCaveNoise(int ax, int ay, int az) {
+        double at[3] = {
+            (double)ax * 0.1f,
+            (double)ay * 0.1f,
+            (double)az * 0.1f
+        };
+        const size_t max_order = 3;
+        double *F = new double[max_order];
+        double (*delta)[3] = new double[max_order][3];
+        uint32_t id;
+        Worley(at, max_order, F, delta, &id);
+        delete[] F;
+        delete[] delta;
+
+        vm::vec3 deltaPoint1(
+            delta[0][0],
+            delta[0][1],
+            delta[0][2]
+        );
+        float distance1 = length(deltaPoint1);
+        
+        vm::vec3 deltaPoint3(
+            delta[2][0],
+            delta[2][1],
+            delta[2][2]
+        );
+        float distance3 = length(deltaPoint3);
+        float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * 1.1f, 0.f), 1.f);
+        return caveValue;
+    }
+    /* float getCaveNoiseMulti(int ax, int ay, int az) {
+        float result = std::numeric_limits<float>::infinity();
+        for (int dy = -2; dy <= 2; dy++) {
+          for (int dz = -2; dz <= 2; dz++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                float caveValue = getCaveNoise(ax + dx, ay + dy, az + dz);
+                result = std::min(result, caveValue);
+            }
+          }
+        }
+        return result;
+    } */
     void initSdf() {
         cachedSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
         for (int dz = 0; dz < gridPoints; dz++)
