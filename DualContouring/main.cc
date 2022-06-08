@@ -16,7 +16,7 @@ namespace DualContouring
     Noises *noises = nullptr;
 
     // storing the octrees that we would delete after mesh construction
-    std::vector<OctreeNode *> neighbourNodes;
+    // std::vector<OctreeNode *> neighbourNodes;
 
     // storing the octree roots here for search
     std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
@@ -204,21 +204,17 @@ namespace DualContouring
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        Chunk &chunk = getChunk(octreeMin, GF_ALL, maxLodNumber);
+        Chunk &chunk = getChunk(octreeMin, GF_ALL, lod);
 
-        ChunkOctree chunkOctree(chunk);
+        ChunkOctree chunkOctree(chunk, lodArray);
         if (!chunkOctree.root)
         {
             // printf("Chunk Has No Data\n");
             return nullptr;
         }
         VertexBuffer vertexBuffer;
-        // std::cout << chunkOctree.root->children.size() << std::endl;
         generateMeshFromOctree(chunkOctree.root, lod, vertexBuffer);
-
-        // std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
-        // OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
-        // generateMeshFromOctree(seamRoot, lod, false, vertexBuffer);
+        generateMeshFromOctree(chunkOctree.seamRoot, lod, vertexBuffer);
 
         // // mesh is not valid
         if (vertexBuffer.indices.size() == 0)
