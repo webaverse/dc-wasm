@@ -74,6 +74,12 @@ enum class BIOME : unsigned char {
   biMesaPlateauFM = 59,
   biMesaPlateauM = 60,
 
+  teDirt = 61,
+  teStone = 62,
+  
+  liWater = 63,
+  liLava = 64,
+
   /* lava = 61,
 
   waterRiver = 62,
@@ -81,7 +87,7 @@ enum class BIOME : unsigned char {
   waterRiverFrozen = 64,
   waterOceanFrozen = 65, */
 
-  NUM_BIOMES = 61,
+  NUM_BIOMES = 65,
 };
 
 class Biome {
