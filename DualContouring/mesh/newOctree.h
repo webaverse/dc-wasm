@@ -225,6 +225,7 @@ public:
         std::vector<std::shared_ptr<OctreeNode>> neighbourNodes;
         std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(chunk, lodArray, neighbourNodes);
         seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+        // std::cout << seamRoot->size << std::endl;
     }
     std::shared_ptr<OctreeNode> root;
     std::shared_ptr<OctreeNode> seamRoot;
@@ -286,7 +287,7 @@ private:
         for (int i = 0; i < 8; i++)
         {
             const vm::ivec3 childMin = node->min + (CHILD_MIN_OFFSETS[i] * childSize);
-            std::shared_ptr<OctreeNode> childNode = std::make_unique<OctreeNode>(OctreeNode(childMin, childSize));
+            std::shared_ptr<OctreeNode> childNode = std::make_shared<OctreeNode>(OctreeNode(childMin, childSize));
             node->children[i] = constructOctreeNodes(childNode, chunk);
             hasChildren |= (node->children[i] != nullptr);
         }
@@ -339,10 +340,11 @@ private:
                 for (int z = chunkMin.z; z < chunkMax.z; z += lod)
                 {
                     const vm::ivec3 min = vm::ivec3(x, y, z);
-                    const vm::ivec3 max = min + vm::ivec3(1);
+                    const vm::ivec3 max = min + vm::ivec3(lod);
                     if (filterFunc(min, max))
                     {
-                        std::shared_ptr<OctreeNode> seamNode = std::make_shared<OctreeNode>(OctreeNode(min, lod));
+                        std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, lod));
+                        std::shared_ptr<OctreeNode> seamNode = constructVoxel(node, chunk);
                         if (seamNode)
                             nodes.push_back(seamNode);
                     }
@@ -424,7 +426,7 @@ private:
     std::vector<std::shared_ptr<OctreeNode>> constructParents(
         std::shared_ptr<OctreeNode> &octree,
         const std::vector<std::shared_ptr<OctreeNode>> &nodes,
-        const int parentSize,
+        const int &parentSize,
         const vm::ivec3 &rootMin)
     {
         std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> parentsHashmap;
@@ -436,12 +438,14 @@ private:
 				 const vm::ivec3 parentPos = node->min - (localPos % parentSize);
 
 				 const uint64_t parentIndex = hashOctreeMin(parentPos - rootMin);
-				 std::shared_ptr<OctreeNode> parentNode = nullptr;
+				 std::shared_ptr<OctreeNode> parentNode;
 
 				 auto iter = parentsHashmap.find(parentIndex);
 				 if (iter == end(parentsHashmap))
 				 {
-					 parentsHashmap.insert(std::pair<uint64_t, std::shared_ptr<OctreeNode> >(parentIndex, std::make_shared<OctreeNode>(parentPos,parentSize)));
+                     parentNode = std::make_shared<OctreeNode>(OctreeNode(parentPos,parentSize));
+					 parentsHashmap.insert(std::pair<uint64_t, std::shared_ptr<OctreeNode>>(parentIndex, parentNode));
+                    //  std::cout << parentNode->size << std::endl;
 				 }
 				 else
 				 {

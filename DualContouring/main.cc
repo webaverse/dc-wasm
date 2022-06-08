@@ -214,7 +214,7 @@ namespace DualContouring
         }
         VertexBuffer vertexBuffer;
         generateMeshFromOctree(chunkOctree.root, lod, vertexBuffer);
-        generateMeshFromOctree(chunkOctree.seamRoot, lod, vertexBuffer);
+        // generateMeshFromOctree(chunkOctree.seamRoot, lod, vertexBuffer);
 
         // // mesh is not valid
         if (vertexBuffer.indices.size() == 0)
