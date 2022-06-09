@@ -262,7 +262,7 @@ public:
                 for (int dz = -8; dz <= 8; dz++) {
                     for (int dx = -8; dx <= 8; dx++) {
                         vm::ivec2 iWorldPosition(ax + dx, az + dz);
-                        unsigned char b = DualContouring::getComputedBiome(iWorldPosition, lod);
+                        unsigned char b = DualContouring::getCachedBiome(iWorldPosition, lod);
                         biomeCounts[b]++;
                     }
                 }
