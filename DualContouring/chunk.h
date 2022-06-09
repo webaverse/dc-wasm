@@ -133,6 +133,7 @@ public:
     }
 
     void generate(int flags) {
+        // dependencies
         if (flags & GenerateFlags::GF_AOFIELD) {
             flags |= (GenerateFlags)GenerateFlags::GF_SDF;
         }
@@ -146,6 +147,7 @@ public:
             flags |= (GenerateFlags)GenerateFlags::GF_NOISE;
         }
 
+        // generate
         if (flags & GenerateFlags::GF_NOISE) {
             if (cachedNoiseField.size() == 0) {
                 initNoiseField();
