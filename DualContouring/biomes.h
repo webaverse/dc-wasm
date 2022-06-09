@@ -9,7 +9,7 @@ extern std::tuple<float, float> groundNormals[];
 extern std::tuple<float, float> groundHeights[];
 extern std::tuple<float, float> groundEmissives[];
 
-constexpr int waterLevel = 5;
+// constexpr int waterLevel = 5;
 
 enum class BIOME : unsigned char {
   biOcean = 0,
