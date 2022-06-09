@@ -25,8 +25,9 @@ enum GenerateFlags : int {
     GF_NOISE = 1 << 0,
     GF_BIOMES = 1 << 1,
     GF_HEIGHTFIELD = 1 << 2,
-    GF_SDF = 1 << 3,
-    GF_ALL = GF_NOISE | GF_BIOMES | GF_HEIGHTFIELD | GF_SDF
+    GF_AOFIELD = 1 << 3,
+    GF_SDF = 1 << 4,
+    // GF_ALL = GF_NOISE | GF_BIOMES | GF_HEIGHTFIELD | GF_SDF
 };
 
 class NoiseField {
@@ -89,6 +90,7 @@ public:
     std::vector<unsigned char> cachedBiomesVectorField;
     std::vector<float> cachedBiomesWeightsVectorField;
     std::vector<float> cachedHeightField;
+    std::vector<uint8_t> cachedAoField;
     std::vector<float> cachedSdf;
     
     Chunk() = delete;
@@ -102,6 +104,7 @@ public:
         cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
         cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
         cachedHeightField(std::move(other.cachedHeightField)),
+        cachedAoField(std::move(other.cachedAoField)),
         cachedSdf(std::move(other.cachedSdf))
         {}
     Chunk(const Chunk &other) = delete;
@@ -124,29 +127,48 @@ public:
         cachedBiomesVectorField = std::move(other.cachedBiomesVectorField);
         cachedBiomesWeightsVectorField = std::move(other.cachedBiomesWeightsVectorField);
         cachedHeightField = std::move(other.cachedHeightField);
+        cachedAoField = std::move(other.cachedAoField);
         cachedSdf = std::move(other.cachedSdf);
         return *this;
     }
 
-    void generate(GenerateFlags flags) {
-        if ((flags & GF_NOISE) | (flags & GF_BIOMES) | (flags & GF_HEIGHTFIELD) | (flags & GF_SDF)) {
+    void generate(int flags) {
+        if (flags & GenerateFlags::GF_AOFIELD) {
+            flags |= (GenerateFlags)GenerateFlags::GF_SDF;
+        }
+        if (flags & GenerateFlags::GF_SDF) {
+            flags |= (GenerateFlags)GenerateFlags::GF_HEIGHTFIELD;
+        }
+        if (flags & GenerateFlags::GF_HEIGHTFIELD) {
+            flags |=  (GenerateFlags)GenerateFlags::GF_BIOMES;
+        }
+        if (flags & GenerateFlags::GF_BIOMES) {
+            flags |= (GenerateFlags)GenerateFlags::GF_NOISE;
+        }
+
+        if (flags & GenerateFlags::GF_NOISE) {
             if (cachedNoiseField.size() == 0) {
                 initNoiseField();
             }
         }
-        if ((flags & GF_BIOMES) | (flags & GF_HEIGHTFIELD) | (flags & GF_SDF)) {
+        if (flags & GenerateFlags::GF_BIOMES) {
             if (cachedBiomesField.size() == 0) {
                 initBiomesField();
             }
         }
-        if ((flags & GF_HEIGHTFIELD) | (flags & GF_SDF)) {
+        if (flags & GenerateFlags::GF_HEIGHTFIELD) {
             if (cachedHeightField.size() == 0) {
                 initHeightField();
             }
         }
-        if ((flags & GF_SDF)) {
+        if (flags & GenerateFlags::GF_SDF) {
             if (cachedSdf.size() == 0) {
                 initSdf();
+            }
+        }
+        if (flags & GenerateFlags::GF_AOFIELD) {
+            if (cachedAoField.size() == 0) {
+                initAoField();
             }
         }
     }
@@ -275,48 +297,33 @@ public:
             }
         }
     }
-    float getCaveNoise(int ax, int ay, int az) {
-        double at[3] = {
-            (double)ax * 0.1f,
-            (double)ay * 0.1f,
-            (double)az * 0.1f
-        };
-        const size_t max_order = 3;
-        double *F = new double[max_order];
-        double (*delta)[3] = new double[max_order][3];
-        uint32_t id;
-        Worley(at, max_order, F, delta, &id);
-        delete[] F;
-        delete[] delta;
+    void initAoField() {
+        cachedAoField.resize(size * size * size);
+        for (int y = 0; y < size; y++) {
+            int ly = y + 1;
+            
+            for (int z = 0; z < size; z++) {
+                int lz = z + 1;
 
-        vm::vec3 deltaPoint1(
-            delta[0][0],
-            delta[0][1],
-            delta[0][2]
-        );
-        float distance1 = length(deltaPoint1);
-        
-        vm::vec3 deltaPoint3(
-            delta[2][0],
-            delta[2][1],
-            delta[2][2]
-        );
-        float distance3 = length(deltaPoint3);
-        float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * 1.1f, 0.f), 1.f);
-        return caveValue;
-    }
-    /* float getCaveNoiseMulti(int ax, int ay, int az) {
-        float result = std::numeric_limits<float>::infinity();
-        for (int dy = -2; dy <= 2; dy++) {
-          for (int dz = -2; dz <= 2; dz++) {
-            for (int dx = -2; dx <= 2; dx++) {
-                float caveValue = getCaveNoise(ax + dx, ay + dy, az + dz);
-                result = std::min(result, caveValue);
+                for (int x = 0; x < size; x++) {
+                    int lx = x + 1;
+
+                    unsigned char numOpens = 0;
+                    for (int dy = -1; dy <= 1; dy++) {
+                        for (int dz = -1; dz <= 1; dz++) {
+                            for (int dx = -1; dx <= 1; dx++) {
+                                int sdfIndex = (lx + dx) + (ly + dy) * gridPoints + (lz + dz) * gridPoints * gridPoints;
+                                numOpens += (unsigned char)(cachedSdf[sdfIndex] >= 0.f);
+                            }
+                        }
+                    }
+
+                    int aoIndex = lx + ly * size + lz * size * size;
+                    cachedAoField[aoIndex] = numOpens;
+                }
             }
-          }
         }
-        return result;
-    } */
+    }
     void initSdf() {
         cachedSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
         for (int dz = 0; dz < gridPoints; dz++)
@@ -334,13 +341,22 @@ public:
                     int ay = min.y + dy - 1;
                     int az = min.z + dz - 1;
 
-                    cachedSdf[index3D] = std::min(
+                    // height
+                    float heightValue = (float)ay - height;
+                    heightValue = std::min(
                         std::max(
-                            (float)ay - height,
-                            (float)(-DualContouring::chunkSize)
+                            heightValue,
+                            (float)-1
                         ),
-                        (float)DualContouring::chunkSize
+                        (float)1
                     );
+
+                    // caves
+                    float caveValue = getComputedCaveNoise(ax, ay, az) * 1.1f;
+                    float f = heightValue + caveValue;
+
+                    // result
+                    cachedSdf[index3D] = f;
                 }
             }
         }
@@ -357,11 +373,11 @@ public:
     }
 
     // biomes
-    unsigned char getBiome(const int lx, const int lz) const {
+    unsigned char getCachedBiome(const int lx, const int lz) const {
         int index = lx + lz * size;
         return cachedBiomesField[index];
     }
-    void getInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+    void getCachedInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
         int lx = int(x) - min.x + 1;
         int lz = int(z) - min.z + 1;
         int index2D = lx + lz * gridPoints;
@@ -375,6 +391,33 @@ public:
         biomeWeights.y = cachedBiomesWeightsVectorField[index2D * 4 + 1];
         biomeWeights.z = cachedBiomesWeightsVectorField[index2D * 4 + 2];
         biomeWeights.w = cachedBiomesWeightsVectorField[index2D * 4 + 3];
+    }
+    void getCachedInterpolatedBiome3D(const float x, const float y, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+        getCachedInterpolatedBiome2D(x, z, biome, biomeWeights);
+
+        int lx = int(x) - min.x + 1;
+        int ly = int(y) - min.y + 1;
+        int lz = int(z) - min.z + 1;
+        int heightfieldIndex = lx + lz * gridPoints;
+        float heightValue = cachedHeightField[heightfieldIndex];
+        int sdfIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
+        float sdfValue = cachedSdf[sdfIndex];
+
+        if (sdfValue < -0.22f) {
+            if (y < heightValue - 12) {
+                unsigned char firstBiome = (unsigned char)BIOME::teStone;
+                biome.w = biome.z;
+                biome.z = biome.y;
+                biome.y = biome.x;
+                biome.x = firstBiome;
+            } else if (y < heightValue - 1) {
+                unsigned char firstBiome = (unsigned char)BIOME::teDirt;
+                biome.w = biome.z;
+                biome.z = biome.y;
+                biome.y = biome.x;
+                biome.x = firstBiome;
+            }
+        }
     }
     /* std::vector<unsigned char> getBiomesContainedInChunk() {
         std::unordered_map<unsigned char, bool> seenBiomes;
@@ -423,15 +466,59 @@ public:
         const int index = localX + localZ * gridPoints;
         return (cachedHeightField.at(index) + 1.f) / 2.f;
     }
-    float getInterpolatedHeight(const float x, const float z) const
+    float getCachedInterpolatedHeight(const float x, const float z) const
     {
         const float localX = x - min.x + 1;
         const float localZ = z - min.z + 1;
         return interpolateHeight2D(localX, localZ);
     }
 
+    // cave
+    float getComputedCaveNoise(int ax, int ay, int az) {
+        double at[3] = {
+            (double)ax * 0.1f,
+            (double)ay * 0.1f,
+            (double)az * 0.1f
+        };
+        const size_t max_order = 3;
+        double *F = new double[max_order];
+        double (*delta)[3] = new double[max_order][3];
+        uint32_t id;
+        Worley(at, max_order, F, delta, &id);
+        delete[] F;
+        delete[] delta;
+
+        vm::vec3 deltaPoint1(
+            delta[0][0],
+            delta[0][1],
+            delta[0][2]
+        );
+        float distance1 = length(deltaPoint1);
+        
+        vm::vec3 deltaPoint3(
+            delta[2][0],
+            delta[2][1],
+            delta[2][2]
+        );
+        float distance3 = length(deltaPoint3);
+        float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * 1.1f, 0.f), 1.f);
+        return caveValue;
+    }
+    /* float getComputedCaveNoiseMulti(int ax, int ay, int az) {
+        float result = std::numeric_limits<float>::infinity();
+        for (int dy = -2; dy <= 2; dy++) {
+          for (int dz = -2; dz <= 2; dz++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                float caveValue = getComputedCaveNoise(ax + dx, ay + dy, az + dz);
+                result = std::min(result, caveValue);
+            }
+          }
+        }
+        return result;
+    } */
+
     // sdf
-    float getInterpolatedSdf(const float x, const float y, const float z) const {
+    float getCachedInterpolatedSdf(const float x, const float y, const float z) const {
         const float localX = x - min.x + 1;
         const float localY = y - min.y + 1;
         const float localZ = z - min.z + 1;
@@ -440,6 +527,12 @@ public:
             cachedSdf,
             gridPoints
         );
+    }
+
+    // ao
+    unsigned char getAoLocal(const int lx, const int ly, const int lz) const {
+        int index = lx + lz * size + ly * size * size;
+        return cachedAoField[index];
     }
 
     // signed distance field function for a box at the origin

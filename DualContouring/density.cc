@@ -91,7 +91,7 @@ float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
 	// noise += glm::clamp((1.0 - mask) * FBM(p + q) * 2.0, -100.0, 10.0);
 	// noise += mask * fbmNoise / 2.0;
 	// const float terrain = chunkNoise.getNoise(position.x, position.y);
-	const float terrain = chunkNoise.getInterpolatedSdf(position.x, position.y, position.z);
+	const float terrain = chunkNoise.getCachedInterpolatedSdf(position.x, position.y, position.z);
 	// std::cout << "terrain " << terrain << " : " << position.x << " " << position.y << " " << position.z << std::endl;
 
   return terrain;

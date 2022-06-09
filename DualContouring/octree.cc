@@ -176,7 +176,7 @@ void selectMostCommonBiomes(vm::ivec4 &biome, vm::vec4 &biomeWeights, const Biom
 
 void setBiomeData(vm::ivec4 &biome, vm::vec4 &biomeWeights, const vm::vec3 &position, Chunk &chunkNoise)
 {
-	chunkNoise.getInterpolatedBiome2D(position.x, position.z, biome, biomeWeights);
+	chunkNoise.getCachedInterpolatedBiome3D(position.x, position.y, position.z, biome, biomeWeights);
 }
 
 OctreeNode *switchChunkLod(OctreeNode *node, const int lod, Chunk &chunkNoise)
