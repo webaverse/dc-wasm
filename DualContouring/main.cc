@@ -192,7 +192,7 @@ namespace DualContouring
             float ax = (float)chunk.min.x + dx;
             float az = (float)chunk.min.z + dz;
 
-            float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
+            float noiseValue = DualContouring::noises->vegetationNoise.in2D(ax, az);
 
             if (noiseValue < veggieRate) {
                 int index = 0;
