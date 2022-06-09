@@ -414,7 +414,7 @@ public:
                 }
                 int neighborHeightfieldIndex = lx2 + lz2 * gridPoints;
                 float heightValue = cachedHeightField[heightfieldIndex];
-                if (y - 2 > heightValue) {
+                if (y + 3 > heightValue) {
                     neighborHeightsValid = false;
                     break;
                 }

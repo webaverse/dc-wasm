@@ -29,6 +29,7 @@ namespace DualContouring
     // float getHeight(float x, float z, const int &lod);
     // void getHeights(float *vec2s, int count, float *heights, const int &lod);
     void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights);
+    void getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos);
     void createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
     void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
     void createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
