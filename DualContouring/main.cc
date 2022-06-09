@@ -294,28 +294,28 @@ namespace DualContouring
     void clearChunkRoot(float x, float y, float z)
     {
         const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-        OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
+        // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-        if (!chunkRoot)
-        {
-            return;
-        }
-        // std::cout << chunkRoot->lod << std::endl;
-        // sort and remove duplicates
-        // std::sort(neighbourNodes.begin(), neighbourNodes.end());
-        neighbourNodes.erase(std::unique(neighbourNodes.begin(), neighbourNodes.end()), neighbourNodes.end());
-        for (int i = 0; i < neighbourNodes.size(); i++)
-        {
-            const OctreeNode *node = neighbourNodes[i];
-            if (node->drawInfo)
-            {
-                delete node->drawInfo;
-            }
-            delete node;
-        }
-        neighbourNodes.clear();
-        destroyOctree(chunkRoot);
-        removeOctreeFromHashMap(octreeMin, chunksListHashMap);
+        // if (!chunkRoot)
+        // {
+        //     return;
+        // }
+        // // std::cout << chunkRoot->lod << std::endl;
+        // // sort and remove duplicates
+        // // std::sort(neighbourNodes.begin(), neighbourNodes.end());
+        // neighbourNodes.erase(std::unique(neighbourNodes.begin(), neighbourNodes.end()), neighbourNodes.end());
+        // for (int i = 0; i < neighbourNodes.size(); i++)
+        // {
+        //     const OctreeNode *node = neighbourNodes[i];
+        //     if (node->drawInfo)
+        //     {
+        //         delete node->drawInfo;
+        //     }
+        //     delete node;
+        // }
+        // neighbourNodes.clear();
+        // destroyOctree(chunkRoot);
+        // removeOctreeFromHashMap(octreeMin, chunksListHashMap);
     }
 
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8])
@@ -326,29 +326,21 @@ namespace DualContouring
         // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
     
         Chunk &chunk = getChunk(octreeMin, GF_SDF, maxLodNumber);
-        ChunkOctree chunkOctree(chunk, octreeMin, chunkSize, lodArray[0]);
+        ChunkOctree chunkOctree(chunk, lodArray);
         if (!chunkOctree.root)
         {
             // printf("Chunk Has No Data\n");
             return nullptr;
         }
-
         VertexBuffer vertexBuffer;
-        generateMeshFromOctree(chunkOctree.root, lod, false, vertexBuffer);
+        generateMeshFromOctree(chunkOctree.root, vertexBuffer, false);
+        generateMeshFromOctree(chunkOctree.seamRoot, vertexBuffer, true);
 
-        std::vector<OctreeNode *> seamNodes = generateSeamNodes(chunk, lodArray, chunkOctree, neighbourNodes);
-        OctreeNode *seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
-        generateMeshFromOctree(seamRoot, lod, false, vertexBuffer);
-
-        // mesh is not valid
         if (vertexBuffer.indices.size() == 0)
         {
             // printf("Generated Mesh Is Not Valid\n");
-            destroyOctree(chunkOctree.root);
             return nullptr;
         }
-
-        addChunkRootToHashMap(chunkOctree.root, chunksListHashMap);
 
         return constructOutputBuffer(vertexBuffer);
     }
