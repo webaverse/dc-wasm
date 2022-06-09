@@ -77,17 +77,14 @@ enum class BIOME : unsigned char {
   teDirt = 61,
   teStone = 62,
   
-  liWater = 63,
-  liLava = 64,
+  waterRiver = 63,
+  waterOcean = 64,
+  waterRiverFrozen = 65,
+  waterOceanFrozen = 66,
 
-  /* lava = 61,
+  liLava = 67,
 
-  waterRiver = 62,
-  waterOcean = 63,
-  waterRiverFrozen = 64,
-  waterOceanFrozen = 65, */
-
-  NUM_BIOMES = 65,
+  NUM_BIOMES = 68,
 };
 
 class Biome {
@@ -1257,6 +1254,142 @@ const Biome BIOMES[] {
     },
     15905933,
     60
+  },
+
+  { // teDirt
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0x8d6e63,
+    61
+  },
+  { // teStone
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0x78909c,
+    62
+  },
+  
+  { // waterRiver
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0x42a5f5,
+    63
+  },
+  { // waterOcean
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0x42a5f5,
+    64
+  },
+  { // waterRiverFrozen
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0x42a5f5,
+    65
+  },
+  { // waterOceanFrozen
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0x42a5f5,
+    66
+  },
+
+  { // liLava
+    0,
+    {	   
+      {
+        0.1,
+        1
+      },
+      {
+        0.05,
+        1.5
+      },
+      {
+        0.01,
+        4
+      }
+    },
+    0xef5350,
+    67
   },
 };
 
