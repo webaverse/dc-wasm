@@ -403,14 +403,35 @@ public:
         int sdfIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
         float sdfValue = cachedSdf[sdfIndex];
 
-        if (sdfValue < -0.22f) {
+        bool neighborHeightsValid = true;
+        for (int dx = -1; dx <= 1; dx += 2) {
+          for (int dz = -1; dz <= 1; dz += 2) {
+            int lx2 = lx + dx;
+            int lz2 = lz + dz;
+            if (lx2 < 0 || lx2 >= gridPoints || lz2 < 0 || lz2 >= gridPoints) {
+              std::cout << "ERROR: getCachedInterpolatedBiome3D out of bounds: " << lx2 << " " << lz2 << std::endl;
+              abort();
+            }
+            int neighborHeightfieldIndex = lx2 + lz2 * gridPoints;
+            float heightValue = cachedHeightField[heightfieldIndex];
+            if (y > heightValue) {
+              neighborHeightsValid = false;
+              break;
+            }
+          }
+          if (!neighborHeightsValid) {
+            break;
+          }
+        }
+
+        if (neighborHeightsValid) {
             if (y < heightValue - 12) {
                 unsigned char firstBiome = (unsigned char)BIOME::teStone;
                 biome.w = biome.z;
                 biome.z = biome.y;
                 biome.y = biome.x;
                 biome.x = firstBiome;
-            } else if (y < heightValue - 1) {
+            } else if (y < heightValue - 2) {
                 unsigned char firstBiome = (unsigned char)BIOME::teDirt;
                 biome.w = biome.z;
                 biome.z = biome.y;
