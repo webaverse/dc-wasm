@@ -184,8 +184,8 @@ public:
             for (int dx = 0; dx < size; dx++)
             {
                 int index = dx + dz * size;
-                int ax = dx + min.x - 1;
-                int az = dz + min.z - 1;
+                int ax = dx + min.x;
+                int az = dz + min.z;
 
                 float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(ax, az);
                 cachedNoiseField.temperature[index] = tNoise;
