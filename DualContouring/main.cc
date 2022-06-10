@@ -148,7 +148,9 @@ namespace DualContouring
         Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
         float seed = DualContouring::noises->grassNoise.in2D(chunk.min.x, chunk.min.z);
-        std::mt19937 rng(seed);
+        unsigned int seedInt;
+        memcpy(&seedInt, &seed, sizeof(unsigned int));
+        std::mt19937 rng(seedInt);
 
         const int maxNumGrasses = 4 * 1024;
         for (int i = 0; i < maxNumGrasses; i++) {
@@ -169,7 +171,7 @@ namespace DualContouring
             qs[countBinding * 4 + 2] = q.z;
             qs[countBinding * 4 + 3] = q.w;
 
-            instances[countBinding] = rng() / (float)0xFFFFFFFF;
+            instances[countBinding] = (float)rng() / (float)0xFFFFFFFF;
 
             countBinding++;
         }
@@ -180,9 +182,11 @@ namespace DualContouring
 
         Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
-        const float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.z);
-        std::mt19937 rng(seed);
-
+        float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.z);
+        unsigned int seedInt;
+        memcpy(&seedInt, &seed, sizeof(unsigned int));
+        std::mt19937 rng(seedInt);
+        
         const int maxNumVeggies = 128;
         const float veggieRate = 0.35;
         for (int i = 0; i < maxNumVeggies; i++) {
@@ -208,7 +212,7 @@ namespace DualContouring
                 qs[countBinding * 4 + 2] = q.z;
                 qs[countBinding * 4 + 3] = q.w;
 
-                instances[countBinding] = rng() / (float)0xFFFFFFFF;
+                instances[countBinding] = (float)rng() / (float)0xFFFFFFFF;
 
                 countBinding++;
             }
@@ -221,7 +225,9 @@ namespace DualContouring
         Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
         float seed = DualContouring::noises->mobNoise.in2D(chunk.min.x, chunk.min.z);
-        std::mt19937 rng(seed);
+        unsigned int seedInt;
+        memcpy(&seedInt, &seed, sizeof(unsigned int));
+        std::mt19937 rng(seedInt);
 
         const int maxNumMobs = 2;
         const float mobRate = 0.1;
@@ -246,7 +252,7 @@ namespace DualContouring
                 qs[countBinding * 4 + 2] = q.z;
                 qs[countBinding * 4 + 3] = q.w;
 
-                instances[countBinding] = rng() / (float)0xFFFFFFFF;
+                instances[countBinding] = (float)rng() / (float)0xFFFFFFFF;
 
                 countBinding++;
             }
