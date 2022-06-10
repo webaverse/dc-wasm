@@ -471,7 +471,7 @@ public:
         const int indexF = xf + z * gridPoints;
         const int indexC = xc + z * gridPoints;
         const float dx = x - xf;
-        return lerp(cachedHeightField.at(indexF), cachedHeightField.at(indexC), dx);
+        return lerp(cachedHeightField[indexF], cachedHeightField[indexC], dx);
     }
     float interpolateHeight2D(const float x, const float z) const
     {
