@@ -254,7 +254,7 @@ namespace DualContouring
     }
 
     // biomes
-    unsigned char getCachedBiome(const vm::ivec2 &worldPosition, const int &lod) {
+    unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod) {
         Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
         int lx = int(worldPosition.x) - chunkNoise.min.x;
         // int ly = int(worldPosition.y) - chunkNoise.min.z;
