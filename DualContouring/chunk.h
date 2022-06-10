@@ -481,13 +481,13 @@ public:
         return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
     }
 
-    float getRawHeight(const int x, const int z) const
+    /* float getRawHeight(const int x, const int z) const
     {
         const int localX = x - min.x + 1;
         const int localZ = z - min.z + 1;
         const int index = localX + localZ * gridPoints;
-        return (cachedHeightField.at(index) + 1.f) / 2.f;
-    }
+        return (cachedHeightField[index] + 1.f) / 2.f;
+    } */
     float getCachedInterpolatedHeight(const float x, const float z) const
     {
         const float localX = x - min.x + 1;
