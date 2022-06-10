@@ -184,7 +184,7 @@ namespace DualContouring
         std::mt19937 rng(seed);
 
         const int maxNumVeggies = 128;
-        const float veggieRate = 0.3;
+        const float veggieRate = 0.35;
         for (int i = 0; i < maxNumVeggies; i++) {
             float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
             float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
