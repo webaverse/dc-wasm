@@ -230,7 +230,7 @@ namespace DualContouring
         std::mt19937 rng(seedInt);
 
         const int maxNumMobs = 2;
-        const float mobRate = 0.1;
+        const float mobRate = 0.4;
         for (int i = 0; i < maxNumMobs; i++) {
             float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
             float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
