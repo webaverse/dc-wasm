@@ -510,12 +510,13 @@ public:
             (double)az * 0.1f
         };
         const size_t max_order = 3;
-        double *F = new double[max_order];
-        double (*delta)[3] = new double[max_order][3];
-        uint32_t id;
-        Worley(at, max_order, F, delta, &id);
+        double *F = new double[max_order + 1]; // handle off-by-one error in Worley
+        double (*delta)[3] = new double[max_order + 1][3];
+        uint32_t *ID = new uint32_t[max_order + 1];
+        Worley(at, max_order, F, delta, ID);
         delete[] F;
         delete[] delta;
+        delete[] ID;
 
         vm::vec3 deltaPoint1(
             delta[0][0],
