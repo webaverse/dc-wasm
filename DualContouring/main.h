@@ -67,7 +67,7 @@ namespace DualContouring
 
     unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod);
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
-    void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod);
+    // void getBiomesContainedInChunk(int x, int z, unsigned char *biomes, unsigned int *biomesCount, const int &lod);
 };
 
 #endif // MAIN_H
