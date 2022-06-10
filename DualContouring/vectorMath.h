@@ -331,6 +331,13 @@ namespace vm
     bool operator==(const ivec3 &v1, const ivec3 &v2);
     bool operator==(const ivec4 &v1, const ivec4 &v2);
 
+    bool operator!=(const vec2 &v1, const vec2 &v2);
+    bool operator!=(const vec3 &v1, const vec3 &v2);
+    bool operator!=(const vec4 &v1, const vec4 &v2);
+    bool operator!=(const ivec2 &v1, const ivec2 &v2);
+    bool operator!=(const ivec3 &v1, const ivec3 &v2);
+    bool operator!=(const ivec4 &v1, const ivec4 &v2);
+
     // % operator
     ivec2 operator%(const ivec2 &v1, const ivec2 &v2);
     ivec3 operator%(const ivec3 &v1, const ivec3 &v2);

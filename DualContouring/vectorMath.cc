@@ -840,6 +840,32 @@ bool vm::operator==(const vm::ivec4 &v1, const vm::ivec4 &v2)
     return (v1.x == v2.x) && (v1.y == v2.y) && (v1.z == v2.z) && (v1.w == v2.w);
 }
 
+// != operator
+bool vm::operator!=(const vm::vec2 &v1, const vm::vec2 &v2)
+{
+    return !(v1 == v2);
+}
+bool vm::operator!=(const vm::vec3 &v1, const vm::vec3 &v2)
+{
+    return !(v1 == v2);
+}
+bool vm::operator!=(const vm::vec4 &v1, const vm::vec4 &v2)
+{
+    return !(v1 == v2);
+}
+bool vm::operator!=(const vm::ivec2 &v1, const vm::ivec2 &v2)
+{
+    return !(v1 == v2);
+}
+bool vm::operator!=(const vm::ivec3 &v1, const vm::ivec3 &v2)
+{
+    return !(v1 == v2);
+}
+bool vm::operator!=(const vm::ivec4 &v1, const vm::ivec4 &v2)
+{
+    return !(v1 == v2);
+}
+
 // % operator
 vm::ivec2 vm::operator%(const vm::ivec2 &v1, const vm::ivec2 &v2)
 {
