@@ -504,34 +504,44 @@ public:
 
     // cave
     float getComputedCaveNoise(int ax, int ay, int az) {
-        double at[3] = {
+        std::vector<double> at = {
             (double)ax * 0.1f,
             (double)ay * 0.1f,
             (double)az * 0.1f
         };
         const size_t max_order = 3;
-        double *F = new double[max_order + 1]; // handle off-by-one error in Worley
-        double (*delta)[3] = new double[max_order + 1][3];
-        uint32_t *ID = new uint32_t[max_order + 1];
+        std::vector<double> F;
+        F.resize(max_order + 1);
+        std::vector<dvec3> delta;
+        delta.resize(max_order + 1);
+        std::vector<uint32_t> ID;
+        ID.resize(max_order + 1);
+        // std::cout << "delete 0 " << delta.size() << std::endl;
         Worley(at, max_order, F, delta, ID);
-        delete[] F;
-        delete[] delta;
-        delete[] ID;
+        // std::cout << "delete 1" << std::endl;
+        // delete[] F;
+        // std::cout << "delete 2" << std::endl;
+        // delete[] delta;
+        // std::cout << "delete 3 " << delta[0].x << std::endl;
 
         vm::vec3 deltaPoint1(
-            delta[0][0],
-            delta[0][1],
-            delta[0][2]
+            delta[0].x,
+            delta[0].y,
+            delta[0].z
         );
         float distance1 = length(deltaPoint1);
         
+        // std::cout << "delete 3" << std::endl;
+
         vm::vec3 deltaPoint3(
-            delta[2][0],
-            delta[2][1],
-            delta[2][2]
+            delta[2].x,
+            delta[2].y,
+            delta[2].z
         );
+        // std::cout << "delete 4" << std::endl;
         float distance3 = length(deltaPoint3);
         float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * 1.1f, 0.f), 1.f);
+        // std::cout << "return" << std::endl;
         return caveValue;
     }
     /* float getComputedCaveNoiseMulti(int ax, int ay, int az) {

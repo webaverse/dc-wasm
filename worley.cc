@@ -22,7 +22,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
-// #include "worley.h"  /* Function prototype */
+#include "worley.h"  /* Function prototype */
 
 /* This macro is a *lot* faster than using (int32_t)floor() on an x86 CPU.
    It actually speeds up the entire Worley() call with almost 10%.
@@ -51,17 +51,23 @@ static int Poisson_count[256]=
 /* the function to merge-sort a "cube" of samples into the current best-found
    list of values. */
 static void AddSamples(int32_t xi, int32_t yi, int32_t zi, size_t max_order,
-			double at[3], double *F,
-			double (*delta)[3], uint32_t *ID);
+			std::vector<double> &at, std::vector<double> &F,
+			std::vector<dvec3> &delta, std::vector<uint32_t> &ID);
 
 
 /* The main function! */
-void Worley(double at[3], size_t max_order,
-	    double *F, double (*delta)[3], uint32_t *ID)
+void Worley(std::vector<double> &at, size_t max_order, std::vector<double> &F, std::vector<dvec3> &delta, std::vector<uint32_t> &ID)
 {
+//   std::cout << "add samples A " << max_order << " " << F.size() << " " << delta.size() << std::endl;
+
   double x2,y2,z2, mx2, my2, mz2;
-  double new_at[3];
-  int32_t int_at[3], i;
+  std::vector<double> new_at;
+  new_at.resize(3);
+  std::vector<int32_t> int_at;
+  int_at.resize(3);
+  int32_t i;
+
+//   std::cout << "add samples B " << max_order << " " << F.size() << " " << delta.size() << std::endl;
   
   /* Initialize the F values to "huge" so they will be replaced by the
      first real sample tests. Note we'll be storing and comparing the
@@ -93,6 +99,7 @@ void Worley(double at[3], size_t max_order,
      speed of the algorithm. */
 
   /* Test the central cube for closest point(s). */
+//   std::cout << "add samples C " << max_order << " " << F.size() << " " << delta.size() << std::endl;
   AddSamples(int_at[0], int_at[1], int_at[2], max_order, new_at, F, delta, ID);
 
   /* We test if neighbor cubes are even POSSIBLE contributors by examining the
@@ -172,9 +179,9 @@ void Worley(double at[3], size_t max_order,
   for (i=0; i<max_order; i++)
     {
       F[i]=sqrt(F[i])*(1.0/DENSITY_ADJUSTMENT);      
-      delta[i][0]*=(1.0/DENSITY_ADJUSTMENT);
-      delta[i][1]*=(1.0/DENSITY_ADJUSTMENT);
-      delta[i][2]*=(1.0/DENSITY_ADJUSTMENT);
+      delta[i].x*=(1.0/DENSITY_ADJUSTMENT);
+      delta[i].y*=(1.0/DENSITY_ADJUSTMENT);
+      delta[i].z*=(1.0/DENSITY_ADJUSTMENT);
     }
   
   return;
@@ -183,8 +190,8 @@ void Worley(double at[3], size_t max_order,
 
 
 static void AddSamples(int32_t xi, int32_t yi, int32_t zi, size_t max_order,
-		       double at[3], double *F,
-		       double (*delta)[3], uint32_t *ID)
+			std::vector<double> &at, std::vector<double> &F,
+			std::vector<dvec3> &delta, std::vector<uint32_t> &ID)
 {
   double dx, dy, dz, fx, fy, fz, d2;
   int32_t count, i, j, index;
@@ -252,18 +259,30 @@ static void AddSamples(int32_t xi, int32_t yi, int32_t zi, size_t max_order,
 	  /* Bump down more distant information to make room for this new point. */
 	  for (i=max_order-2; i>=index; i--)
 	    {
-	      F[i+1]=F[i];
+	      if (i+1 >= F.size()) {
+            std::cout << "F out of bounds " << i << " " << max_order << " " << F.size() << " " << delta.size() << std::endl;
+            abort();
+         }
+         F[i+1]=F[i];
 	      ID[i+1]=ID[i];
-	      delta[i+1][0]=delta[i][0];
-	      delta[i+1][1]=delta[i][1];
-	      delta[i+1][2]=delta[i][2];
+	      if (i+1 >= delta.size()) {
+            std::cout << "index out of bounds " << i << " " << max_order << " " << F.size() << " " << delta.size() << std::endl;
+            abort();
+         }
+         delta[i+1].x=delta[i].x;
+	      delta[i+1].y=delta[i].y;
+	      delta[i+1].z=delta[i].z;
 	    }		
 	  /* Insert the new point's information into the list. */
 	  F[index]=d2;
 	  ID[index]=this_id;
-	  delta[index][0]=dx;
-	  delta[index][1]=dy;
-	  delta[index][2]=dz;
+	  if (index >= delta.size()) {
+         std::cout << "index out of bounds AFTER " << std::endl;
+         abort();
+      }
+     delta[index].x=dx;
+	  delta[index].y=dy;
+	  delta[index].z=dz;
 	}
     }
   

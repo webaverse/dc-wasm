@@ -52,12 +52,17 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <vector>
+#include <iostream>
 
-extern "C" {
+class dvec3 {
+public:
+    double x;
+    double y;
+    double z;
+    // dvec3() : x(0), y(0), z(0) {}
+};
 
-void Worley(double at[3], size_t max_order,
-	    double *F, double (*delta)[3], uint32_t *ID);
-
-}
+void Worley(std::vector<double> &at, size_t max_order, std::vector<double> &F, std::vector<dvec3> &delta, std::vector<uint32_t> &ID);
 
 #endif /* __WORLEY__NOISE__ */
