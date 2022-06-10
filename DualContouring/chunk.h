@@ -255,15 +255,14 @@ public:
                 int ax = dx + min.x - 1;
                 int az = dz + min.z - 1;
 
-                constexpr int sampleWidth = 8 * 2 + 1;
-                constexpr int numSamples = sampleWidth * sampleWidth;
-
                 std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-                for (int dz = -8; dz <= 8; dz++) {
-                    for (int dx = -8; dx <= 8; dx++) {
+                int numSamples = 0;
+                for (int dz = -size/2; dz < size/2; dz++) {
+                    for (int dx = -size/2; dx < size/2; dx++) {
                         vm::ivec2 iWorldPosition(ax + dx, az + dz);
-                        unsigned char b = DualContouring::getCachedBiome(iWorldPosition, lod);
+                        unsigned char b = DualContouring::getBiome(iWorldPosition, lod);
                         biomeCounts[b]++;
+                        numSamples++;
                     }
                 }
 
