@@ -34,7 +34,7 @@ public:
     lavaNoise(rng(), 0.01, 4),
     grassNoise(rng(), 0.01, 4),
     vegetationNoise(rng(), 0.1, 4),
-    mobNoise(rng(), 0.01, 4)
+    mobNoise(rng(), 2, 4)
   {}
   Noises(const Noises&) = delete;
 };
