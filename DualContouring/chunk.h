@@ -355,6 +355,13 @@ public:
                     // caves
                     float caveValue = getComputedCaveNoise(ax, ay, az) * 1.1f;
                     float f = heightValue + caveValue;
+                    f = std::min(
+                        std::max(
+                            f,
+                            -1.f
+                        ),
+                        1.f
+                    );
 
                     // result
                     cachedSdf[index3D] = f;
