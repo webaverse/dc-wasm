@@ -246,7 +246,7 @@ public:
     void initHeightField() {
         cachedBiomesVectorField.resize(gridPoints * gridPoints * 4);
         cachedBiomesWeightsVectorField.resize(gridPoints * gridPoints * 4);
-        cachedHeightField.resize(gridPoints * gridPoints, -std::numeric_limits<float>::infinity());
+        cachedHeightField.resize(gridPoints * gridPoints);
         for (int dz = 0; dz < gridPoints; dz++)
         {
             for (int dx = 0; dx < gridPoints; dx++)
