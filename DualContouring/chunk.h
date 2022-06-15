@@ -92,6 +92,7 @@ public:
     std::vector<float> cachedHeightField;
     std::vector<uint8_t> cachedAoField;
     std::vector<float> cachedSdf;
+    std::vector<float> cachedDamageSdf;
     
     Chunk() = delete;
     Chunk(Chunk &&other) :
@@ -105,7 +106,8 @@ public:
         cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
         cachedHeightField(std::move(other.cachedHeightField)),
         cachedAoField(std::move(other.cachedAoField)),
-        cachedSdf(std::move(other.cachedSdf))
+        cachedSdf(std::move(other.cachedSdf)),
+        cachedDamageSdf(std::move(other.cachedDamageSdf))
         {}
     Chunk(const Chunk &other) = delete;
     Chunk(const vm::ivec3 chunkMin, const int &lod, GenerateFlags flags) :
@@ -129,6 +131,7 @@ public:
         cachedHeightField = std::move(other.cachedHeightField);
         cachedAoField = std::move(other.cachedAoField);
         cachedSdf = std::move(other.cachedSdf);
+        cachedDamageSdf = std::move(other.cachedDamageSdf);
         return *this;
     }
 
@@ -166,6 +169,9 @@ public:
         if (flags & GenerateFlags::GF_SDF) {
             if (cachedSdf.size() == 0) {
                 initSdf();
+            }
+            if (cachedDamageSdf.size() == 0) {
+                initDamageSdf();
             }
         }
         if (flags & GenerateFlags::GF_AOFIELD) {
@@ -368,6 +374,9 @@ public:
                 }
             }
         }
+    }
+    void initDamageSdf() {
+        cachedDamageSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
     }
 
     // noises
