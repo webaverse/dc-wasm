@@ -261,7 +261,7 @@ private:
                 {
                     const vm::ivec3 min = vm::ivec3(x, y, z);
                     std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, chunk.lod, Node_Leaf));
-                    std::shared_ptr<OctreeNode> seamNode = constructVoxel(node, chunk);
+                    std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, chunk);
                     if (seamNode)
                         nodes.push_back(seamNode);
                 }
@@ -285,7 +285,7 @@ private:
         return vertexData;
     }
 
-    std::shared_ptr<OctreeNode> constructVoxel(std::shared_ptr<OctreeNode> &voxelNode, Chunk &chunk)
+    std::shared_ptr<OctreeNode> constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, Chunk &chunk)
     {
         int corners = 0;
         for (int i = 0; i < 8; i++)
@@ -302,7 +302,7 @@ private:
         else
         {
             // voxel is touching the surface
-            voxelNode->vertexData = std::make_unique<VertexData>(generateVoxelData(voxelNode, corners, chunk));
+            voxelNode->vertexData = std::make_shared<VertexData>(generateVoxelData(voxelNode, corners, chunk));
         }
         return voxelNode;
     }
@@ -320,7 +320,7 @@ private:
             return;
         }
 
-        if (node->size == minVoxelSize)
+        if (node->type == Node_Leaf)
         {
             nodes.push_back(node);
         }
@@ -352,7 +352,7 @@ private:
                     if (filterFunc(min, max))
                     {
                         std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, lod, Node_Leaf));
-                        std::shared_ptr<OctreeNode> seamNode = constructVoxel(node, chunk);
+                        std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, chunk);
                         if (seamNode)
                             nodes.push_back(seamNode);
                     }
