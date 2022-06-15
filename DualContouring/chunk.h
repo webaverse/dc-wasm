@@ -694,10 +694,10 @@ public:
                     float newDistance = signedDistanceToSphere(bx, by, bz, radius, ax, ay, az);
 
                     int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                    float oldDistance = cachedSdf[index];
+                    float oldDistance = cachedDamageSdf[index];
 
                     if (newDistance < oldDistance) {
-                        cachedSdf[index] = newDistance;
+                        cachedDamageSdf[index] = newDistance;
                         drew = true;
                     }
                 }
@@ -723,10 +723,13 @@ public:
                     float newDistance = signedDistanceToSphere(bx, by, bz, radius, ax, ay, az);
 
                     int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                    float oldDistance = cachedSdf[index];
+                    float oldDistance = cachedDamageSdf[index];
 
-                    if (newDistance <= 0.f || oldDistance >= newDistance) {
-                        cachedSdf[index] = (float)size;
+                    if (
+                        newDistance <= 0.f || // new point is inside the sphere
+                        newDistance <= oldDistance  // new point affects this index
+                    ) {
+                        cachedDamageSdf[index] = (float)size; // max outside distance for a chunk
                         erased[index] = true;
                         drew = true;
                     }
@@ -762,10 +765,10 @@ public:
                     float newDistance = signedDistanceToBox(sx, sy, sz, p.x, p.y, p.z);
 
                     int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                    float oldDistance = cachedSdf[index];
+                    float oldDistance = cachedDamageSdf[index];
 
                     if (newDistance < oldDistance) {
-                        cachedSdf[index] = newDistance;
+                        cachedDamageSdf[index] = newDistance;
                         drew = true;
                     }
                 }
@@ -796,10 +799,10 @@ public:
                     float newDistance = signedDistanceToBox(sx, sy, sz, p.x, p.y, p.z);
 
                     int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                    float oldDistance = cachedSdf[index];
+                    float oldDistance = cachedDamageSdf[index];
 
                     if (newDistance <= 0.f || oldDistance >= newDistance) {
-                        cachedSdf[index] = (float)size;
+                        cachedDamageSdf[index] = (float)size;
                         erased[index] = true;
                         drew = true;
                     }
