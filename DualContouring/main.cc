@@ -379,9 +379,9 @@ namespace DualContouring
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                int gridSize = chunkSize + 3;
+                                int gridSize = chunkSize + 3 + lod;
                                 int damageBufferSize = gridSize * gridSize * gridSize;
-                                memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                                memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.data(), sizeof(float) * damageBufferSize);
 
                                 outPositions[(*outPositionsCount) * 3] = min.x;
                                 outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -428,7 +428,7 @@ namespace DualContouring
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                int gridSize = chunkSize + 3;
+                                int gridSize = chunkSize + 3 + lod;
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
@@ -488,7 +488,7 @@ namespace DualContouring
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                int gridSize = chunkSize + 3;
+                                int gridSize = chunkSize + 3 + lod;
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
@@ -548,7 +548,7 @@ namespace DualContouring
                         {
                             if (*outPositionsCount < maxPositionsCount)
                             {
-                                int gridSize = chunkSize + 3;
+                                int gridSize = chunkSize + 3 + lod;
                                 int damageBufferSize = gridSize * gridSize * gridSize;
                                 memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
 
