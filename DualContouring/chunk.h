@@ -578,6 +578,16 @@ public:
             gridPoints
         );
     }
+    float getCachedDamageInterpolatedSdf(const float x, const float y, const float z) const {
+        const float localX = x - min.x + 1;
+        const float localY = y - min.y + 1;
+        const float localZ = z - min.z + 1;
+        return trilinear<float>(
+            vm::vec3(localX, localY, localZ),
+            cachedDamageSdf,
+            gridPoints
+        );
+    }
 
     // ao
     unsigned char getAoLocal(const int lx, const int ly, const int lz) const {
