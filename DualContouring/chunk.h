@@ -430,10 +430,6 @@ public:
             for (int dz = -1; dz <= 1; dz += 2) {
                 int lx2 = lx + dx;
                 int lz2 = lz + dz;
-                if (lx2 < 0 || lx2 >= gridPoints || lz2 < 0 || lz2 >= gridPoints) {
-                    std::cout << "ERROR: getCachedInterpolatedBiome3D out of bounds: " << lx2 << " " << lz2 << std::endl;
-                    abort();
-                }
                 int neighborHeightfieldIndex = lx2 + lz2 * gridPoints;
                 float heightValue = cachedHeightField[heightfieldIndex];
                 if (y + 3 > heightValue) {
