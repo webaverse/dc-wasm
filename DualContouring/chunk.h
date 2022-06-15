@@ -818,9 +818,8 @@ public:
     }
 
     void injectDamage(float *damageBuffer) {
-        std::vector<float> cachedHeightField;
-        std::vector<float> cachedSdf(gridPoints * gridPoints * gridPoints);
-        memcpy(cachedSdf.data(), this->cachedSdf.data(), sizeof(float) * gridPoints * gridPoints * gridPoints);
+        cachedDamageSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
+        memcpy(cachedDamageSdf.data(), damageBuffer, cachedDamageSdf.size() * sizeof(float));
     }
 };
 #endif // _CHUNK_H_
