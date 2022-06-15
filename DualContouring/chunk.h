@@ -619,102 +619,60 @@ public:
     }
 
     void patchFrontier(std::vector<bool> &erased) {
-        // frontier points are those that are erased and have a neighbor that is not erased
-        std::deque<vm::ivec3> frontierPoints;
-        std::vector<bool> frontierSeenPoints(gridPoints * gridPoints * gridPoints, false);
-        for (int y = 0; y < gridPoints; y++) {
-            for (int z = 0; z < gridPoints; z++) {
-                for (int x = 0; x < gridPoints; x++) {
-                    int index = x + z * gridPoints + y * gridPoints * gridPoints;
-                    
-                    if (erased[index]) {
-                        bool someNeighborIsNotErased = false;
-                        for (int dx = -1; dx <= 1; dx += 2) {
-                            for (int dy = -1; dy <= 1; dy += 2) {
-                                for (int dz = -1; dz <= 1; dz += 2) {
-                                    int neighborIndex = index + dx + dz * gridPoints + dy * gridPoints * gridPoints;
-                                    if (!erased[neighborIndex]) {
-                                        someNeighborIsNotErased = true;
-                                        break;
-                                    }
-                                }
-                                if (someNeighborIsNotErased) {
-                                    break;
-                                }
-                            }
-                            if (someNeighborIsNotErased) {
+        std::function<void(const vm::ivec3 &)> tryIndex = [&](const vm::ivec3 &v) -> void {
+            int index = v.x + v.y * gridPoints + v.z * gridPoints * gridPoints;
+            if (erased[index]) {
+                std::vector<vm::ivec3> unerasedNeighbors;
+                for (int dx = -1; dx <= 1; dx += 2) {
+                    for (int dy = -1; dy <= 1; dy += 2) {
+                        for (int dz = -1; dz <= 1; dz += 2) {
+                            int ax = v.x + dx;
+                            int ay = v.y + dy;
+                            int az = v.z + dz;
+
+                            int neighborIndex = ax + ay * gridPoints + az * gridPoints * gridPoints;
+                            if (!erased[neighborIndex]) {
+                                unerasedNeighbors.push_back(vm::ivec3(dx, dy, dz));
                                 break;
                             }
                         }
-                        if (someNeighborIsNotErased) {
-                            frontierPoints.push_back(vm::ivec3(x, y, z));
-
-                            int index = x + z * gridPoints + y * gridPoints * gridPoints;
-                            frontierSeenPoints[index] = true;
-                        }
                     }
                 }
-            }
-        }
+                if (unerasedNeighbors.size() > 0) {
+                    // compute the current sdf min distance from the neighbors
+                    float minDistance = cachedDamageSdf[index];
+                    for (auto &neighborOffset : unerasedNeighbors) {
+                        int ax = v.x + neighborOffset.x;
+                        int ay = v.y + neighborOffset.y;
+                        int az = v.z + neighborOffset.z;
+                        
+                        int neighborIndex = ax + ay * gridPoints + az * gridPoints * gridPoints;
+                        float neighborDamageSdf = cachedDamageSdf[neighborIndex];
+                        float extraDistance = length(neighborOffset);
+                        minDistance = std::min(minDistance, neighborDamageSdf + extraDistance);
+                    }
+                    cachedDamageSdf[index] = minDistance;
+                    erased[index] = false;
+                    unerasedNeighbors.clear();
 
-        // patch each frontier point by extending the min distance from its neighbors
-        while (frontierPoints.size() > 0) {
-            vm::ivec3 frontierPoint = frontierPoints.front();
-            frontierPoints.pop_front();
-
-            int x = frontierPoint.x;
-            int y = frontierPoint.y;
-            int z = frontierPoint.z;
-            int index = x + z * gridPoints + y * gridPoints * gridPoints;
-
-            // compute candidate distances
-            std::vector<float> candidateDistances;
-            candidateDistances.reserve(8);
-            for (int dy = -1; dy <= 1; dy += 2) {
-                for (int dz = -1; dz <= 1; dz += 2) {
                     for (int dx = -1; dx <= 1; dx += 2) {
-                        int ax = x + dx;
-                        int ay = y + dy;
-                        int az = z + dz;
-
-                        if (ax >= 0 && ax < gridPoints && az >= 0 && az < gridPoints && ay >= 0 && ay < gridPoints) {
-                            int neighborIndex = ax + az * gridPoints + ay * gridPoints * gridPoints;
-                            if (!erased[neighborIndex]) {
-                                float neighborDistance = cachedSdf[neighborIndex];
-                                float localCandidateDistance = neighborDistance + Vec(dx, dy, dz).magnitude();
-                                candidateDistances.push_back(localCandidateDistance);
+                        for (int dy = -1; dy <= 1; dy += 2) {
+                            for (int dz = -1; dz <= 1; dz += 2) {
+                                int ax = v.x + dx;
+                                int ay = v.y + dy;
+                                int az = v.z + dz;
+                                tryIndex(vm::ivec3(ax, ay, az));
                             }
                         }
                     }
                 }
             }
-            // sanity check: if we don't have any candidate distances, this should not have been a frontier point!
-            if (candidateDistances.size() == 0) {
-                std::cerr << "Error: candidateDistances.size() == 0; invalid frontier" << std::endl;
-                abort();
-            }
+        };
 
-            // set new sdf value
-            float minDistance = *std::min_element(candidateDistances.begin(), candidateDistances.end());
-            cachedSdf[index] = minDistance;
-            erased[index] = false;
-
-            // add neighbors to frontier if not seen yet
-            for (int dy = -1; dy <= 1; dy += 2) {
-                for (int dz = -1; dz <= 1; dz += 2) {
-                    for (int dx = -1; dx <= 1; dx += 2) {
-                        int ax = x + dx;
-                        int ay = y + dy;
-                        int az = z + dz;
-
-                        if (ax >= 0 && ax < gridPoints && az >= 0 && az < gridPoints && ay >= 0 && ay < gridPoints) {
-                            int neighborIndex = ax + az * gridPoints + ay * gridPoints * gridPoints;
-                            if (erased[neighborIndex] && !frontierSeenPoints[neighborIndex]) {
-                                frontierPoints.push_back(vm::ivec3(ax, ay, az));
-                                frontierSeenPoints[neighborIndex] = true;
-                            }
-                        }
-                    }
+        for (int ly = 0; ly < gridPoints; ly++) {
+            for (int lz = 0; lz < gridPoints; lz++) {
+                for (int lx = 0; lx < gridPoints; lx++) {
+                    tryIndex(vm::ivec3(lx, ly, lz));
                 }
             }
         }
