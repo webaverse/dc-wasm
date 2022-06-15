@@ -410,6 +410,11 @@ public:
         biomeWeights.w = cachedBiomesWeightsVectorField[index2D * 4 + 3];
     }
     void getCachedInterpolatedBiome3D(const float x, const float y, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+        if (std::isnan(x) || std::isnan(y) || std::isnan(z)) {
+            std::cout << "got nan getCachedInterpolatedBiome3D: " << x << " " << y << " " << z << std::endl;
+            abort();
+        }
+
         getCachedInterpolatedBiome2D(x, z, biome, biomeWeights);
 
         int lx = int(x) - min.x + 1;
