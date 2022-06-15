@@ -572,10 +572,6 @@ namespace DualContouring
     {
         const vm::ivec3 min = vm::ivec3(x, y, z);
         Chunk &chunk = getChunk(min, GF_NONE, lod);
-
-        int gridSize = chunkSize + 3;
-        std::vector<float> sdf(gridSize * gridSize * gridSize);
-        memcpy(sdf.data(), damageBuffer, sdf.size() * sizeof(float));
-        chunk.cachedSdf = std::move(sdf);
+        chunk.injectDamage(damageBuffer);
     }
 }
