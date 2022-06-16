@@ -90,6 +90,7 @@ public:
     std::vector<unsigned char> cachedBiomesVectorField;
     std::vector<float> cachedBiomesWeightsVectorField;
     std::vector<float> cachedHeightField;
+    std::vector<uint8_t> cachedSkylightField;
     std::vector<uint8_t> cachedAoField;
     std::vector<float> cachedSdf;
     std::vector<float> cachedDamageSdf;
@@ -105,6 +106,7 @@ public:
         cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
         cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
         cachedHeightField(std::move(other.cachedHeightField)),
+        cachedSkylightField(std::move(other.cachedSkylightField)),
         cachedAoField(std::move(other.cachedAoField)),
         cachedSdf(std::move(other.cachedSdf)),
         cachedDamageSdf(std::move(other.cachedDamageSdf))
@@ -129,6 +131,7 @@ public:
         cachedBiomesVectorField = std::move(other.cachedBiomesVectorField);
         cachedBiomesWeightsVectorField = std::move(other.cachedBiomesWeightsVectorField);
         cachedHeightField = std::move(other.cachedHeightField);
+        cachedSkylightField = std::move(other.cachedSkylightField);
         cachedAoField = std::move(other.cachedAoField);
         cachedSdf = std::move(other.cachedSdf);
         cachedDamageSdf = std::move(other.cachedDamageSdf);
@@ -175,6 +178,9 @@ public:
             }
         }
         if (flags & GenerateFlags::GF_AOFIELD) {
+            if (cachedSkylightField.size() == 0) {
+                initSkylightField();
+            }
             if (cachedAoField.size() == 0) {
                 initAoField();
             }
@@ -301,6 +307,35 @@ public:
                 
                 float elevation = elevationSum / (float)numSamples;
                 cachedHeightField[index2D] = elevation;
+            }
+        }
+    }
+    void initSkylightField() {
+        cachedSkylightField.resize(size * size * size);
+        for (int z = 0; z < size; z++) {
+            int lz = z + 1;
+
+            for (int x = 0; x < size; x++) {
+                int lx = x + 1;
+
+                int index2D = x + z * gridPoints;
+                float height = cachedHeightField[index2D];
+                constexpr float maxSkyLight = 8.f;
+                int topAY = min.y + size;
+                float skylight = std::min(std::max((float)topAY - height + maxSkyLight, 0.f), maxSkyLight);
+        
+                for (int y = size - 1; y >= 0; y--) {
+                    int ly = y + 1;
+
+                    int sdfIndex = lx + ly * gridPoints + lz * gridPoints * gridPoints;
+                    if (cachedSdf[sdfIndex] < 0.f) {
+                      skylight--;
+                    }
+                    
+                    // XXX change the dimensions to match sdf for a flood fill
+                    int skylightIndex = x + y * size + z * size * size;
+                    cachedSkylightField[skylightIndex] = skylight;
+                }
             }
         }
     }
