@@ -322,7 +322,7 @@ public:
                 // int lx = x + 1;
 
                 int index2D = x + z * gridPoints;
-                float height = cachedHeightField.at(index2D);
+                float height = cachedHeightField[index2D];
                 int topAY = min.y + gridPoints - 1;
                 float skylight = std::min(std::max((float)topAY - height + maxSkyLight, 0.f), maxSkyLight);
         
@@ -330,12 +330,12 @@ public:
                     // int ly = y + 1;
 
                     int sdfIndex = x + z * gridPoints + y * gridPoints * gridPoints;
-                    if (cachedSdf.at(sdfIndex) < 0.f) {
+                    if (cachedSdf[sdfIndex] < 0.f) {
                       skylight = std::min(std::max(skylight - 1.f, 0.f), maxSkyLight);
                     }
                     
                     int skylightIndex = x + z * gridPoints + y * gridPoints * gridPoints;
-                    cachedSkylightField.at(skylightIndex) = skylight;
+                    cachedSkylightField[skylightIndex] = skylight;
                 }
             }
         }
@@ -350,7 +350,7 @@ public:
                     // int ly = y + 1;
 
                     int skylightIndex = x + z * gridPoints + y * gridPoints * gridPoints;
-                    float maxNeighborSkylight = cachedSkylightField.at(skylightIndex);
+                    float maxNeighborSkylight = cachedSkylightField[skylightIndex];
                     for (int dz = -1; dz <= 1; dz += 2) {
                         for (int dx = -1; dx <= 1; dx += 2) {
                             for (int dy = -1; dy <= 1; dy += 2) {
@@ -362,14 +362,14 @@ public:
 
                                 if (lx >= 0 && lx < gridPoints && ly >= 0 && ly < gridPoints && lz >= 0 && lz < gridPoints) {
                                     int neighborIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                                    float skylight = cachedSkylightField.at(neighborIndex);
+                                    float skylight = cachedSkylightField[neighborIndex];
                                     maxNeighborSkylight = std::max(maxNeighborSkylight, skylight - deltaRadius);
                                 }
                             }
                         }
                     }
 
-                    cachedSkylightField.at(skylightIndex) = maxNeighborSkylight;
+                    cachedSkylightField[skylightIndex] = maxNeighborSkylight;
                 }
             }
         }
@@ -662,13 +662,13 @@ public:
     // skylight
     unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const {
         int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-        return cachedSkylightField.at(index);
+        return cachedSkylightField[index];
     }
 
     // ao
     unsigned char getAoLocal(const int lx, const int ly, const int lz) const {
         int index = lx + lz * size + ly * size * size;
-        return cachedAoField.at(index);
+        return cachedAoField[index];
     }
 
     // signed distance field function for a box at the origin
