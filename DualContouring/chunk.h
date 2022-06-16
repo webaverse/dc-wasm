@@ -311,36 +311,71 @@ public:
         }
     }
     void initSkylightField() {
-        cachedSkylightField.resize(size * size * size);
-        for (int z = 0; z < size; z++) {
-            int lz = z + 1;
+        std::cout << "init skylight " << min.x << " " << min.y << " " << min.z << std::endl;
 
-            for (int x = 0; x < size; x++) {
-                int lx = x + 1;
+        constexpr float maxSkyLight = 8.f;
+        cachedSkylightField.resize(gridPoints * gridPoints * gridPoints, maxSkyLight);
+        for (int z = 0; z < gridPoints; z++) {
+            // int lz = z + 1;
+
+            for (int x = 0; x < gridPoints; x++) {
+                // int lx = x + 1;
 
                 int index2D = x + z * gridPoints;
-                float height = cachedHeightField[index2D];
-                constexpr float maxSkyLight = 8.f;
-                int topAY = min.y + size;
+                float height = cachedHeightField.at(index2D);
+                int topAY = min.y + gridPoints - 1;
                 float skylight = std::min(std::max((float)topAY - height + maxSkyLight, 0.f), maxSkyLight);
         
-                for (int y = size - 1; y >= 0; y--) {
-                    int ly = y + 1;
+                for (int y = gridPoints - 1; y >= 0; y--) {
+                    // int ly = y + 1;
 
-                    int sdfIndex = lx + ly * gridPoints + lz * gridPoints * gridPoints;
-                    if (cachedSdf[sdfIndex] < 0.f) {
-                      skylight--;
+                    int sdfIndex = x + z * gridPoints + y * gridPoints * gridPoints;
+                    if (cachedSdf.at(sdfIndex) < 0.f) {
+                      skylight = std::min(std::max(skylight - 1.f, 0.f), maxSkyLight);
                     }
                     
-                    // XXX change the dimensions to match sdf for a flood fill
-                    int skylightIndex = x + y * size + z * size * size;
-                    cachedSkylightField[skylightIndex] = skylight;
+                    int skylightIndex = x + z * gridPoints + y * gridPoints * gridPoints;
+                    cachedSkylightField.at(skylightIndex) = skylight;
+                }
+            }
+        }
+
+        for (int x = 0; x < gridPoints; x++) {
+            for (int z = 0; z < gridPoints; z++) {
+                // int lz = z + 1;
+                // int lx = x + 1;
+
+                // for (int y = gridPoints - 1; y >= 0; y--) {
+                for (int y = 0; y < gridPoints; y++) {
+                    // int ly = y + 1;
+
+                    int skylightIndex = x + z * gridPoints + y * gridPoints * gridPoints;
+                    float maxNeighborSkylight = cachedSkylightField.at(skylightIndex);
+                    for (int dz = -1; dz <= 1; dz += 2) {
+                        for (int dx = -1; dx <= 1; dx += 2) {
+                            for (int dy = -1; dy <= 1; dy += 2) {
+                                int lx = x + dx;
+                                int ly = y + dy;
+                                int lz = z + dz;
+
+                                float deltaRadius = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+                                if (lx >= 0 && lx < gridPoints && ly >= 0 && ly < gridPoints && lz >= 0 && lz < gridPoints) {
+                                    int neighborIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
+                                    float skylight = cachedSkylightField.at(neighborIndex);
+                                    maxNeighborSkylight = std::max(maxNeighborSkylight, skylight - deltaRadius);
+                                }
+                            }
+                        }
+                    }
+
+                    cachedSkylightField.at(skylightIndex) = maxNeighborSkylight;
                 }
             }
         }
     }
     void initAoField() {
-        cachedAoField.resize(size * size * size);
+        cachedAoField.resize(size * size * size, 3 * 3 * 3);
         for (int y = 0; y < size; y++) {
             int ly = y + 1;
             
@@ -354,13 +389,13 @@ public:
                     for (int dy = -1; dy <= 1; dy++) {
                         for (int dz = -1; dz <= 1; dz++) {
                             for (int dx = -1; dx <= 1; dx++) {
-                                int sdfIndex = (lx + dx) + (ly + dy) * gridPoints + (lz + dz) * gridPoints * gridPoints;
+                                int sdfIndex = (lx + dx) + (lz + dz) * gridPoints + (ly + dy) * gridPoints * gridPoints;
                                 numOpens += (unsigned char)(cachedSdf[sdfIndex] >= 0.f);
                             }
                         }
                     }
 
-                    int aoIndex = x + y * size + z * size * size;
+                    int aoIndex = x + z * size + y * size * size;
                     cachedAoField[aoIndex] = numOpens;
                 }
             }
@@ -626,14 +661,14 @@ public:
 
     // skylight
     unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const {
-        int index = lx + ly * size + lz * size * size;
-        return cachedSkylightField[index];
+        int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
+        return cachedSkylightField.at(index);
     }
 
     // ao
     unsigned char getAoLocal(const int lx, const int ly, const int lz) const {
-        int index = lx + ly * size + lz * size * size;
-        return cachedAoField[index];
+        int index = lx + lz * size + ly * size * size;
+        return cachedAoField.at(index);
     }
 
     // signed distance field function for a box at the origin

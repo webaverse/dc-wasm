@@ -128,12 +128,12 @@ namespace DualContouring
                     int ay = y + dy;
                     int az = z + dz;
 
-                    Chunk &chunkNoise = getChunkAt(ax, az, GF_AOFIELD, lod);
+                    Chunk &chunkNoise = getChunkAt(ax, ay, az, GF_AOFIELD, lod);
 
                     // chunk-local
-                    int lx = ax - chunkNoise.min.x;
-                    int ly = ay - chunkNoise.min.y;
-                    int lz = az - chunkNoise.min.z;
+                    int lx = ax - chunkNoise.min.x + 1;
+                    int ly = ay - chunkNoise.min.y + 1;
+                    int lz = az - chunkNoise.min.z + 1;
 
                     int skylightIndex = dx + dy * w + dz * w * h;
                     skylights[skylightIndex] = chunkNoise.getSkylightLocal(lx, ly, lz);
@@ -150,7 +150,7 @@ namespace DualContouring
                     int ay = y + dy;
                     int az = z + dz;
 
-                    Chunk &chunkNoise = getChunkAt(ax, az, GF_AOFIELD, lod);
+                    Chunk &chunkNoise = getChunkAt(ax, ay, az, GF_AOFIELD, lod);
 
                     // chunk-local
                     int lx = ax - chunkNoise.min.x;
