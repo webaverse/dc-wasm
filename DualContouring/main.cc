@@ -120,12 +120,12 @@ namespace DualContouring
         }
     }
     void getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos) {
-        for (int dy = 0; dy < h; dy++) {
-            for (int dz = 0; dz < d; dz++) {
+        for (int dz = 0; dz < d; dz++) {
+            for (int dy = 0; dy < h; dy++) {
                 for (int dx = 0; dx < w; dx++) {
                     // absolute
                     int ax = x + dx;
-                    int ay = x + dx;
+                    int ay = y + dy;
                     int az = z + dz;
 
                     Chunk &chunkNoise = getChunkAt(ax, az, GF_AOFIELD, lod);
@@ -135,7 +135,7 @@ namespace DualContouring
                     int ly = ay - chunkNoise.min.y;
                     int lz = az - chunkNoise.min.z;
 
-                    int aoIndex = dx + dz * w + dy * w * d;
+                    int aoIndex = dx + dy * w + dz * w * h;
                     aos[aoIndex] = chunkNoise.getAoLocal(lx, ly, lz);
                 }
             }

@@ -591,7 +591,7 @@ public:
 
     // ao
     unsigned char getAoLocal(const int lx, const int ly, const int lz) const {
-        int index = lx + lz * size + ly * size * size;
+        int index = lx + ly * size + lz * size * size;
         return cachedAoField[index];
     }
 
