@@ -360,7 +360,7 @@ public:
                         }
                     }
 
-                    int aoIndex = lx + ly * size + lz * size * size;
+                    int aoIndex = x + y * size + z * size * size;
                     cachedAoField[aoIndex] = numOpens;
                 }
             }
