@@ -119,6 +119,28 @@ namespace DualContouring
             }
         }
     }
+    void getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
+        for (int dz = 0; dz < d; dz++) {
+            for (int dy = 0; dy < h; dy++) {
+                for (int dx = 0; dx < w; dx++) {
+                    // absolute
+                    int ax = x + dx;
+                    int ay = y + dy;
+                    int az = z + dz;
+
+                    Chunk &chunkNoise = getChunkAt(ax, az, GF_AOFIELD, lod);
+
+                    // chunk-local
+                    int lx = ax - chunkNoise.min.x;
+                    int ly = ay - chunkNoise.min.y;
+                    int lz = az - chunkNoise.min.z;
+
+                    int skylightIndex = dx + dy * w + dz * w * h;
+                    skylights[skylightIndex] = chunkNoise.getSkylightLocal(lx, ly, lz);
+                }
+            }
+        }
+    }
     void getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos) {
         for (int dz = 0; dz < d; dz++) {
             for (int dy = 0; dy < h; dy++) {

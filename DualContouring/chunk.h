@@ -624,6 +624,12 @@ public:
         );
     }
 
+    // skylight
+    unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const {
+        int index = lx + ly * size + lz * size * size;
+        return cachedSkylightField[index];
+    }
+
     // ao
     unsigned char getAoLocal(const int lx, const int ly, const int lz) const {
         int index = lx + ly * size + lz * size * size;
