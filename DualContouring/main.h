@@ -28,6 +28,8 @@ namespace DualContouring
     // float *getChunkHeightField(float x, float y, float z);
     // float getHeight(float x, float z, const int &lod);
     // void getHeights(float *vec2s, int count, float *heights, const int &lod);
+    void getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights);
+    void getChunkAo(int x, int y, int z, int lod, unsigned char *ao);
     void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights);
     void getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos);
     void getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos);

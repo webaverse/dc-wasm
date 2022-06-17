@@ -119,6 +119,16 @@ namespace DualContouring
             }
         }
     }
+    void getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights) {
+        const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
+        Chunk &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
+        chunkNoise.getCachedSkylight(skylights);
+    }
+    void getChunkAo(int x, int y, int z, int lod, unsigned char *aos) {
+        const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
+        Chunk &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
+        chunkNoise.getCachedAo(aos);
+    }
     void getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
         for (int dz = 0; dz < d; dz++) {
             for (int dy = 0; dy < h; dy++) {
