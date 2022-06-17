@@ -637,6 +637,36 @@ public:
         return result;
     } */
 
+    // lighting
+    void getCachedSkylight(unsigned char *skylights) const {
+        for (int z = 0; z < size; z++) {
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    int dstIndex = x + y * size + z * size * size;
+
+                    int lx = x + 1;
+                    int ly = y + 1;
+                    int lz = z + 1;
+                    int srcIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints; // note: output is y-first, but storage is z-first
+
+                    skylights[dstIndex] = cachedSkylightField[srcIndex];
+                }
+            }
+        }
+    }
+    void getCachedAo(unsigned char *aos) const {
+        for (int z = 0; z < size; z++) {
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    int dstIndex = x + y * size + z * size * size;
+                    int srcIndex = x + z * size + y * size * size; // note: output is y-first, but storage is z-first
+
+                    aos[dstIndex] = cachedAoField[srcIndex];
+                }
+            }
+        }
+    }
+
     // sdf
     float getCachedInterpolatedSdf(const float x, const float y, const float z) const {
         const float localX = x - min.x + 1;
