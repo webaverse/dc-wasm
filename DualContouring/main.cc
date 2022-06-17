@@ -144,8 +144,8 @@ namespace DualContouring
                     int lx = ax - chunkNoise.min.x + 1;
                     int ly = ay - chunkNoise.min.y + 1;
                     int lz = az - chunkNoise.min.z + 1;
+                    int skylightIndex = dx + dy * w + dz * w * h; // note: output is y-first, but storage is z-first
 
-                    int skylightIndex = dx + dy * w + dz * w * h;
                     skylights[skylightIndex] = chunkNoise.getSkylightLocal(lx, ly, lz);
                 }
             }
@@ -166,8 +166,8 @@ namespace DualContouring
                     int lx = ax - chunkNoise.min.x;
                     int ly = ay - chunkNoise.min.y;
                     int lz = az - chunkNoise.min.z;
+                    int aoIndex = dx + dy * w + dz * w * h; // note: output is y-first, but storage is z-first
 
-                    int aoIndex = dx + dy * w + dz * w * h;
                     aos[aoIndex] = chunkNoise.getAoLocal(lx, ly, lz);
                 }
             }
