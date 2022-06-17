@@ -311,7 +311,7 @@ public:
         }
     }
     void initSkylightField() {
-        std::cout << "init skylight " << min.x << " " << min.y << " " << min.z << std::endl;
+        // std::cout << "init skylight " << min.x << " " << min.y << " " << min.z << std::endl;
 
         constexpr float maxSkyLight = 8.f;
         cachedSkylightField.resize(gridPoints * gridPoints * gridPoints, maxSkyLight);
