@@ -238,11 +238,11 @@ unsigned char DCInstance::getBiome(const vm::ivec2 &worldPosition, const int &lo
 uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];
-    const int maxLodNumber = *std::max_element(lodArray, lodArray + 8);
+    // const int maxLodNumber = *std::max_element(lodArray, lodArray + 8);
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
     // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
-    Chunk &chunk = getChunk(octreeMin, GF_SDF, maxLodNumber);
+    Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
     ChunkOctree chunkOctree(chunk, lodArray);
     if (!chunkOctree.root)
     {
