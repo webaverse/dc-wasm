@@ -16,7 +16,7 @@ namespace DualContouring
     Noises *noises = nullptr;
 
     // storing the octrees that we would delete after mesh construction
-    std::vector<OctreeNode *> neighbourNodes;
+    // std::vector<OctreeNode *> neighbourNodes;
 
     // storing the octree roots here for search
     std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
