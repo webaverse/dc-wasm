@@ -189,8 +189,7 @@ ChunkOctree::ChunkOctree(Chunk &chunk, int lodArray[8]) : min(chunk.min), size(c
     std::shared_ptr<OctreeNode> rootNode = std::make_shared<OctreeNode>(OctreeNode(min, size, Node_Internal));
     std::vector<std::shared_ptr<OctreeNode>> voxelNodes = generateVoxelNodes(chunk);
     root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
-    std::vector<std::shared_ptr<OctreeNode>> neighbourNodes;
-    std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(chunk, lodArray, neighbourNodes);
+    std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(chunk, lodArray);
     seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
 }
 std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateVoxelNodes(Chunk &chunk)
@@ -303,7 +302,7 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::constructChunkSeamNodes(Ch
     return nodes;
 }
 
-std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateSeamNodes(Chunk &chunk, const int lodArray[], std::vector<std::shared_ptr<OctreeNode>> &neighbourNodes)
+std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateSeamNodes(Chunk &chunk, const int lodArray[])
 {
     const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
     const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunk.size);
@@ -351,6 +350,7 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateSeamNodes(Chunk &c
 
     // creating the seam nodes of the neighbouring chunks
     // NEIGHBOUR_CHUNKS_OFFSETS[i]
+    std::vector<std::shared_ptr<OctreeNode>> neighbourNodes;
     for (int i = 1; i < 8; i++)
     {
         const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunk.size;

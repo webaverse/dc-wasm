@@ -125,7 +125,7 @@ public:
 
     std::vector<std::shared_ptr<OctreeNode>> findOctreeNodes(std::shared_ptr<OctreeNode> root, FilterNodesFunc filterFunc);
     std::vector<std::shared_ptr<OctreeNode>> constructChunkSeamNodes(Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize);
-    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(Chunk &chunk, const int lodArray[], std::vector<std::shared_ptr<OctreeNode>> &neighbourNodes);
+    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(Chunk &chunk, const int lodArray[]);
 
     std::vector<std::shared_ptr<OctreeNode>> constructParents(
         std::shared_ptr<OctreeNode> &octree,
