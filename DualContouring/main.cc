@@ -19,7 +19,7 @@ namespace DualContouring
     // std::vector<OctreeNode *> neighbourNodes;
 
     // storing the octree roots here for search
-    std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
+    // std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
 
     void initialize(int newChunkSize, int seed)
