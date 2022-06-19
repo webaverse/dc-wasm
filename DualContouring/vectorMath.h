@@ -151,6 +151,21 @@ namespace vm
         int z;
         int w;
     };
+    struct ibox3
+    {
+        ibox3()
+        {
+            min = ivec3(0);
+            max = ivec3(0);
+        }
+        ibox3(const ivec3 &_min, const ivec3 &_max)
+        {
+            min = _min;
+            max = _max;
+        }
+        ivec3 min;
+        ivec3 max;
+    };
 
     vec2 min(const vec2 &v1, const vec2 &v2);
     vec3 min(const vec3 &v1, const vec3 &v2);
