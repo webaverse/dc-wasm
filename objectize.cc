@@ -103,6 +103,10 @@ EMSCRIPTEN_KEEPALIVE void injectDamage(DCInstance *inst, float x, float y, float
     inst->injectDamage(x, y, z, damageBuffer, 1);
 }
 
+EMSCRIPTEN_KEEPALIVE void setRange(DCInstance *inst, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    inst->setRange(vm::ivec3(minX, minY, minZ), vm::ivec3(maxX, maxY, maxZ));
+}
+
 EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {
     return malloc(size);
 }

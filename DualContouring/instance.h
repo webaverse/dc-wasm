@@ -14,6 +14,9 @@
 class DCInstance {
 public:
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
+    vm::ivec3 rangeMin;
+    vm::ivec3 rangeMax;
+    bool hasRange;
 
     DCInstance();
     ~DCInstance();
@@ -61,6 +64,8 @@ public:
 
     );
     void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
+
+    void setRange(const vm::ivec3 &min, const vm::ivec3 &max);
 
     unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod);
 };

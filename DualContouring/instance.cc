@@ -3,7 +3,7 @@
 #include "../vector.h"
 
 // constructor/destructor
-DCInstance::DCInstance() {}
+DCInstance::DCInstance() : hasRange(false) {}
 DCInstance::~DCInstance() {}
 
 // chunks
@@ -501,4 +501,10 @@ void DCInstance::injectDamage(const float &x, const float &y, const float &z, fl
     const vm::ivec3 min = vm::ivec3(x, y, z);
     Chunk &chunk = getChunk(min, GF_NONE, lod);
     chunk.injectDamage(damageBuffer);
+}
+
+void DCInstance::setRange(const vm::ivec3 &min, const vm::ivec3 &max) {
+    rangeMin = min;
+    rangeMax = max;
+    hasRange = true;
 }
