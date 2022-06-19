@@ -84,7 +84,6 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
 float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 {
-
 	const float terrain = chunk.getCachedInterpolatedSdf(position.x, position.y, position.z);
 	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
 
@@ -103,17 +102,6 @@ float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 			vm::vec3(w, h, d)
 		);
 		minDistance = std::max(minDistance, cube);
-    
-
-		// std::cout << "rangeMin: " << rangeMin.x << " " << rangeMin.y << " " << rangeMin.z << " " <<
-		// 	"rangeMax: " << rangeMax.x << " " << rangeMax.y << " " << rangeMax.z << std::endl;
-		// minDistance += maxDistanceOutside;
-
-		// minDistance = std::max(minDistance, minDistanceOutside);
-		// minDistance = std::min(minDistance, vm::length(position - vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z)));
-		// minDistance = std::min(minDistance, vm::length(position - vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)));
-	  
-		// minDistance = std::min(std::max(minDistance, (float)-chunk.size), (float)chunk.size);
 	}
 	/* if (damage != 0.) {
 		std::cout << "got damage " << damage << " - " << position.x << " " << position.y << " " << position.z << std::endl;
