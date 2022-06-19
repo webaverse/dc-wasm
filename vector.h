@@ -1032,4 +1032,12 @@ class Frustum {
     }
 };
 
+class Box3 {
+public:
+  Vec min;
+  Vec max;
+
+  Box3(const Vec &min, const Vec &max);
+};
+
 #endif

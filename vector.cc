@@ -209,3 +209,7 @@ Vec &Vec::applyQuaternion(const Quat &q) {
 
   return *this;
 }
+
+//
+
+Box3::Box3(const Vec &min, const Vec &max) : min(min), max(max) {}
