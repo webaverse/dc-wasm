@@ -7,6 +7,7 @@
 #include "../worley.h"
 #include "biomes.h"
 #include "chunk.h"
+#include "density.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>

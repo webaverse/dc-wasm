@@ -104,7 +104,7 @@ OctreeNode::OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeTy
 
 //
 
-vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, Chunk &chunk)
+vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, DCInstance *inst, Chunk &chunk)
 {
     // approximate the zero crossing by finding the min value along the edge
     float minValue = 100000.f;
@@ -114,7 +114,7 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
     {
         const float percentage = i / steps;
         const vm::vec3 p = p0 + ((p1 - p0) * percentage);
-        const float density = abs(Density_Func(p, chunk));
+        const float density = abs(Density_Func(p, inst, chunk));
         if (density < minValue)
         {
             minValue = density;
@@ -125,16 +125,16 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
     return p0 + ((p1 - p0) * t);
 }
 
-vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, Chunk &chunkNoise)
+vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst, Chunk &chunkNoise)
 {
     // finding the surface normal with the derivative
     const float H = 0.001f;
-    const float dx = Density_Func(p + vm::vec3(H, 0.f, 0.f), chunkNoise) -
-                     Density_Func(p - vm::vec3(H, 0.f, 0.f), chunkNoise);
-    const float dy = Density_Func(p + vm::vec3(0.f, H, 0.f), chunkNoise) -
-                     Density_Func(p - vm::vec3(0.f, H, 0.f), chunkNoise);
-    const float dz = Density_Func(p + vm::vec3(0.f, 0.f, H), chunkNoise) -
-                     Density_Func(p - vm::vec3(0.f, 0.f, H), chunkNoise);
+    const float dx = Density_Func(p + vm::vec3(H, 0.f, 0.f), inst, chunkNoise) -
+                     Density_Func(p - vm::vec3(H, 0.f, 0.f), inst, chunkNoise);
+    const float dy = Density_Func(p + vm::vec3(0.f, H, 0.f), inst, chunkNoise) -
+                     Density_Func(p - vm::vec3(0.f, H, 0.f), inst, chunkNoise);
+    const float dz = Density_Func(p + vm::vec3(0.f, 0.f, H), inst, chunkNoise) -
+                     Density_Func(p - vm::vec3(0.f, 0.f, H), inst, chunkNoise);
     return vm::normalize(vm::vec3(dx, dy, dz));
 }
 
@@ -154,7 +154,7 @@ void clampPositionToMassPoint(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSo
     }
 }
 
-int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, Chunk &chunk)
+int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst, Chunk &chunk)
 {
     const int MAX_CROSSINGS = 6;
     int edgeCount = 0;
@@ -173,8 +173,8 @@ int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver 
         const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * minVoxelSize;
         const vm::vec3 p1 = vm::vec3(ip1.x, ip1.y, ip1.z);
         const vm::vec3 p2 = vm::vec3(ip2.x, ip2.y, ip2.z);
-        const vm::vec3 p = approximateZeroCrossingPosition(p1, p2, chunk);
-        const vm::vec3 n = calculateSurfaceNormal(p, chunk);
+        const vm::vec3 p = approximateZeroCrossingPosition(p1, p2, inst, chunk);
+        const vm::vec3 n = calculateSurfaceNormal(p, inst, chunk);
         qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
         averageNormal += n;
         edgeCount++;
@@ -184,15 +184,15 @@ int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver 
 
 //
 
-ChunkOctree::ChunkOctree(Chunk &chunk, int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
+ChunkOctree::ChunkOctree(DCInstance *inst, Chunk &chunk, int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
 {
     std::shared_ptr<OctreeNode> rootNode = std::make_shared<OctreeNode>(OctreeNode(min, size, Node_Internal));
-    std::vector<std::shared_ptr<OctreeNode>> voxelNodes = generateVoxelNodes(chunk);
+    std::vector<std::shared_ptr<OctreeNode>> voxelNodes = generateVoxelNodes(inst, chunk);
     root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
-    std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(chunk, lodArray);
+    std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(inst, chunk, lodArray);
     seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
 }
-std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateVoxelNodes(Chunk &chunk)
+std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateVoxelNodes(DCInstance *inst, Chunk &chunk)
 {
     std::vector<std::shared_ptr<OctreeNode>> nodes;
     const vm::ivec3 chunkMax = chunk.min + chunk.size;
@@ -203,17 +203,17 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateVoxelNodes(Chunk &
             {
                 const vm::ivec3 min = vm::ivec3(x, y, z);
                 std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, chunk.lod, Node_Leaf));
-                std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, chunk);
+                std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, inst, chunk);
                 if (seamNode)
                     nodes.push_back(seamNode);
             }
     return nodes;
 }
-VertexData ChunkOctree::generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, Chunk &chunk)
+VertexData ChunkOctree::generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, DCInstance *inst, Chunk &chunk)
 {
     svd::QefSolver qef;
     vm::vec3 averageNormal(0.f);
-    int edgeCount = findEdgeIntersection(voxelNode, qef, averageNormal, corners, minVoxelSize, chunk);
+    int edgeCount = findEdgeIntersection(voxelNode, qef, averageNormal, corners, minVoxelSize, inst, chunk);
     svd::Vec3 qefPosition;
     qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
     vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
@@ -227,13 +227,13 @@ VertexData ChunkOctree::generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode
     return vertexData;
 }
 
-std::shared_ptr<OctreeNode> ChunkOctree::constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, Chunk &chunk)
+std::shared_ptr<OctreeNode> ChunkOctree::constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, DCInstance *inst, Chunk &chunk)
 {
     int corners = 0;
     for (int i = 0; i < 8; i++)
     {
         const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
-        const float density = Density_Func(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), chunk);
+        const float density = Density_Func(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), inst, chunk);
         const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
         corners |= (material << i);
     }
@@ -244,7 +244,7 @@ std::shared_ptr<OctreeNode> ChunkOctree::constructLeaf(std::shared_ptr<OctreeNod
     else
     {
         // voxel is touching the surface
-        voxelNode->vertexData = std::make_shared<VertexData>(generateVoxelData(voxelNode, corners, chunk));
+        voxelNode->vertexData = std::make_shared<VertexData>(generateVoxelData(voxelNode, corners, inst, chunk));
     }
     return voxelNode;
 }
@@ -280,7 +280,7 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::findOctreeNodes(std::share
     return nodes;
 }
 
-std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::constructChunkSeamNodes(Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
+std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::constructChunkSeamNodes(DCInstance *inst, Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
 {
     std::vector<std::shared_ptr<OctreeNode>> nodes;
     const vm::ivec3 chunkMax = chunkMin + chunkSize;
@@ -294,7 +294,7 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::constructChunkSeamNodes(Ch
                 if (filterFunc(min, max))
                 {
                     std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, lod, Node_Leaf));
-                    std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, chunk);
+                    std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, inst, chunk);
                     if (seamNode)
                         nodes.push_back(seamNode);
                 }
@@ -302,7 +302,7 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::constructChunkSeamNodes(Ch
     return nodes;
 }
 
-std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateSeamNodes(Chunk &chunk, const int lodArray[])
+std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateSeamNodes(DCInstance *inst, Chunk &chunk, const int lodArray[])
 {
     const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
     const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunk.size);
@@ -355,7 +355,7 @@ std::vector<std::shared_ptr<OctreeNode>> ChunkOctree::generateSeamNodes(Chunk &c
     {
         const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunk.size;
         const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-        std::vector<std::shared_ptr<OctreeNode>> chunkSeamNodes = constructChunkSeamNodes(chunk, lodArray[i], chunkMin, selectionFuncs[i], chunk.size);
+        std::vector<std::shared_ptr<OctreeNode>> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], chunk.size);
         neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
     }
 

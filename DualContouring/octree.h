@@ -96,20 +96,20 @@ public:
 
 //
 
-vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, Chunk &chunk);
+vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, DCInstance *inst, Chunk &chunk);
 
-vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, Chunk &chunkNoise);
+vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst, Chunk &chunkNoise);
 
 void clampPositionToMassPoint(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
 
-int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, Chunk &chunk);
+int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst, Chunk &chunk);
 
 //
 
 class ChunkOctree
 {
 public:
-    ChunkOctree(Chunk &chunk, int lodArray[8]);
+    ChunkOctree(DCInstance *inst, Chunk &chunk, int lodArray[8]);
 
     std::shared_ptr<OctreeNode> root;
     std::shared_ptr<OctreeNode> seamRoot;
@@ -118,14 +118,14 @@ public:
     int minVoxelSize; // determined by level of detail
     int size;
 
-    std::vector<std::shared_ptr<OctreeNode>> generateVoxelNodes(Chunk &chunk);
-    VertexData generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, Chunk &chunk);
-    std::shared_ptr<OctreeNode> constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, Chunk &chunk);
+    std::vector<std::shared_ptr<OctreeNode>> generateVoxelNodes(DCInstance *inst, Chunk &chunk);
+    VertexData generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, DCInstance *inst, Chunk &chunk);
+    std::shared_ptr<OctreeNode> constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, DCInstance *inst, Chunk &chunk);
     void findOctreeNodesRecursively(std::shared_ptr<OctreeNode> &node, FilterNodesFunc &func, std::vector<std::shared_ptr<OctreeNode>> &nodes);
 
     std::vector<std::shared_ptr<OctreeNode>> findOctreeNodes(std::shared_ptr<OctreeNode> root, FilterNodesFunc filterFunc);
-    std::vector<std::shared_ptr<OctreeNode>> constructChunkSeamNodes(Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize);
-    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(Chunk &chunk, const int lodArray[]);
+    std::vector<std::shared_ptr<OctreeNode>> constructChunkSeamNodes(DCInstance *inst, Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize);
+    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(DCInstance *inst, Chunk &chunk, const int lodArray[]);
 
     std::vector<std::shared_ptr<OctreeNode>> constructParents(
         std::shared_ptr<OctreeNode> &octree,

@@ -80,23 +80,41 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 	return biome;
 } */
 
-float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
+// negative density means inside the chunk, positive density means outside the chunk
+// when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
+float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 {
-	// const float MAX_HEIGHT = 20.f;
-	// float noise = 0.0;
-	// const vm::vec2 p = vm::vec2(position.x, position.z);
-	// const float mask = glm::clamp(glm::simplex(glm::vec2(p.x, p.y) / (float)200) * 5.0, 0.0, 1.0);
-	// const float fbmNoise = FBM(p);
-	// const vm::vec2 q = vm::vec2(fbmNoise * 50.0, FBM(p + vm::vec2(50.2, 1.3)) * 60.0);
-	// noise += glm::clamp((1.0 - mask) * FBM(p + q) * 2.0, -100.0, 10.0);
-	// noise += mask * fbmNoise / 2.0;
-	// const float terrain = chunkNoise.getNoise(position.x, position.y);
-	const float terrain = chunkNoise.getCachedInterpolatedSdf(position.x, position.y, position.z);
-	const float damage = chunkNoise.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
-	// std::cout << "terrain " << terrain << " : " << position.x << " " << position.y << " " << position.z << std::endl;
 
-  return std::min(terrain, damage);
+	const float terrain = chunk.getCachedInterpolatedSdf(position.x, position.y, position.z);
+	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
 
+	float minDistance = std::min(terrain, damage);
+	if (inst->hasRange) { // range clipper enabled
+    const vm::ivec3 &rangeMin = inst->rangeMin;
+		const vm::ivec3 &rangeMax = inst->rangeMax;
+
+    int w = (rangeMax.x - rangeMin.x) / 2;
+		int h = (rangeMax.y - rangeMin.y) / 2;
+		int d = (rangeMax.z - rangeMin.z) / 2;
+
+    const float cube = cuboid(
+			position,
+			vm::vec3(rangeMin.x + w / 2, rangeMin.y + h / 2, rangeMin.z + d / 2),
+			vm::vec3(w, h, d)
+		);
+		minDistance = std::max(minDistance, cube);
+    
+
+		// std::cout << "rangeMin: " << rangeMin.x << " " << rangeMin.y << " " << rangeMin.z << " " <<
+		// 	"rangeMax: " << rangeMax.x << " " << rangeMax.y << " " << rangeMax.z << std::endl;
+		// minDistance += maxDistanceOutside;
+
+		// minDistance = std::max(minDistance, minDistanceOutside);
+		// minDistance = std::min(minDistance, vm::length(position - vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z)));
+		// minDistance = std::min(minDistance, vm::length(position - vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)));
+	  
+		// minDistance = std::min(std::max(minDistance, (float)-chunk.size), (float)chunk.size);
+	}
 	/* if (damage != 0.) {
 		std::cout << "got damage " << damage << " - " << position.x << " " << position.y << " " << position.z << std::endl;
 	} */
@@ -110,4 +128,5 @@ float Density_Func(const vm::vec3 &position, Chunk &chunkNoise)
 	// return cube;
 	// return terrain;
 	// return std::max(-cube, terrain);
+	return minDistance;
 }

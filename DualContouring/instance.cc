@@ -243,7 +243,7 @@ uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
     // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
     Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
-    ChunkOctree chunkOctree(chunk, lodArray);
+    ChunkOctree chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");
