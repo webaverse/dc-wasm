@@ -10,13 +10,15 @@
 #include <memory>
 #include "chunk.h"
 #include "octree.h"
+#include "../vector.h"
 
 class DCInstance {
 public:
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
-    vm::ivec3 rangeMin;
-    vm::ivec3 rangeMax;
-    bool hasRange;
+    // vm::ivec3 rangeMin;
+    // vm::ivec3 rangeMax;
+    // bool hasRange;
+    std::unique_ptr<vm::ibox3> range;
 
     DCInstance();
     ~DCInstance();

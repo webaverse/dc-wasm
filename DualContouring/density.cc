@@ -88,9 +88,9 @@ float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
 
 	float minDistance = std::min(terrain, damage);
-	if (inst->hasRange) { // range clipper enabled
-    const vm::ivec3 &rangeMin = inst->rangeMin;
-		const vm::ivec3 &rangeMax = inst->rangeMax;
+	if (inst->range) { // range clipper enabled
+    const vm::ivec3 &rangeMin = inst->range->min;
+		const vm::ivec3 &rangeMax = inst->range->max;
 
     int w = (rangeMax.x - rangeMin.x) / 2;
 		int h = (rangeMax.y - rangeMin.y) / 2;

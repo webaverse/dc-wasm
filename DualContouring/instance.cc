@@ -3,7 +3,7 @@
 #include "../vector.h"
 
 // constructor/destructor
-DCInstance::DCInstance() : hasRange(false) {}
+DCInstance::DCInstance() {}
 DCInstance::~DCInstance() {}
 
 // chunks
@@ -504,7 +504,11 @@ void DCInstance::injectDamage(const float &x, const float &y, const float &z, fl
 }
 
 void DCInstance::setRange(const vm::ivec3 &min, const vm::ivec3 &max) {
-    rangeMin = min;
-    rangeMax = max;
-    hasRange = true;
+    range.reset(new vm::ibox3(
+        vm::ivec3(min.x, min.y, min.z),
+        vm::ivec3(max.x, max.y, max.z)
+    ));
+    // rangeMin = min;
+    // rangeMax = max;
+    // hasRange = true;
 }
