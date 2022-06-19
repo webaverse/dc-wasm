@@ -92,14 +92,19 @@ float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
     const vm::ivec3 &rangeMin = inst->range->min;
 		const vm::ivec3 &rangeMax = inst->range->max;
 
-    int w = (rangeMax.x - rangeMin.x) / 2;
-		int h = (rangeMax.y - rangeMin.y) / 2;
-		int d = (rangeMax.z - rangeMin.z) / 2;
+    // vm::ivec3 rangeMinP1 = rangeMin + 1.f;
+    // vm::ivec3 rangeMaxM1 = rangeMax - 1.f;
+		// vm::ivec3 rangeMinP1 = rangeMin;
+		// vm::ivec3 rangeMaxM1 = rangeMax;
+
+    int w = rangeMax.x - rangeMin.x;
+		int h = rangeMax.y - rangeMin.y;
+		int d = rangeMax.z - rangeMin.z;
 
     const float cube = cuboid(
 			position,
-			vm::vec3(rangeMin.x + w / 2, rangeMin.y + h / 2, rangeMin.z + d / 2),
-			vm::vec3(w, h, d)
+			(vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z) + vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)) / 2.f,
+			vm::vec3(w, h, d) / 2.f
 		);
 		minDistance = std::max(minDistance, cube);
 	}
