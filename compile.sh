@@ -1,7 +1,7 @@
 mkdir -p bin
 echo 'building main...'
 # m = 64*1024; s = 350000000; Math.floor(s/m)*m;
-# emcc -s WASM=1 -s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=419430400 -s ALLOW_MEMORY_GROWTH=1 -O3
+# emcc -s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=52428800 -D__linux__ -s ALLOW_MEMORY_GROWTH=0 -g -s ASSERTIONS=1 \
 emcc -s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=52428800 -D__linux__ -s ALLOW_MEMORY_GROWTH=0 -O3 \
   objectize.cc \
   FastNoise.cpp util.cc vector.cc worley.cc \
