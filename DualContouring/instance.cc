@@ -24,26 +24,29 @@ Chunk &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const int
 Chunk &DCInstance::getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int &lod)
 {
     vm::ivec3 min = vm::ivec3(
-      (int)std::floor(x / (float)DualContouring::chunkSize),
-      (int)std::floor(y / (float)DualContouring::chunkSize),
-      (int)std::floor(z / (float)DualContouring::chunkSize)
-    ) * DualContouring::chunkSize;
+                        (int)std::floor(x / (float)DualContouring::chunkSize),
+                        (int)std::floor(y / (float)DualContouring::chunkSize),
+                        (int)std::floor(z / (float)DualContouring::chunkSize)) *
+                    DualContouring::chunkSize;
     return getChunk(min, flags, lod);
 }
 Chunk &DCInstance::getChunkAt(const float x, const float z, GenerateFlags flags, const int &lod)
 {
     vm::ivec3 min = vm::ivec3(
-      (int)std::floor(x / (float)DualContouring::chunkSize),
-      0,
-      (int)std::floor(z / (float)DualContouring::chunkSize)
-    ) * DualContouring::chunkSize;
+                        (int)std::floor(x / (float)DualContouring::chunkSize),
+                        0,
+                        (int)std::floor(z / (float)DualContouring::chunkSize)) *
+                    DualContouring::chunkSize;
     return getChunk(min, flags, lod);
 }
 
 // chunks
-void DCInstance::getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights) {
-    for (int dz = 0; dz < h; dz++) {
-        for (int dx = 0; dx < w; dx++) {
+void DCInstance::getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights)
+{
+    for (int dz = 0; dz < h; dz++)
+    {
+        for (int dx = 0; dx < w; dx++)
+        {
             int ax = x + dx;
             int az = z + dz;
 
@@ -54,20 +57,26 @@ void DCInstance::getHeightfieldRange(int x, int z, int w, int h, int lod, float 
         }
     }
 }
-void DCInstance::getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights) {
+void DCInstance::getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights)
+{
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
     Chunk &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
     chunkNoise.getCachedSkylight(skylights);
 }
-void DCInstance::getChunkAo(int x, int y, int z, int lod, unsigned char *aos) {
+void DCInstance::getChunkAo(int x, int y, int z, int lod, unsigned char *aos)
+{
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
     Chunk &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
     chunkNoise.getCachedAo(aos);
 }
-void DCInstance::getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
-    for (int dz = 0; dz < d; dz++) {
-        for (int dy = 0; dy < h; dy++) {
-            for (int dx = 0; dx < w; dx++) {
+void DCInstance::getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights)
+{
+    for (int dz = 0; dz < d; dz++)
+    {
+        for (int dy = 0; dy < h; dy++)
+        {
+            for (int dx = 0; dx < w; dx++)
+            {
                 // absolute
                 int ax = x + dx;
                 int ay = y + dy;
@@ -86,10 +95,14 @@ void DCInstance::getSkylightFieldRange(int x, int y, int z, int w, int h, int d,
         }
     }
 }
-void DCInstance::getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos) {
-    for (int dz = 0; dz < d; dz++) {
-        for (int dy = 0; dy < h; dy++) {
-            for (int dx = 0; dx < w; dx++) {
+void DCInstance::getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos)
+{
+    for (int dz = 0; dz < d; dz++)
+    {
+        for (int dy = 0; dy < h; dy++)
+        {
+            for (int dx = 0; dx < w; dx++)
+            {
                 // absolute
                 int ax = x + dx;
                 int ay = y + dy;
@@ -108,7 +121,8 @@ void DCInstance::getAoFieldRange(int x, int y, int z, int w, int h, int d, int l
         }
     }
 }
-void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
     unsigned int &countBinding = *count;
     countBinding = 0;
 
@@ -120,7 +134,8 @@ void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *q
     std::mt19937 rng(seedInt);
 
     const int maxNumGrasses = 4 * 1024;
-    for (int i = 0; i < maxNumGrasses; i++) {
+    for (int i = 0; i < maxNumGrasses; i++)
+    {
         float dx = (float)rng() / (float)0xFFFFFFFF * (float)DualContouring::chunkSize;
         float dz = (float)rng() / (float)0xFFFFFFFF * (float)DualContouring::chunkSize;
 
@@ -143,7 +158,8 @@ void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *q
         countBinding++;
     }
 }
-void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
     unsigned int &countBinding = *count;
     countBinding = 0;
 
@@ -153,10 +169,11 @@ void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, flo
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
-    
+
     const int maxNumVeggies = 128;
     const float veggieRate = 0.35;
-    for (int i = 0; i < maxNumVeggies; i++) {
+    for (int i = 0; i < maxNumVeggies; i++)
+    {
         float dx = (float)rng() / (float)0xFFFFFFFF * (float)DualContouring::chunkSize;
         float dz = (float)rng() / (float)0xFFFFFFFF * (float)DualContouring::chunkSize;
 
@@ -165,7 +182,8 @@ void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, flo
 
         float noiseValue = DualContouring::noises->vegetationNoise.in2D(ax, az);
 
-        if (noiseValue < veggieRate) {
+        if (noiseValue < veggieRate)
+        {
             int index = 0;
 
             float height = chunk.getCachedInterpolatedHeight(ax, az);
@@ -185,7 +203,8 @@ void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, flo
         }
     }
 }
-void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
     unsigned int &countBinding = *count;
     countBinding = 0;
 
@@ -198,16 +217,18 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
 
     const int maxNumMobs = 2;
     const float mobRate = 0.4;
-    for (int i = 0; i < maxNumMobs; i++) {
+    for (int i = 0; i < maxNumMobs; i++)
+    {
         float dx = (float)rng() / (float)0xFFFFFFFF * (float)DualContouring::chunkSize;
         float dz = (float)rng() / (float)0xFFFFFFFF * (float)DualContouring::chunkSize;
-        
+
         float ax = (float)chunk.min.x + dx;
         float az = (float)chunk.min.z + dz;
-        
+
         float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
-        
-        if (noiseValue < mobRate) {
+
+        if (noiseValue < mobRate)
+        {
             float height = chunk.getCachedInterpolatedHeight(ax, az);
             ps[countBinding * 3] = ax;
             ps[countBinding * 3 + 1] = height;
@@ -227,7 +248,8 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
 }
 
 // biomes
-unsigned char DCInstance::getBiome(const vm::ivec2 &worldPosition, const int &lod) {
+unsigned char DCInstance::getBiome(const vm::ivec2 &worldPosition, const int &lod)
+{
     Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
     int lx = int(worldPosition.x) - chunkNoise.min.x;
     // int ly = int(worldPosition.y) - chunkNoise.min.z;
@@ -263,35 +285,33 @@ uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
 }
 
 bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z,
-                      const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
-                      const int &lod)
+                                  const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                                  const int &lod)
 {
     unsigned int maxPositionsCount = *outPositionsCount;
     *outPositionsCount = 0;
 
     bool drew = false;
     std::set<uint64_t> seenHashes;
-    for (float dx = -1; dx <= 1; dx += 2)
+
+    // chunk min of the hit point
+    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3(x, y, z));
+
+    for (float dx = -1; dx <= 1; dx += 1)
     {
-        for (float dz = -1; dz <= 1; dz += 2)
+        for (float dz = -1; dz <= 1; dz += 1)
         {
-            for (float dy = -1; dy <= 1; dy += 2)
+            for (float dy = -1; dy <= 1; dy += 1)
             {
-                float ax = x + dx * radius;
-                float ay = y + dy * radius;
-                float az = z + dz * radius;
-                vm::ivec3 min = vm::ivec3(
-                  std::floor(ax / (float)DualContouring::chunkSize),
-                  std::floor(ay / (float)DualContouring::chunkSize),
-                  std::floor(az / (float)DualContouring::chunkSize)
-                ) * DualContouring::chunkSize;
+                vm::ivec3 min = chunkMin + vm::ivec3(dx,dy,dz) * DualContouring::chunkSize;
+                
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
                     seenHashes.insert(minHash);
 
                     Chunk &chunkNoise = getChunk(min, GF_SDF, lod);
-                    if (chunkNoise.addSphereDamage(ax, ay, az, radius))
+                    if (chunkNoise.addSphereDamage(x, y, z, radius))
                     {
                         if (*outPositionsCount < maxPositionsCount)
                         {
@@ -316,8 +336,8 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
 }
 
 bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &z,
-                        const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
-                        const int &lod)
+                                   const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                                   const int &lod)
 {
     unsigned int maxPositionsCount = *outPositionsCount;
     *outPositionsCount = 0;
@@ -334,10 +354,10 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
                 float ay = y + dy * radius;
                 float az = z + dz * radius;
                 vm::ivec3 min = vm::ivec3(
-                  std::floor(ax / (float)DualContouring::chunkSize),
-                  std::floor(ay / (float)DualContouring::chunkSize),
-                  std::floor(az / (float)DualContouring::chunkSize)
-                ) * DualContouring::chunkSize;
+                                    std::floor(ax / (float)DualContouring::chunkSize),
+                                    std::floor(ay / (float)DualContouring::chunkSize),
+                                    std::floor(az / (float)DualContouring::chunkSize)) *
+                                DualContouring::chunkSize;
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
@@ -395,10 +415,10 @@ bool DCInstance::drawCubeDamage(
                 float ay = p.y;
                 float az = p.z;
                 vm::ivec3 min = vm::ivec3(
-                  std::floor(ax / (float)DualContouring::chunkSize),
-                  std::floor(ay / (float)DualContouring::chunkSize),
-                  std::floor(az / (float)DualContouring::chunkSize)
-                ) * DualContouring::chunkSize;
+                                    std::floor(ax / (float)DualContouring::chunkSize),
+                                    std::floor(ay / (float)DualContouring::chunkSize),
+                                    std::floor(az / (float)DualContouring::chunkSize)) *
+                                DualContouring::chunkSize;
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
@@ -459,10 +479,10 @@ bool DCInstance::eraseCubeDamage(
                 float ay = p.y;
                 float az = p.z;
                 vm::ivec3 min = vm::ivec3(
-                  std::floor(ax / (float)DualContouring::chunkSize),
-                  std::floor(ay / (float)DualContouring::chunkSize),
-                  std::floor(az / (float)DualContouring::chunkSize)
-                ) * DualContouring::chunkSize;
+                                    std::floor(ax / (float)DualContouring::chunkSize),
+                                    std::floor(ay / (float)DualContouring::chunkSize),
+                                    std::floor(az / (float)DualContouring::chunkSize)) *
+                                DualContouring::chunkSize;
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
@@ -503,11 +523,11 @@ void DCInstance::injectDamage(const float &x, const float &y, const float &z, fl
     chunk.injectDamage(damageBuffer);
 }
 
-void DCInstance::setRange(const vm::ivec3 &min, const vm::ivec3 &max) {
+void DCInstance::setRange(const vm::ivec3 &min, const vm::ivec3 &max)
+{
     range.reset(new vm::ibox3(
         vm::ivec3(min.x, min.y, min.z),
-        vm::ivec3(max.x, max.y, max.z)
-    ));
+        vm::ivec3(max.x, max.y, max.z)));
     // rangeMin = min;
     // rangeMax = max;
     // hasRange = true;
