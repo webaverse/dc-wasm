@@ -344,27 +344,25 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
 
     bool drew = false;
     std::set<uint64_t> seenHashes;
-    for (float dx = -1; dx <= 1; dx += 2)
+
+    // chunk min of the hit point
+    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3(x, y, z));
+
+    for (float dx = -1; dx <= 1; dx += 1)
     {
-        for (float dz = -1; dz <= 1; dz += 2)
+        for (float dz = -1; dz <= 1; dz += 1)
         {
-            for (float dy = -1; dy <= 1; dy += 2)
+            for (float dy = -1; dy <= 1; dy += 1)
             {
-                float ax = x + dx * radius;
-                float ay = y + dy * radius;
-                float az = z + dz * radius;
-                vm::ivec3 min = vm::ivec3(
-                                    std::floor(ax / (float)DualContouring::chunkSize),
-                                    std::floor(ay / (float)DualContouring::chunkSize),
-                                    std::floor(az / (float)DualContouring::chunkSize)) *
-                                DualContouring::chunkSize;
+               vm::ivec3 min = chunkMin + vm::ivec3(dx,dy,dz) * DualContouring::chunkSize;
+
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
                     seenHashes.insert(minHash);
 
                     Chunk &chunkNoise = getChunk(min, GF_SDF, lod);
-                    if (chunkNoise.removeSphereDamage(ax, ay, az, radius))
+                    if (chunkNoise.removeSphereDamage(x, y, z, radius))
                     {
                         if (*outPositionsCount < maxPositionsCount)
                         {
