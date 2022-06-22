@@ -278,8 +278,8 @@ uint8_t *DCInstance::createChunkTerrainMesh(float x, float y, float z, int lodAr
         return nullptr;
     }
     TerrainDCContext vertexContext;
-    generateMeshFromOctree(chunkOctree.root, vertexContext, false);
-    generateMeshFromOctree(chunkOctree.seamRoot, vertexContext, true);
+    generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
+    generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
 
     auto &vertexBuffer = vertexContext.vertexBuffer;
     if (vertexBuffer.indices.size() == 0)
@@ -304,8 +304,8 @@ uint8_t *DCInstance::createChunkLiquidMesh(float x, float y, float z, int lodArr
         return nullptr;
     }
     LiquidDCContext vertexContext;
-    generateMeshFromOctree(chunkOctree.root, vertexContext, false);
-    generateMeshFromOctree(chunkOctree.seamRoot, vertexContext, true);
+    generateMeshFromOctree<LiquidDCContext, false>(chunkOctree.root, vertexContext);
+    generateMeshFromOctree<LiquidDCContext, false>(chunkOctree.seamRoot, vertexContext);
 
     auto &vertexBuffer = vertexContext.vertexBuffer;
     if (vertexBuffer.indices.size() == 0)
