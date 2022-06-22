@@ -287,7 +287,7 @@ uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
         return nullptr;
     }
 
-    return DualContouring::constructOutputBuffer(vertexBuffer);
+    return vertexBuffer.getBuffer();
 }
 
 uint8_t *DCInstance::createChunkWaterMesh(float x, float y, float z, int lodArray[8])
@@ -312,7 +312,7 @@ uint8_t *DCInstance::createChunkWaterMesh(float x, float y, float z, int lodArra
         return nullptr;
     }
 
-    return DualContouring::constructOutputBuffer(vertexBuffer);
+    return vertexWaterBuffer.getBuffer();
 }
 
 //

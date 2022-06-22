@@ -26,9 +26,6 @@ namespace DualContouring {
     DCInstance *createInstance();
     void destroyInstance(DCInstance *instance);
 
-    // output
-    uint8_t *constructOutputBuffer(VertexBuffer &vertexBuffer);
-
     // biomes
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
     

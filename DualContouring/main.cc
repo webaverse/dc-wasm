@@ -39,12 +39,6 @@ namespace DualContouring
         delete instance;
     }
 
-    // geometries
-    uint8_t *constructOutputBuffer(VertexBuffer &vertexBuffer)
-    {
-        return vertexBuffer.getBuffer();
-    }
-
     // biomes
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod) {
         const Biome &biome = BIOMES[b];
