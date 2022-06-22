@@ -294,7 +294,9 @@ void Chunk::initSkylightField() {
         }
     }
 
-    for (int x = 0; x < gridPoints; x++) {
+    // XXX should flood fill the light
+
+    /* for (int x = 0; x < gridPoints; x++) {
         for (int z = 0; z < gridPoints; z++) {
             // int lz = z + 1;
             // int lx = x + 1;
@@ -326,7 +328,7 @@ void Chunk::initSkylightField() {
                 cachedSkylightField[skylightIndex] = maxNeighborSkylight;
             }
         }
-    }
+    } */
 }
 void Chunk::initAoField() {
     cachedAoField.resize(size * size * size, 3 * 3 * 3);
