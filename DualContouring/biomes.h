@@ -1413,4 +1413,6 @@ const BIOME BIOMES_TEMPERATURE_HUMIDITY[] {
 		/* 15 */ BIOME::biTaiga,  BIOME::biTaiga,  BIOME::biTaiga,        BIOME::biTaiga,        BIOME::biJungle,       BIOME::biJungle,       BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle,       BIOME::biJungle,      BIOME::biSwampland,    BIOME::biSwampland,    BIOME::biSwampland,   BIOME::biSwampland,
 	};
 
+bool isWaterBiome(unsigned char b);
+
 #endif // _BIOMES_H_
