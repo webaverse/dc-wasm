@@ -82,7 +82,7 @@ public:
 
 //
 
-template<typename VertexContextType>
+template<typename DCContextType>
 vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, DCInstance *inst, Chunk &chunk)
 {
     // approximate the zero crossing by finding the min value along the edge
@@ -93,7 +93,7 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
     {
         const float percentage = i / steps;
         const vm::vec3 p = p0 + ((p1 - p0) * percentage);
-        const float density = abs(VertexContextType::densityFn(p, inst, chunk));
+        const float density = abs(DCContextType::densityFn(p, inst, chunk));
         if (density < minValue)
         {
             minValue = density;
@@ -103,23 +103,23 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
 
     return p0 + ((p1 - p0) * t);
 }
-template<typename VertexContextType>
+template<typename DCContextType>
 vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst, Chunk &chunkNoise)
 {
     // finding the surface normal with the derivative
     const float H = 0.001f;
-    const float dx = VertexContextType::densityFn(p + vm::vec3(H, 0.f, 0.f), inst, chunkNoise) -
-                     VertexContextType::densityFn(p - vm::vec3(H, 0.f, 0.f), inst, chunkNoise);
-    const float dy = VertexContextType::densityFn(p + vm::vec3(0.f, H, 0.f), inst, chunkNoise) -
-                     VertexContextType::densityFn(p - vm::vec3(0.f, H, 0.f), inst, chunkNoise);
-    const float dz = VertexContextType::densityFn(p + vm::vec3(0.f, 0.f, H), inst, chunkNoise) -
-                     VertexContextType::densityFn(p - vm::vec3(0.f, 0.f, H), inst, chunkNoise);
+    const float dx = DCContextType::densityFn(p + vm::vec3(H, 0.f, 0.f), inst, chunkNoise) -
+                     DCContextType::densityFn(p - vm::vec3(H, 0.f, 0.f), inst, chunkNoise);
+    const float dy = DCContextType::densityFn(p + vm::vec3(0.f, H, 0.f), inst, chunkNoise) -
+                     DCContextType::densityFn(p - vm::vec3(0.f, H, 0.f), inst, chunkNoise);
+    const float dz = DCContextType::densityFn(p + vm::vec3(0.f, 0.f, H), inst, chunkNoise) -
+                     DCContextType::densityFn(p - vm::vec3(0.f, 0.f, H), inst, chunkNoise);
     return vm::normalize(vm::vec3(dx, dy, dz));
 }
 
 void clampPositionToMassPoint(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
 
-template<typename VertexContextType>
+template<typename DCContextType>
 int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst, Chunk &chunk)
 {
     const int MAX_CROSSINGS = 6;
@@ -139,8 +139,8 @@ int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver 
         const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * minVoxelSize;
         const vm::vec3 p1 = vm::vec3(ip1.x, ip1.y, ip1.z);
         const vm::vec3 p2 = vm::vec3(ip2.x, ip2.y, ip2.z);
-        const vm::vec3 p = approximateZeroCrossingPosition<VertexContextType>(p1, p2, inst, chunk);
-        const vm::vec3 n = calculateSurfaceNormal<VertexContextType>(p, inst, chunk);
+        const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, inst, chunk);
+        const vm::vec3 n = calculateSurfaceNormal<DCContextType>(p, inst, chunk);
         qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
         averageNormal += n;
         edgeCount++;
@@ -150,7 +150,7 @@ int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver 
 
 //
 
-template <typename VertexContextType>
+template <typename DCContextType>
 class ChunkOctree
 {
 public:
@@ -193,7 +193,7 @@ public:
     {
         svd::QefSolver qef;
         vm::vec3 averageNormal(0.f);
-        int edgeCount = findEdgeIntersection<VertexContextType>(voxelNode, qef, averageNormal, corners, minVoxelSize, inst, chunk);
+        int edgeCount = findEdgeIntersection<DCContextType>(voxelNode, qef, averageNormal, corners, minVoxelSize, inst, chunk);
         svd::Vec3 qefPosition;
         qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
         vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
@@ -213,7 +213,7 @@ public:
         for (int i = 0; i < 8; i++)
         {
             const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
-            const float density = VertexContextType::densityFn(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), inst, chunk);
+            const float density = DCContextType::densityFn(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), inst, chunk);
             const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
             corners |= (material << i);
         }
@@ -451,16 +451,16 @@ void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffe
 void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer, bool isSeam);
 void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer, bool isSeam);
 
-template <typename VertexContextType>
-void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, VertexContextType &vertexContext, bool isSeam)
+template <typename DCContextType>
+void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, DCContextType &dcContext, bool isSeam)
 {
-    generateVertexIndices(node, vertexContext);
-    contourCellProc(node, vertexContext.vertexBuffer.indices, isSeam);
+    generateVertexIndices(node, dcContext);
+    contourCellProc(node, dcContext.vertexBuffer.indices, isSeam);
 }
-template <typename VertexContextType>
-void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexContextType &vertexContext)
+template <typename DCContextType>
+void generateVertexIndices(std::shared_ptr<OctreeNode> &node, DCContextType &dcContext)
 {
-    auto &vertexBuffer = vertexContext.vertexBuffer;
+    auto &vertexBuffer = dcContext.vertexBuffer;
     if (!node)
     {
         return;
@@ -479,7 +479,7 @@ void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexContextType 
     {
         for (int i = 0; i < 8; i++)
         {
-            generateVertexIndices(node->children[i], vertexContext);
+            generateVertexIndices(node->children[i], dcContext);
         }
     }
 }

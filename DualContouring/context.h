@@ -10,14 +10,14 @@
 //
 
 // the context determines the density function and output of the mesh
-class TerrainVertexContext {
+class TerrainDCContext {
 public:
     TerrainVertexBuffer vertexBuffer;
 
     static float densityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk);
 };
 
-class LiquidVertexContext {
+class LiquidDCContext {
 public:
     LiquidVertexBuffer vertexBuffer;
 

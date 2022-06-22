@@ -271,13 +271,13 @@ uint8_t *DCInstance::createChunkTerrainMesh(float x, float y, float z, int lodAr
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
     Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
-    ChunkOctree<TerrainVertexContext> chunkOctree(this, chunk, lodArray);
+    ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");
         return nullptr;
     }
-    TerrainVertexContext vertexContext;
+    TerrainDCContext vertexContext;
     generateMeshFromOctree(chunkOctree.root, vertexContext, false);
     generateMeshFromOctree(chunkOctree.seamRoot, vertexContext, true);
 
@@ -297,13 +297,13 @@ uint8_t *DCInstance::createChunkLiquidMesh(float x, float y, float z, int lodArr
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
     Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
-    ChunkOctree<LiquidVertexContext> chunkOctree(this, chunk, lodArray);
+    ChunkOctree<LiquidDCContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");
         return nullptr;
     }
-    LiquidVertexContext vertexContext;
+    LiquidDCContext vertexContext;
     generateMeshFromOctree(chunkOctree.root, vertexContext, false);
     generateMeshFromOctree(chunkOctree.seamRoot, vertexContext, true);
 
