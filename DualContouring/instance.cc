@@ -265,7 +265,7 @@ void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int 
 
 //
 
-uint8_t *DCInstance::createChunkTerrainMesh(float x, float y, float z, int lodArray[8])
+uint8_t *DCInstance::createTerrainChunkMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
@@ -291,7 +291,7 @@ uint8_t *DCInstance::createChunkTerrainMesh(float x, float y, float z, int lodAr
     return vertexBuffer.getBuffer();
 }
 
-uint8_t *DCInstance::createChunkLiquidMesh(float x, float y, float z, int lodArray[8])
+uint8_t *DCInstance::createLiquidChunkMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);

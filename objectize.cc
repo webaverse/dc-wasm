@@ -49,12 +49,12 @@ EMSCRIPTEN_KEEPALIVE void createMobSplat(DCInstance *inst, float x, float z, int
 
 //
 
-EMSCRIPTEN_KEEPALIVE uint8_t *createChunkMeshDualContouring(DCInstance *inst, float x, float y, float z, int *lodArray) {
-    return inst->createChunkTerrainMesh(x, y, z, lodArray);
+EMSCRIPTEN_KEEPALIVE uint8_t *createTerrainChunkMesh(DCInstance *inst, float x, float y, float z, int *lodArray) {
+    return inst->createTerrainChunkMesh(x, y, z, lodArray);
 }
 
-EMSCRIPTEN_KEEPALIVE uint8_t *createChunkLiquidMesh(DCInstance *inst, float x, float y, float z, int *lodArray) {
-    return inst->createChunkLiquidMesh(x, y, z, lodArray);
+EMSCRIPTEN_KEEPALIVE uint8_t *createLiquidChunkMesh(DCInstance *inst, float x, float y, float z, int *lodArray) {
+    return inst->createLiquidChunkMesh(x, y, z, lodArray);
 }
 
 //
