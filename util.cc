@@ -5,7 +5,7 @@ float lerp(const float &a, const float &b, const float &f) {
     return a + f * (b - a);
 }
 
-template<typename T>
+/* template<typename T>
 T bilinear( 
     const float &tx, 
     const float &ty, 
@@ -59,4 +59,4 @@ T trilinear(
   const T &e = bilinear<T>(tx, ty, v000, v100, v010, v110); 
   const T &f = bilinear<T>(tx, ty, v001, v101, v011, v111); 
   return e * (1 - tz) + f * tz; 
-}
+} */
