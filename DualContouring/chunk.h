@@ -25,7 +25,7 @@ enum GenerateFlags : int {
     GF_HEIGHTFIELD = 1 << 2,
     GF_AOFIELD = 1 << 3,
     GF_SDF = 1 << 4,
-    // GF_ALL = GF_NOISE | GF_BIOMES | GF_HEIGHTFIELD | GF_SDF
+    GF_LIQUIDS = 1 << 5,
 };
 
 class NoiseField {
