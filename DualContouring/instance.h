@@ -10,6 +10,7 @@
 #include <memory>
 #include "chunk.h"
 #include "octree.h"
+#include "context.h"
 #include "../vector.h"
 
 class DCInstance {
@@ -38,8 +39,8 @@ public:
     void createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
     // void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
-    uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8]);
-    uint8_t *createChunkWaterMesh(float x, float y, float z, int lodArray[8]);
+    uint8_t *createChunkTerrainMesh(float x, float y, float z, int lodArray[8]);
+    uint8_t *createChunkLiquidMesh(float x, float y, float z, int lodArray[8]);
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                           const int &lod);

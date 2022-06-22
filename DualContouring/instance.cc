@@ -265,13 +265,13 @@ void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int 
 
 //
 
-uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
+uint8_t *DCInstance::createChunkTerrainMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
     Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
-    ChunkOctree chunkOctree(this, chunk, lodArray);
+    ChunkOctree<TerrainVertexContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");
@@ -291,13 +291,13 @@ uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
     return vertexBuffer.getBuffer();
 }
 
-uint8_t *DCInstance::createChunkWaterMesh(float x, float y, float z, int lodArray[8])
+uint8_t *DCInstance::createChunkLiquidMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
     Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
-    ChunkOctree chunkOctree(this, chunk, lodArray);
+    ChunkOctree<LiquidVertexContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");

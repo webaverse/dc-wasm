@@ -150,38 +150,298 @@ int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver 
 
 //
 
+template <typename VertexContextType>
 class ChunkOctree
 {
 public:
-    ChunkOctree(DCInstance *inst, Chunk &chunk, int lodArray[8]);
-
+    // members
     std::shared_ptr<OctreeNode> root;
     std::shared_ptr<OctreeNode> seamRoot;
-
     vm::ivec3 min;
     int minVoxelSize; // determined by level of detail
     int size;
 
-    std::vector<std::shared_ptr<OctreeNode>> generateVoxelNodes(DCInstance *inst, Chunk &chunk);
-    VertexData generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, DCInstance *inst, Chunk &chunk);
-    std::shared_ptr<OctreeNode> constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, DCInstance *inst, Chunk &chunk);
-    void findOctreeNodesRecursively(std::shared_ptr<OctreeNode> &node, FilterNodesFunc &func, std::vector<std::shared_ptr<OctreeNode>> &nodes);
+    // constructors
+    ChunkOctree(DCInstance *inst, Chunk &chunk, int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
+    {
+        std::shared_ptr<OctreeNode> rootNode = std::make_shared<OctreeNode>(OctreeNode(min, size, Node_Internal));
+        std::vector<std::shared_ptr<OctreeNode>> voxelNodes = generateVoxelNodes(inst, chunk);
+        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
+        std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(inst, chunk, lodArray);
+        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+    }
 
-    std::vector<std::shared_ptr<OctreeNode>> findOctreeNodes(std::shared_ptr<OctreeNode> root, FilterNodesFunc filterFunc);
-    std::vector<std::shared_ptr<OctreeNode>> constructChunkSeamNodes(DCInstance *inst, Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize);
-    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(DCInstance *inst, Chunk &chunk, const int lodArray[]);
+    // methods
+    std::vector<std::shared_ptr<OctreeNode>> generateVoxelNodes(DCInstance *inst, Chunk &chunk)
+    {
+        std::vector<std::shared_ptr<OctreeNode>> nodes;
+        const vm::ivec3 chunkMax = chunk.min + chunk.size;
+
+        for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
+            for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
+                for (int z = chunk.min.z; z < chunkMax.z; z += chunk.lod)
+                {
+                    const vm::ivec3 min = vm::ivec3(x, y, z);
+                    std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, chunk.lod, Node_Leaf));
+                    std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, inst, chunk);
+                    if (seamNode)
+                        nodes.push_back(seamNode);
+                }
+        return nodes;
+    }
+    VertexData generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, DCInstance *inst, Chunk &chunk)
+    {
+        svd::QefSolver qef;
+        vm::vec3 averageNormal(0.f);
+        int edgeCount = findEdgeIntersection<VertexContextType>(voxelNode, qef, averageNormal, corners, minVoxelSize, inst, chunk);
+        svd::Vec3 qefPosition;
+        qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
+        vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
+        // if the generated position is outside of the voxel bounding box :
+        clampPositionToMassPoint(voxelNode, qef, vertexPosition);
+        VertexData vertexData;
+        vertexData.position = vertexPosition;
+        vertexData.normal = vm::normalize(averageNormal / (float)edgeCount);
+        vertexData.corners = corners;
+        chunk.getCachedInterpolatedBiome3D(vertexData.position, vertexData.biomes, vertexData.biomesWeights);
+        return vertexData;
+    }
+
+    std::shared_ptr<OctreeNode> constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, DCInstance *inst, Chunk &chunk)
+    {
+        int corners = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
+            const float density = VertexContextType::densityFn(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), inst, chunk);
+            const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
+            corners |= (material << i);
+        }
+        if (corners == 0 || corners == 255)
+        {
+            voxelNode = 0;
+        }
+        else
+        {
+            // voxel is touching the surface
+            voxelNode->vertexData = std::make_shared<VertexData>(generateVoxelData(voxelNode, corners, inst, chunk));
+        }
+        return voxelNode;
+    }
+
+    void findOctreeNodesRecursively(std::shared_ptr<OctreeNode> &node, FilterNodesFunc &func, std::vector<std::shared_ptr<OctreeNode>> &nodes)
+    {
+        if (!node)
+        {
+            return;
+        }
+
+        const vm::ivec3 max = node->min + vm::ivec3(node->size);
+        if (!func(node->min, max))
+        {
+            return;
+        }
+
+        if (node->type == Node_Leaf)
+        {
+            nodes.push_back(node);
+        }
+        else
+        {
+            for (int i = 0; i < 8; i++)
+                findOctreeNodesRecursively(node->children[i], func, nodes);
+        }
+    }
+
+    std::vector<std::shared_ptr<OctreeNode>> findOctreeNodes(std::shared_ptr<OctreeNode> root, FilterNodesFunc filterFunc)
+    {
+        std::vector<std::shared_ptr<OctreeNode>> nodes;
+        findOctreeNodesRecursively(root, filterFunc, nodes);
+        return nodes;
+    }
+
+    std::vector<std::shared_ptr<OctreeNode>> constructChunkSeamNodes(DCInstance *inst, Chunk &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
+    {
+        std::vector<std::shared_ptr<OctreeNode>> nodes;
+        const vm::ivec3 chunkMax = chunkMin + chunkSize;
+
+        for (int x = chunkMin.x; x < chunkMax.x; x += lod)
+            for (int y = chunkMin.y; y < chunkMax.y; y += lod)
+                for (int z = chunkMin.z; z < chunkMax.z; z += lod)
+                {
+                    const vm::ivec3 min = vm::ivec3(x, y, z);
+                    const vm::ivec3 max = min + vm::ivec3(lod);
+                    if (filterFunc(min, max))
+                    {
+                        std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, lod, Node_Leaf));
+                        std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, inst, chunk);
+                        if (seamNode)
+                            nodes.push_back(seamNode);
+                    }
+                }
+        return nodes;
+    }
+
+    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(DCInstance *inst, Chunk &chunk, const int lodArray[])
+    {
+        const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunk.size);
+
+        std::vector<std::shared_ptr<OctreeNode>> seamNodes;
+
+        FilterNodesFunc selectionFuncs[8] =
+            {[&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.x == seamValues.x;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.z == seamValues.z;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.x == seamValues.x && min.z == seamValues.z;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.y == seamValues.y;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.x == seamValues.x && min.y == seamValues.y;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.y == seamValues.y && min.z == seamValues.z;
+                },
+                [&](const vm::ivec3 &min, const vm::ivec3 &max)
+                {
+                    return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
+                }};
+
+        std::vector<std::shared_ptr<OctreeNode>> rootChunkSeamNodes = findOctreeNodes(root, selectionFuncs[0]);
+
+        // adding root chunk seam nodes
+        seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
+
+        // creating the seam nodes of the neighbouring chunks
+        // NEIGHBOUR_CHUNKS_OFFSETS[i]
+        std::vector<std::shared_ptr<OctreeNode>> neighbourNodes;
+        for (int i = 1; i < 8; i++)
+        {
+            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunk.size;
+            const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
+            std::vector<std::shared_ptr<OctreeNode>> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], chunk.size);
+            neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
+        }
+
+        seamNodes.insert(std::end(seamNodes), std::begin(neighbourNodes), std::end(neighbourNodes));
+
+        return seamNodes;
+    }
 
     std::vector<std::shared_ptr<OctreeNode>> constructParents(
         std::shared_ptr<OctreeNode> &octree,
         const std::vector<std::shared_ptr<OctreeNode>> &nodes,
         const int &parentSize,
-        const vm::ivec3 &rootMin);
+        const vm::ivec3 &rootMin)
+    {
+        std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> parentsHashmap;
+
+        for_each(begin(nodes), end(nodes), [&](std::shared_ptr<OctreeNode> node)
+                    {
+                    // because the octree is regular we can calculate the parent min
+                    const vm::ivec3 localPos = (node->min - rootMin);
+                    const vm::ivec3 parentPos = node->min - (localPos % parentSize);
+
+                    const uint64_t parentIndex = hashOctreeMin(parentPos - rootMin);
+                    std::shared_ptr<OctreeNode> parentNode;
+
+                    auto iter = parentsHashmap.find(parentIndex);
+                    if (iter == end(parentsHashmap))
+                    {
+                        parentNode = std::make_shared<OctreeNode>(OctreeNode(parentPos,parentSize, Node_Internal));
+                        parentsHashmap.insert(std::pair<uint64_t, std::shared_ptr<OctreeNode>>(parentIndex, parentNode));
+                    //  std::cout << parentNode->size << std::endl;
+                    }
+                    else
+                    {
+                        parentNode = iter->second;
+                    }
+
+                    bool foundParentNode = false;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        const vm::ivec3 childPos = parentPos + ((parentSize / 2) * CHILD_MIN_OFFSETS[i]);
+                        if (childPos == node->min)
+                        {
+                            parentNode->children[i] = node;
+                            foundParentNode = true;
+                            break;
+                        }
+                    } });
+
+        std::vector<std::shared_ptr<OctreeNode>> parents;
+        for_each(begin(parentsHashmap), end(parentsHashmap), [&](std::pair<uint64_t, std::shared_ptr<OctreeNode>> pair)
+                    { parents.push_back(pair.second); });
+
+        return parents;
+    }
 
     std::shared_ptr<OctreeNode> constructOctreeUpwards(
         std::shared_ptr<OctreeNode> &octree,
         const std::vector<std::shared_ptr<OctreeNode>> &inputNodes,
         const vm::ivec3 &rootMin,
-        const int rootNodeSize);
+        const int rootNodeSize)
+    {
+        if (inputNodes.empty())
+        {
+            return nullptr;
+        }
+
+        std::vector<std::shared_ptr<OctreeNode>> nodes(begin(inputNodes), end(inputNodes));
+        std::sort(std::begin(nodes), std::end(nodes),
+                    [](std::shared_ptr<OctreeNode> &lhs, std::shared_ptr<OctreeNode> &rhs)
+                    {
+                        return lhs->size < rhs->size;
+                    });
+
+        // the input nodes may be different sizes if a seam octree is being constructed
+        // in that case we need to process the input nodes in stages along with the newly
+        // constructed parent nodes until all the nodes have the same size
+        while (nodes.front()->size != nodes.back()->size)
+        {
+            // find the end of this run
+            auto iter = std::begin(nodes);
+            int size = (*iter)->size;
+            do
+            {
+                ++iter;
+            } while ((*iter)->size == size);
+
+            // construct the new parent nodes for this run
+            std::vector<std::shared_ptr<OctreeNode>> newNodes(std::begin(nodes), iter);
+            newNodes = constructParents(octree, newNodes, size * 2, rootMin);
+
+            // set up for the next iteration: the parents produced plus any remaining input nodes
+            newNodes.insert(std::end(newNodes), iter, std::end(nodes));
+            std::swap(nodes, newNodes);
+        }
+
+        int parentSize = nodes.front()->size * 2;
+        while (parentSize <= rootNodeSize)
+        {
+            nodes = constructParents(octree, nodes, parentSize, rootMin);
+            parentSize *= 2;
+        }
+        std::shared_ptr<OctreeNode> root = nodes.front();
+
+        return root;
+    }
 };
 
 //
@@ -194,9 +454,8 @@ void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer
 template <typename VertexContextType>
 void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, VertexContextType &vertexContext, bool isSeam)
 {
-    auto &vertexBuffer = vertexContext.vertexBuffer;
-    generateVertexIndices(node, vertexBuffer);
-    contourCellProc(node, vertexBuffer.indices, isSeam);
+    generateVertexIndices(node, vertexContext);
+    contourCellProc(node, vertexContext.vertexBuffer.indices, isSeam);
 }
 template <typename VertexContextType>
 void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexContextType &vertexContext)
@@ -220,7 +479,7 @@ void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexContextType 
     {
         for (int i = 0; i < 8; i++)
         {
-            generateVertexIndices(node->children[i], vertexBuffer);
+            generateVertexIndices(node->children[i], vertexContext);
         }
     }
 }
