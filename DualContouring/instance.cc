@@ -296,7 +296,7 @@ uint8_t *DCInstance::createLiquidChunkMesh(float x, float y, float z, int lodArr
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
-    Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
+    Chunk &chunk = getChunk(octreeMin, GF_LIQUIDS, lod);
     ChunkOctree<LiquidDCContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
