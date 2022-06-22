@@ -39,6 +39,7 @@ public:
     void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8]);
+    uint8_t *createChunkWaterMesh(float x, float y, float z, int lodArray[8]);
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                           const int &lod);

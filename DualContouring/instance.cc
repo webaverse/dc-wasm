@@ -269,6 +269,33 @@ uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
     return DualContouring::constructOutputBuffer(vertexBuffer);
 }
 
+uint8_t *DCInstance::createChunkWaterMesh(float x, float y, float z, int lodArray[8])
+{
+    int lod = lodArray[0];
+    const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
+
+    Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
+    ChunkOctree chunkOctree(this, chunk, lodArray);
+    if (!chunkOctree.root)
+    {
+        // printf("Chunk Has No Data\n");
+        return nullptr;
+    }
+    VertexBuffer vertexBuffer;
+    generateMeshFromOctree(chunkOctree.root, vertexBuffer, false);
+    generateMeshFromOctree(chunkOctree.seamRoot, vertexBuffer, true);
+
+    if (vertexBuffer.indices.size() == 0)
+    {
+        // printf("Generated Mesh Is Not Valid\n");
+        return nullptr;
+    }
+
+    return DualContouring::constructOutputBuffer(vertexBuffer);
+}
+
+//
+
 bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z,
                       const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                       const int &lod)

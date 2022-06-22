@@ -64,6 +64,7 @@ public:
     std::vector<uint8_t> cachedSkylightField;
     std::vector<uint8_t> cachedAoField;
     std::vector<float> cachedSdf;
+    std::vector<float> cachedWaterSdf;
     std::vector<float> cachedDamageSdf;
     
     Chunk() = delete;
@@ -80,6 +81,7 @@ public:
     void initSkylightField();
     void initAoField();
     void initSdf();
+    void initWaterSdf(DCInstance *inst);
     void initDamageSdf();
 
     // noises
@@ -102,6 +104,7 @@ public:
     // sdf
     float getCachedInterpolatedSdf(const float x, const float y, const float z) const;
     float getCachedDamageInterpolatedSdf(const float x, const float y, const float z) const;
+    float getCachedWaterInterpolatedSdf(const float x, const float y, const float z) const;
 
     // skylight
     void getCachedSkylight(unsigned char *skylights) const;

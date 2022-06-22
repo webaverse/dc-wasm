@@ -97,6 +97,9 @@ void Chunk::generate(DCInstance *inst, int flags) {
     if (flags & GenerateFlags::GF_AOFIELD) {
         flags |= (GenerateFlags)GenerateFlags::GF_SDF;
     }
+    if (flags & GenerateFlags::GF_LIQUIDS) {
+        flags |= (GenerateFlags)GenerateFlags::GF_SDF;
+    }
     if (flags & GenerateFlags::GF_SDF) {
         flags |= (GenerateFlags)GenerateFlags::GF_HEIGHTFIELD;
     }
@@ -129,6 +132,11 @@ void Chunk::generate(DCInstance *inst, int flags) {
         }
         if (cachedDamageSdf.size() == 0) {
             initDamageSdf();
+        }
+    }
+    if (flags & GenerateFlags::GF_LIQUIDS) {
+        if (cachedWaterSdf.size() == 0) {
+            initWaterSdf(inst);
         }
     }
     if (flags & GenerateFlags::GF_AOFIELD) {
@@ -405,6 +413,51 @@ void Chunk::initDamageSdf() {
     cachedDamageSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
 }
 
+// liquids
+void Chunk::initWaterSdf(DCInstance *inst) {
+    cachedWaterSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
+
+    const float fSize = (float)gridPoints;
+    for (int dz = 0; dz < gridPoints; dz++)
+    {
+        int az = min.z + dz - 1;
+        for (int dx = 0; dx < gridPoints; dx++)
+        {
+            int ax = min.x + dx - 1;
+
+            vm::ivec4 biomes;
+            vm::vec4 biomeWeights;
+            inst->getInterpolatedBiomes(vm::vec2(ax, az), lod, biomes, biomeWeights);
+            float waterWeight = 0;
+            if (biomeWeights.x > 0 && isWaterBiome(biomes.x)) {
+                waterWeight += biomeWeights.x;
+            }
+            if (biomeWeights.y > 0 && isWaterBiome(biomes.y)) {
+                waterWeight += biomeWeights.y;
+            }
+            if (biomeWeights.z > 0 && isWaterBiome(biomes.z)) {
+                waterWeight += biomeWeights.z;
+            }
+            if (biomeWeights.w > 0 && isWaterBiome(biomes.w)) {
+                waterWeight += biomeWeights.w;
+            }
+            float biomeValue = (-waterWeight + 0.5f) * fSize; // ranges from -size/2 to size/2
+            // int heightfieldIndex = dx + dz * gridPoints;
+            // float height = cachedHeightField[heightfieldIndex];
+            for (int dy = 0; dy < gridPoints; dy++)
+            {
+                int ay = min.y + dy - 1;
+
+                float heightValue = (float)ay - waterBaseHeight;
+                float value = std::max(biomeValue, heightValue);
+
+                int index3D = dx + dz * gridPoints + dy * gridPoints * gridPoints;
+                cachedWaterSdf[index3D] = value;
+            }
+        }
+    }
+}
+
 // noises
 float Chunk::getTemperatureLocal(const int lx, const int lz) const {
     int index = lx + lz * size;
@@ -581,6 +634,16 @@ float Chunk::getCachedInterpolatedSdf(const float x, const float y, const float 
     return trilinear<float>(
         vm::vec3(localX, localY, localZ),
         cachedSdf,
+        gridPoints
+    );
+}
+float Chunk::getCachedWaterInterpolatedSdf(const float x, const float y, const float z) const {
+    const float localX = x - min.x + 1;
+    const float localY = y - min.y + 1;
+    const float localZ = z - min.z + 1;
+    return trilinear<float>(
+        vm::vec3(localX, localY, localZ),
+        cachedWaterSdf,
         gridPoints
     );
 }
