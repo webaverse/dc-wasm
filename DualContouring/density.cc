@@ -80,6 +80,23 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 	return biome;
 } */
 
+inline float clampPointToRange(float minDistance, const vm::vec3 &position, const vm::ibox3 &range) {
+  const vm::ivec3 &rangeMin = range.min;
+	const vm::ivec3 &rangeMax = range.max;
+
+	int w = rangeMax.x - rangeMin.x;
+	int h = rangeMax.y - rangeMin.y;
+	int d = rangeMax.z - rangeMin.z;
+
+	const float cube = cuboid(
+		position,
+		(vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z) + vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)) / 2.f,
+		vm::vec3(w, h, d) / 2.f
+	);
+	minDistance = std::max(minDistance, cube);
+	return minDistance;
+}
+
 // negative density means inside the chunk, positive density means outside the chunk
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
 float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
@@ -89,19 +106,7 @@ float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 
 	float minDistance = std::max(terrain, -damage);
 	if (inst->range) { // range clipper enabled
-    const vm::ivec3 &rangeMin = inst->range->min;
-		const vm::ivec3 &rangeMax = inst->range->max;
-
-    int w = rangeMax.x - rangeMin.x;
-		int h = rangeMax.y - rangeMin.y;
-		int d = rangeMax.z - rangeMin.z;
-
-    const float cube = cuboid(
-			position,
-			(vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z) + vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)) / 2.f,
-			vm::vec3(w, h, d) / 2.f
-		);
-		minDistance = std::max(minDistance, cube);
+	  minDistance = clampPointToRange(minDistance, position, *inst->range);
 	}
 
 	// const float cube = cuboid(position, vm::vec3(-4., 10.f, -4.f), vm::vec3(12.f));
@@ -120,19 +125,7 @@ float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 
 	float minDistance = water;
 	if (inst->range) { // range clipper enabled
-    const vm::ivec3 &rangeMin = inst->range->min;
-		const vm::ivec3 &rangeMax = inst->range->max;
-
-    int w = rangeMax.x - rangeMin.x;
-		int h = rangeMax.y - rangeMin.y;
-		int d = rangeMax.z - rangeMin.z;
-
-    const float cube = cuboid(
-			position,
-			(vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z) + vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)) / 2.f,
-			vm::vec3(w, h, d) / 2.f
-		);
-		minDistance = std::max(minDistance, cube);
+    minDistance = clampPointToRange(minDistance, position, *inst->range);
 	}
 	return minDistance;
 }
