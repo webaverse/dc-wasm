@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include <iostream>
 
-uint8_t *VertexBuffer::getBuffer() const {
+uint8_t *TerrainVertexBuffer::getBuffer() const {
   // calculate size
   size_t neededSize = 
     sizeof(uint32_t) +
@@ -55,7 +55,7 @@ uint8_t *VertexBuffer::getBuffer() const {
 
   return buffer;
 }
-void VertexBuffer::pushVertexData(const VertexData &vertexData) {
+void TerrainVertexBuffer::pushVertexData(const VertexData &vertexData) {
   positions.push_back(vertexData.position);
   normals.push_back(vertexData.normal);
   biomes.push_back(vertexData.biomes);
@@ -64,7 +64,7 @@ void VertexBuffer::pushVertexData(const VertexData &vertexData) {
 
 //
 
-uint8_t *VertexWaterBuffer::getBuffer() const {
+uint8_t *LiquidVertexBuffer::getBuffer() const {
   // calculate size
   size_t neededSize = 
     sizeof(uint32_t) +
@@ -109,8 +109,7 @@ uint8_t *VertexWaterBuffer::getBuffer() const {
 
   return buffer;
 }
-
-void VertexWaterBuffer::pushVertexData(const VertexData &vertexData) {
+void LiquidVertexBuffer::pushVertexData(const VertexData &vertexData) {
   positions.push_back(vertexData.position);
   normals.push_back(vertexData.normal);
   biomes.push_back(vertexData.biomes.x);

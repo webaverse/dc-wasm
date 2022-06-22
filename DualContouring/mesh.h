@@ -32,7 +32,7 @@ struct VertexData
 
 //
 
-class VertexBuffer {
+class TerrainVertexBuffer {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
@@ -45,7 +45,7 @@ public:
     void pushVertexData(const VertexData &vertexData);
 };
 
-class VertexWaterBuffer {
+class LiquidVertexBuffer {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
