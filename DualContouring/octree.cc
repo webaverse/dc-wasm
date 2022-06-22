@@ -493,7 +493,7 @@ void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexBuffer &vert
     }
 }
 
-void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool &isSeam)
+void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam)
 {
     int minSize = 2147483647; // arbitrary big number
     int minIndex = 0;
@@ -549,7 +549,7 @@ void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBu
     }
 }
 
-void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool &isSeam)
+void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam)
 {
     if (!node[0] || !node[1] || !node[2] || !node[3])
     {
@@ -606,7 +606,7 @@ void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffe
     }
 }
 
-void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer, bool &isSeam)
+void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer, bool isSeam)
 {
     if (!node[0] || !node[1])
     {
@@ -684,7 +684,7 @@ void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffe
     }
 }
 
-void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer, bool &isSeam)
+void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer, bool isSeam)
 {
     if (!node || node->type == Node_Leaf)
     {

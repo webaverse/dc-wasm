@@ -143,10 +143,10 @@ public:
 //
 
 void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexBuffer &vertexBuffer);
-void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool &isSeam);
-void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool &isSeam);
-void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer, bool &isSeam);
-void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer, bool &isSeam);
+void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam);
+void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam);
+void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer, bool isSeam);
+void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer, bool isSeam);
 void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, VertexBuffer &vertexBuffer, bool isSeam);
 
 #endif // OCTREE_H
