@@ -36,7 +36,7 @@ public:
     void createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
     void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
     void createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void clearTemporaryChunkData();
+    // void clearTemporaryChunkData();
     void clearChunkRoot(float x, float y, float z);
     uint8_t *createChunkMesh(float x, float y, float z, int lodArray[8]);
     uint8_t *createChunkWaterMesh(float x, float y, float z, int lodArray[8]);
