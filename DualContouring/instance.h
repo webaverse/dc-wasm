@@ -69,7 +69,8 @@ public:
 
     void setRange(const vm::ivec3 &min, const vm::ivec3 &max);
 
-    unsigned char getBiome(const vm::ivec2 &worldPosition, const int &lod);
+    unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
+    void getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights);
 };
 
 #endif // _INSTANCE_H_

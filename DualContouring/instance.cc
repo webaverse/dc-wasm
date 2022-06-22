@@ -227,20 +227,27 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
 }
 
 // biomes
-unsigned char DCInstance::getBiome(const vm::ivec2 &worldPosition, const int &lod) {
+// et biome value for a world point
+unsigned char DCInstance::getBiome(const vm::vec2 &worldPosition, const int &lod) {
     Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
-    int lx = int(worldPosition.x) - chunkNoise.min.x;
-    // int ly = int(worldPosition.y) - chunkNoise.min.z;
-    int lz = int(worldPosition.y) - chunkNoise.min.z;
-    return chunkNoise.getCachedBiome(lx, /*ly,*/ lz);
+    int lx = (int)worldPosition.x - chunkNoise.min.x;
+    int lz = (int)worldPosition.y - chunkNoise.min.z;
+    return chunkNoise.getCachedBiome(lx, lz);
 }
+// get biomes weights for a world point
+void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
+    Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    // int lx = (int)worldPosition.x - chunkNoise.min.x;
+    // int lz = (int)worldPosition.y - chunkNoise.min.z;
+    chunkNoise.getCachedInterpolatedBiome2D(worldPosition, biome, biomeWeights);
+}
+
+//
 
 uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];
-    // const int maxLodNumber = *std::max_element(lodArray, lodArray + 8);
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-    // OctreeNode *chunkRoot = getChunkRootFromHashMap(octreeMin, chunksListHashMap);
 
     Chunk &chunk = getChunk(octreeMin, GF_SDF, lod);
     ChunkOctree chunkOctree(this, chunk, lodArray);

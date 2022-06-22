@@ -88,8 +88,8 @@ public:
 
     // biomes
     unsigned char getCachedBiome(const int lx, const int lz) const;
-    void getCachedInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
-    void getCachedInterpolatedBiome3D(const float x, const float y, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
+    void getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
+    void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
 
     // height
     float interpolateHeight1D(const float x, const float z) const;
@@ -98,17 +98,15 @@ public:
     float getCachedInterpolatedHeight(const float x, const float z) const;
 
     // lighting
-    void getCachedSkylight(unsigned char *skylights) const;
-    void getCachedAo(unsigned char *aos) const;
 
     // sdf
     float getCachedInterpolatedSdf(const float x, const float y, const float z) const;
     float getCachedDamageInterpolatedSdf(const float x, const float y, const float z) const;
 
     // skylight
-    unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const;
-
-    // ao
+    void getCachedSkylight(unsigned char *skylights) const;
+    void getCachedAo(unsigned char *aos) const;
+    unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const; // XXX not used?
     unsigned char getAoLocal(const int lx, const int ly, const int lz) const;
 
     // signed distance field function for a box at the origin

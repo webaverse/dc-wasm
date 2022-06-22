@@ -225,8 +225,8 @@ void Chunk::initHeightField(DCInstance *inst) {
             int numSamples = 0;
             for (int dz = -size/2; dz < size/2; dz++) {
                 for (int dx = -size/2; dx < size/2; dx++) {
-                    vm::ivec2 iWorldPosition(ax + dx, az + dz);
-                    unsigned char b = inst->getBiome(iWorldPosition, lod);
+                    vm::vec2 worldPosition(ax + dx, az + dz);
+                    unsigned char b = inst->getBiome(worldPosition, lod);
                     biomeCounts[b]++;
                     numSamples++;
                 }
@@ -420,7 +420,9 @@ unsigned char Chunk::getCachedBiome(const int lx, const int lz) const {
     int index = lx + lz * size;
     return cachedBiomesField[index];
 }
-void Chunk::getCachedInterpolatedBiome2D(const float x, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+void Chunk::getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+    const float &x = worldPosition.x;
+    const float &z = worldPosition.y;
     int lx = int(x) - min.x + 1;
     int lz = int(z) - min.z + 1;
     int index2D = lx + lz * gridPoints;
@@ -435,13 +437,16 @@ void Chunk::getCachedInterpolatedBiome2D(const float x, const float z, vm::ivec4
     biomeWeights.z = cachedBiomesWeightsVectorField[index2D * 4 + 2];
     biomeWeights.w = cachedBiomesWeightsVectorField[index2D * 4 + 3];
 }
-void Chunk::getCachedInterpolatedBiome3D(const float x, const float y, const float z, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+void Chunk::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+    const float &x = worldPosition.x;
+    const float &z = worldPosition.z;
+    const float &y = worldPosition.y;
     if (std::isnan(x) || std::isnan(y) || std::isnan(z)) {
         std::cout << "got nan getCachedInterpolatedBiome3D: " << x << " " << y << " " << z << std::endl;
         abort();
     }
 
-    getCachedInterpolatedBiome2D(x, z, biome, biomeWeights);
+    getCachedInterpolatedBiome2D(vm::vec2(worldPosition.x, worldPosition.z), biome, biomeWeights);
 
     int lx = int(x) - min.x + 1;
     int ly = int(y) - min.y + 1;

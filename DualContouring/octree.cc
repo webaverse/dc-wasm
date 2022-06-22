@@ -223,7 +223,7 @@ VertexData ChunkOctree::generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode
     vertexData.position = vertexPosition;
     vertexData.normal = vm::normalize(averageNormal / (float)edgeCount);
     vertexData.corners = corners;
-    chunk.getCachedInterpolatedBiome3D(vertexData.position.x, vertexData.position.y , vertexData.position.z, vertexData.biome, vertexData.biomeWeights);
+    chunk.getCachedInterpolatedBiome3D(vertexData.position, vertexData.biome, vertexData.biomeWeights);
     return vertexData;
 }
 
