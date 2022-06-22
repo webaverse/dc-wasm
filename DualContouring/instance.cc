@@ -277,10 +277,11 @@ uint8_t *DCInstance::createChunkMesh(float x, float y, float z, int lodArray[8])
         // printf("Chunk Has No Data\n");
         return nullptr;
     }
-    TerrainVertexBuffer vertexBuffer;
-    generateMeshFromOctree(chunkOctree.root, vertexBuffer, false);
-    generateMeshFromOctree(chunkOctree.seamRoot, vertexBuffer, true);
+    TerrainVertexContext vertexContext;
+    generateMeshFromOctree(chunkOctree.root, vertexContext, false);
+    generateMeshFromOctree(chunkOctree.seamRoot, vertexContext, true);
 
+    auto &vertexBuffer = vertexContext.vertexBuffer;
     if (vertexBuffer.indices.size() == 0)
     {
         // printf("Generated Mesh Is Not Valid\n");
@@ -302,10 +303,11 @@ uint8_t *DCInstance::createChunkWaterMesh(float x, float y, float z, int lodArra
         // printf("Chunk Has No Data\n");
         return nullptr;
     }
-    LiquidVertexBuffer vertexBuffer;
-    generateMeshFromOctree(chunkOctree.root, vertexBuffer, false);
-    generateMeshFromOctree(chunkOctree.seamRoot, vertexBuffer, true);
+    LiquidVertexContext vertexContext;
+    generateMeshFromOctree(chunkOctree.root, vertexContext, false);
+    generateMeshFromOctree(chunkOctree.seamRoot, vertexContext, true);
 
+    auto &vertexBuffer = vertexContext.vertexBuffer;
     if (vertexBuffer.indices.size() == 0)
     {
         // printf("Generated Mesh Is Not Valid\n");

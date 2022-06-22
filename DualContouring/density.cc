@@ -82,7 +82,7 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 
 // negative density means inside the chunk, positive density means outside the chunk
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
-float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
+float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 {
 	const float terrain = chunk.getCachedInterpolatedSdf(position.x, position.y, position.z);
 	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
@@ -91,11 +91,6 @@ float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 	if (inst->range) { // range clipper enabled
     const vm::ivec3 &rangeMin = inst->range->min;
 		const vm::ivec3 &rangeMax = inst->range->max;
-
-    // vm::ivec3 rangeMinP1 = rangeMin + 1.f;
-    // vm::ivec3 rangeMaxM1 = rangeMax - 1.f;
-		// vm::ivec3 rangeMinP1 = rangeMin;
-		// vm::ivec3 rangeMaxM1 = rangeMax;
 
     int w = rangeMax.x - rangeMin.x;
 		int h = rangeMax.y - rangeMin.y;
@@ -108,11 +103,6 @@ float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 		);
 		minDistance = std::max(minDistance, cube);
 	}
-	/* if (damage != 0.) {
-		std::cout << "got damage " << damage << " - " << position.x << " " << position.y << " " << position.z << std::endl;
-	} */
-
-	// const float mountainsNoise = fractalNoise(2, 0.2f, 2.1f, 0.21f, p);
 
 	// const float cube = cuboid(position, vm::vec3(-4., 10.f, -4.f), vm::vec3(12.f));
 	// const float orb = sphere(position, vm::vec3(15.f, 2.5f, 1.f), 16.f);
@@ -121,5 +111,28 @@ float Density_Func(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 	// return cube;
 	// return terrain;
 	// return std::max(-cube, terrain);
+	return minDistance;
+}
+
+float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
+{
+	const float water = chunk.getCachedWaterInterpolatedSdf(position.x, position.y, position.z);
+
+	float minDistance = water;
+	if (inst->range) { // range clipper enabled
+    const vm::ivec3 &rangeMin = inst->range->min;
+		const vm::ivec3 &rangeMax = inst->range->max;
+
+    int w = rangeMax.x - rangeMin.x;
+		int h = rangeMax.y - rangeMin.y;
+		int d = rangeMax.z - rangeMin.z;
+
+    const float cube = cuboid(
+			position,
+			(vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z) + vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)) / 2.f,
+			vm::vec3(w, h, d) / 2.f
+		);
+		minDistance = std::max(minDistance, cube);
+	}
 	return minDistance;
 }
