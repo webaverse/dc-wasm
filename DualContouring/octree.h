@@ -67,20 +67,6 @@ enum OctreeNodeType
 
 //
 
-struct VertexData
-{
-    VertexData();
-    
-    int index;
-    int corners;
-    vm::ivec4 biome;
-    vm::vec4 biomeWeights;
-    vm::vec3 position;
-    vm::vec3 normal;
-};
-
-//
-
 class OctreeNode
 {
 public:
@@ -142,11 +128,41 @@ public:
 
 //
 
-void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexBuffer &vertexBuffer);
 void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam);
 void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam);
 void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer, bool isSeam);
 void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer, bool isSeam);
-void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, VertexBuffer &vertexBuffer, bool isSeam);
+
+template <typename VertexBufferType>
+void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, VertexBufferType &vertexBuffer, bool isSeam)
+{
+    generateVertexIndices(node, vertexBuffer);
+    contourCellProc(node, vertexBuffer.indices, isSeam);
+}
+template <typename VertexBufferType>
+void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexBufferType &vertexBuffer)
+{
+    if (!node)
+    {
+        return;
+    }
+    if (node->type == Node_Leaf)
+    {
+        if (!node->vertexData)
+        {
+            printf("Error! The provided voxel has no vertex data!\n");
+            abort();
+        }
+        node->vertexData->index = vertexBuffer.positions.size();
+        vertexBuffer.pushVertexData(*(node->vertexData));
+    }
+    else
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            generateVertexIndices(node->children[i], vertexBuffer);
+        }
+    }
+}
 
 #endif // OCTREE_H

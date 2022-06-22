@@ -223,7 +223,7 @@ VertexData ChunkOctree::generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode
     vertexData.position = vertexPosition;
     vertexData.normal = vm::normalize(averageNormal / (float)edgeCount);
     vertexData.corners = corners;
-    chunk.getCachedInterpolatedBiome3D(vertexData.position, vertexData.biome, vertexData.biomeWeights);
+    chunk.getCachedInterpolatedBiome3D(vertexData.position, vertexData.biomes, vertexData.biomesWeights);
     return vertexData;
 }
 
@@ -465,34 +465,6 @@ std::shared_ptr<OctreeNode> ChunkOctree::constructOctreeUpwards(
 
 //
 
-void generateVertexIndices(std::shared_ptr<OctreeNode> &node, VertexBuffer &vertexBuffer)
-{
-    if (!node)
-    {
-        return;
-    }
-    if (node->type == Node_Leaf)
-    {
-        if (!node->vertexData)
-        {
-            printf("Error! The provided voxel has no vertex data!\n");
-            return;
-        }
-        node->vertexData->index = vertexBuffer.positions.size();
-        vertexBuffer.positions.push_back(node->vertexData->position);
-        vertexBuffer.normals.push_back(node->vertexData->normal);
-        vertexBuffer.biomes.push_back(node->vertexData->biome);
-        vertexBuffer.biomesWeights.push_back(node->vertexData->biomeWeights);
-    }
-    else
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            generateVertexIndices(node->children[i], vertexBuffer);
-        }
-    }
-}
-
 void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer, bool isSeam)
 {
     int minSize = 2147483647; // arbitrary big number
@@ -725,10 +697,4 @@ void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer
 
         contourEdgeProc(edgeNodes, cellProcEdgeMask[i][4], indexBuffer, isSeam);
     }
-}
-
-void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, VertexBuffer &vertexBuffer, bool isSeam)
-{
-    generateVertexIndices(node, vertexBuffer);
-    contourCellProc(node, vertexBuffer.indices, isSeam);
 }

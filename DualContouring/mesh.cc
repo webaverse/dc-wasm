@@ -55,6 +55,14 @@ uint8_t *VertexBuffer::getBuffer() const {
 
   return buffer;
 }
+void VertexBuffer::pushVertexData(const VertexData &vertexData) {
+  positions.push_back(vertexData.position);
+  normals.push_back(vertexData.normal);
+  biomes.push_back(vertexData.biomes);
+  biomesWeights.push_back(vertexData.biomesWeights);
+}
+
+//
 
 uint8_t *VertexWaterBuffer::getBuffer() const {
   // calculate size
@@ -100,4 +108,10 @@ uint8_t *VertexWaterBuffer::getBuffer() const {
   index += indices.size() * sizeof(indices[0]);
 
   return buffer;
+}
+
+void VertexWaterBuffer::pushVertexData(const VertexData &vertexData) {
+  positions.push_back(vertexData.position);
+  normals.push_back(vertexData.normal);
+  biomes.push_back(vertexData.biomes.x);
 }
