@@ -68,11 +68,16 @@ public:
 
     );
     void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
-
+    
     void setRange(const vm::ivec3 &min, const vm::ivec3 &max);
 
     unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
     void getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights);
+    
+    float getTemperature(const vm::vec2 &worldPosition, const int &lod);
+    float getHumidity(const vm::vec2 &worldPosition, const int &lod);
+
+    float getBiomesWaterValue(const vm::vec2 &worldPosition, const int &lod);
 };
 
 #endif // _INSTANCE_H_

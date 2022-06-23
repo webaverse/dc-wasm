@@ -60,6 +60,7 @@ public:
     std::vector<uint8_t> cachedBiomesField;
     std::vector<unsigned char> cachedBiomesVectorField;
     std::vector<float> cachedBiomesWeightsVectorField;
+    std::vector<float> cachedBiomesWaterField;
     std::vector<float> cachedHeightField;
     std::vector<uint8_t> cachedSkylightField;
     std::vector<uint8_t> cachedAoField;
@@ -87,6 +88,7 @@ public:
     // noises
     float getTemperatureLocal(const int lx, const int lz) const;
     float getHumidityLocal(const int lx, const int lz) const;
+    float getBiomesWaterLocal(const int lx, const int lz) const;
 
     // biomes
     unsigned char getCachedBiome(const int lx, const int lz) const;

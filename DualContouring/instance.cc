@@ -265,6 +265,29 @@ void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int 
 
 //
 
+float DCInstance::getTemperature(const vm::vec2 &worldPosition, const int &lod) {
+    Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    int lx = (int)worldPosition.x - chunkNoise.min.x;
+    int lz = (int)worldPosition.y - chunkNoise.min.z;
+    return chunkNoise.getTemperatureLocal(lx, lz);
+}
+
+float DCInstance::getHumidity(const vm::vec2 &worldPosition, const int &lod) {
+    Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    int lx = (int)worldPosition.x - chunkNoise.min.x;
+    int lz = (int)worldPosition.y - chunkNoise.min.z;
+    return chunkNoise.getHumidityLocal(lx, lz);
+}
+
+float DCInstance::getBiomesWaterValue(const vm::vec2 &worldPosition, const int &lod) {
+    Chunk &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_HEIGHTFIELD, lod); // XXX can be a separate step
+    int lx = (int)worldPosition.x - chunkNoise.min.x;
+    int lz = (int)worldPosition.y - chunkNoise.min.z;
+    return chunkNoise.getBiomesWaterLocal(lx, lz);
+}
+
+//
+
 uint8_t *DCInstance::createTerrainChunkMesh(float x, float y, float z, int lodArray[8])
 {
     int lod = lodArray[0];

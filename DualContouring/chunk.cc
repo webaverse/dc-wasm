@@ -65,6 +65,7 @@ Chunk::Chunk(Chunk &&other) : size(other.size),
                               cachedBiomesField(std::move(other.cachedBiomesField)),
                               cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
                               cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
+                              cachedBiomesWaterField(std::move(other.cachedBiomesWaterField)),
                               cachedHeightField(std::move(other.cachedHeightField)),
                               cachedSkylightField(std::move(other.cachedSkylightField)),
                               cachedAoField(std::move(other.cachedAoField)),
@@ -86,6 +87,7 @@ Chunk &Chunk::operator=(const Chunk &&other)
     cachedBiomesField = std::move(other.cachedBiomesField);
     cachedBiomesVectorField = std::move(other.cachedBiomesVectorField);
     cachedBiomesWeightsVectorField = std::move(other.cachedBiomesWeightsVectorField);
+    cachedBiomesWaterField = std::move(other.cachedBiomesWaterField);
     cachedHeightField = std::move(other.cachedHeightField);
     cachedSkylightField = std::move(other.cachedSkylightField);
     cachedAoField = std::move(other.cachedAoField);
@@ -247,6 +249,7 @@ void Chunk::initHeightField(DCInstance *inst)
 {
     cachedBiomesVectorField.resize(gridPoints * gridPoints * 4);
     cachedBiomesWeightsVectorField.resize(gridPoints * gridPoints * 4);
+    cachedBiomesWaterField.resize(size * size);
     cachedHeightField.resize(gridPoints * gridPoints);
     for (int dz = 0; dz < gridPoints; dz++)
     {
@@ -255,6 +258,11 @@ void Chunk::initHeightField(DCInstance *inst)
             int index2D = dx + dz * gridPoints;
             int ax = dx + min.x - 1;
             int az = dz + min.z - 1;
+            
+            int lx = dx - 1;
+            int lz = dz - 1;
+            int index2D2 = lx + lz * size;
+            bool isInRange = lx >= 0 && lx < size && lz >= 0 && lz < size;
 
             std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
             int numSamples = 0;
@@ -264,8 +272,13 @@ void Chunk::initHeightField(DCInstance *inst)
                 {
                     vm::vec2 worldPosition(ax + dx, az + dz);
                     unsigned char b = inst->getBiome(worldPosition, lod);
+
                     biomeCounts[b]++;
                     numSamples++;
+
+                    if (isInRange && isWaterBiome(b)) {
+                        cachedBiomesWaterField[index2D2]++;
+                    }
                 }
             }
 
@@ -478,31 +491,23 @@ void Chunk::initWaterSdf(DCInstance *inst) {
         {
             int ax = min.x + dx - 1;
 
-            vm::ivec4 biomes;
-            vm::vec4 biomeWeights;
-            inst->getInterpolatedBiomes(vm::vec2(ax, az), lod, biomes, biomeWeights);
-            float waterWeight = 0;
-            if (biomeWeights.x > 0 && isWaterBiome(biomes.x)) {
-                waterWeight += biomeWeights.x;
-            }
-            if (biomeWeights.y > 0 && isWaterBiome(biomes.y)) {
-                waterWeight += biomeWeights.y;
-            }
-            if (biomeWeights.z > 0 && isWaterBiome(biomes.z)) {
-                waterWeight += biomeWeights.z;
-            }
-            if (biomeWeights.w > 0 && isWaterBiome(biomes.w)) {
-                waterWeight += biomeWeights.w;
-            }
-            float biomeValue = (-waterWeight + 0.5f) * fSize; // ranges from -size/2 to size/2
-            // int heightfieldIndex = dx + dz * gridPoints;
-            // float height = cachedHeightField[heightfieldIndex];
+            float waterValue = inst->getBiomesWaterValue(vm::vec2(ax, az), lod) / fSize;
+            waterValue *= -1.f;
+            // waterValue *= -1.1f;
             for (int dy = 0; dy < gridPoints; dy++)
             {
                 int ay = min.y + dy - 1;
 
                 float heightValue = (float)ay - waterBaseHeight;
-                float value = std::max(biomeValue, heightValue);
+                heightValue = std::min(
+                    std::max(
+                        heightValue,
+                        -1.f
+                    ),
+                    1.f
+                );
+                
+                float value = std::max(waterValue, heightValue);
 
                 int index3D = dx + dz * gridPoints + dy * gridPoints * gridPoints;
                 cachedWaterSdf[index3D] = value;
@@ -521,6 +526,11 @@ float Chunk::getHumidityLocal(const int lx, const int lz) const
 {
     int index = lx + lz * size;
     return cachedNoiseField.humidity[index];
+}
+float Chunk::getBiomesWaterLocal(const int lx, const int lz) const
+{
+    int index = lx + lz * size;
+    return cachedBiomesWaterField[index];
 }
 
 // biomes
