@@ -16,10 +16,7 @@
 class DCInstance {
 public:
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
-    // vm::ivec3 rangeMin;
-    // vm::ivec3 rangeMax;
-    // bool hasRange;
-    std::unique_ptr<vm::ibox3> range;
+    std::unique_ptr<vm::box3> clipRange;
 
     DCInstance();
     ~DCInstance();
@@ -69,7 +66,7 @@ public:
     );
     void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
     
-    void setRange(const vm::ivec3 &min, const vm::ivec3 &max);
+    void setClipRange(const vm::vec3 &min, const vm::vec3 &max);
 
     unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
     void getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights);

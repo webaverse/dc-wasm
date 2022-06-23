@@ -579,12 +579,9 @@ void DCInstance::injectDamage(const float &x, const float &y, const float &z, fl
     chunk.injectDamage(damageBuffer);
 }
 
-void DCInstance::setRange(const vm::ivec3 &min, const vm::ivec3 &max)
+void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 {
-    range.reset(new vm::ibox3(
-        vm::ivec3(min.x, min.y, min.z),
-        vm::ivec3(max.x, max.y, max.z)));
-    // rangeMin = min;
-    // rangeMax = max;
-    // hasRange = true;
+    clipRange.reset(new vm::box3(
+        vm::vec3(min.x, min.y, min.z),
+        vm::vec3(max.x, max.y, max.z)));
 }

@@ -113,8 +113,8 @@ EMSCRIPTEN_KEEPALIVE void injectDamage(DCInstance *inst, float x, float y, float
 
 //
 
-EMSCRIPTEN_KEEPALIVE void setRange(DCInstance *inst, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-    inst->setRange(vm::ivec3(minX, minY, minZ), vm::ivec3(maxX, maxY, maxZ));
+EMSCRIPTEN_KEEPALIVE void setClipRange(DCInstance *inst, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+    inst->setClipRange(vm::vec3(minX, minY, minZ), vm::vec3(maxX, maxY, maxZ));
 }
 
 //
