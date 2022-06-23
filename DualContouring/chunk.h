@@ -23,9 +23,10 @@ enum GenerateFlags : int {
     GF_NOISE = 1 << 0,
     GF_BIOMES = 1 << 1,
     GF_HEIGHTFIELD = 1 << 2,
-    GF_AOFIELD = 1 << 3,
-    GF_SDF = 1 << 4,
-    GF_LIQUIDS = 1 << 5,
+    GF_WATERFIELD = 1 << 3,
+    GF_AOFIELD = 1 << 4,
+    GF_SDF = 1 << 5,
+    GF_LIQUIDS = 1 << 6,
 };
 
 class NoiseField {
@@ -60,8 +61,8 @@ public:
     std::vector<uint8_t> cachedBiomesField;
     std::vector<unsigned char> cachedBiomesVectorField;
     std::vector<float> cachedBiomesWeightsVectorField;
-    std::vector<float> cachedBiomesWaterField;
     std::vector<float> cachedHeightField;
+    std::vector<float> cachedWaterField;
     std::vector<uint8_t> cachedSkylightField;
     std::vector<uint8_t> cachedAoField;
     std::vector<float> cachedSdf;
@@ -79,6 +80,7 @@ public:
     void initNoiseField();
     void initBiomesField();
     void initHeightField(DCInstance *inst);
+    void initWaterField(DCInstance *inst);
     void initSkylightField();
     void initAoField();
     void initSdf();
@@ -88,7 +90,7 @@ public:
     // noises
     float getTemperatureLocal(const int lx, const int lz) const;
     float getHumidityLocal(const int lx, const int lz) const;
-    float getBiomesWaterLocal(const int lx, const int lz) const;
+    float getWaterFieldLocal(const int lx, const int lz) const;
 
     // biomes
     unsigned char getCachedBiome(const int lx, const int lz) const;

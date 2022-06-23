@@ -65,7 +65,7 @@ Chunk::Chunk(Chunk &&other) : size(other.size),
                               cachedBiomesField(std::move(other.cachedBiomesField)),
                               cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
                               cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
-                              cachedBiomesWaterField(std::move(other.cachedBiomesWaterField)),
+                              cachedWaterField(std::move(other.cachedWaterField)),
                               cachedHeightField(std::move(other.cachedHeightField)),
                               cachedSkylightField(std::move(other.cachedSkylightField)),
                               cachedAoField(std::move(other.cachedAoField)),
@@ -87,7 +87,7 @@ Chunk &Chunk::operator=(const Chunk &&other)
     cachedBiomesField = std::move(other.cachedBiomesField);
     cachedBiomesVectorField = std::move(other.cachedBiomesVectorField);
     cachedBiomesWeightsVectorField = std::move(other.cachedBiomesWeightsVectorField);
-    cachedBiomesWaterField = std::move(other.cachedBiomesWaterField);
+    cachedWaterField = std::move(other.cachedWaterField);
     cachedHeightField = std::move(other.cachedHeightField);
     cachedSkylightField = std::move(other.cachedSkylightField);
     cachedAoField = std::move(other.cachedAoField);
@@ -103,14 +103,13 @@ void Chunk::generate(DCInstance *inst, int flags)
     {
         flags |= (GenerateFlags)GenerateFlags::GF_SDF;
     }
-    if (flags & GenerateFlags::GF_LIQUIDS) {
-        flags |= (GenerateFlags)GenerateFlags::GF_SDF;
-    }
     if (flags & GenerateFlags::GF_SDF) {
         flags |= (GenerateFlags)GenerateFlags::GF_HEIGHTFIELD;
     }
-    if (flags & GenerateFlags::GF_HEIGHTFIELD)
-    {
+    if (flags & GenerateFlags::GF_LIQUIDS) {
+        flags |= (GenerateFlags)GenerateFlags::GF_WATERFIELD;
+    }
+    if ((flags & GenerateFlags::GF_HEIGHTFIELD) | (flags & GenerateFlags::GF_WATERFIELD)) {
         flags |= (GenerateFlags)GenerateFlags::GF_BIOMES;
     }
     if (flags & GenerateFlags::GF_BIOMES)
@@ -138,6 +137,13 @@ void Chunk::generate(DCInstance *inst, int flags)
         if (cachedHeightField.size() == 0)
         {
             initHeightField(inst);
+        }
+    }
+    if (flags & GenerateFlags::GF_WATERFIELD)
+    {
+        if (cachedWaterField.size() == 0)
+        {
+            initWaterField(inst);
         }
     }
     if (flags & GenerateFlags::GF_SDF)
@@ -249,20 +255,19 @@ void Chunk::initHeightField(DCInstance *inst)
 {
     cachedBiomesVectorField.resize(gridPoints * gridPoints * 4);
     cachedBiomesWeightsVectorField.resize(gridPoints * gridPoints * 4);
-    cachedBiomesWaterField.resize(size * size);
     cachedHeightField.resize(gridPoints * gridPoints);
-    for (int dz = 0; dz < gridPoints; dz++)
+    for (int z = 0; z < gridPoints; z++)
     {
-        for (int dx = 0; dx < gridPoints; dx++)
+        for (int x = 0; x < gridPoints; x++)
         {
-            int index2D = dx + dz * gridPoints;
-            int ax = dx + min.x - 1;
-            int az = dz + min.z - 1;
+            int index2D = x + z * gridPoints;
+            int ax = x + min.x - 1;
+            int az = z + min.z - 1;
             
-            int lx = dx - 1;
-            int lz = dz - 1;
-            int index2D2 = lx + lz * size;
-            bool isInRange = lx >= 0 && lx < size && lz >= 0 && lz < size;
+            // int lx = x - 1;
+            // int lz = z - 1;
+            // int index2D2 = lx + lz * size;
+            // bool isInRange = lx >= 0 && lx < size && lz >= 0 && lz < size;
 
             std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
             int numSamples = 0;
@@ -275,10 +280,6 @@ void Chunk::initHeightField(DCInstance *inst)
 
                     biomeCounts[b]++;
                     numSamples++;
-
-                    if (isInRange && isWaterBiome(b)) {
-                        cachedBiomesWaterField[index2D2]++;
-                    }
                 }
             }
 
@@ -316,6 +317,37 @@ void Chunk::initHeightField(DCInstance *inst)
 
             float elevation = elevationSum / (float)numSamples;
             cachedHeightField[index2D] = elevation;
+        }
+    }
+}
+void Chunk::initWaterField(DCInstance *inst)
+{
+    cachedWaterField.resize(size * size);
+    for (int z = 0; z < size; z++)
+    {
+        for (int x = 0; x < size; x++)
+        {
+            int ax = x + min.x;
+            int az = z + min.z;
+
+            int lx = x;
+            int lz = z;
+            int index2D = x + z * size;
+            
+            std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
+            int numSamples = 0;
+            for (int dz = -size/2; dz < size/2; dz++)
+            {
+                for (int dx = -size/2; dx < size/2; dx++)
+                {
+                    vm::vec2 worldPosition(ax + dx, az + dz);
+                    unsigned char b = inst->getBiome(worldPosition, lod);
+
+                    if (isWaterBiome(b)) {
+                        cachedWaterField[index2D]++;
+                    }
+                }
+            }
         }
     }
 }
@@ -491,8 +523,8 @@ void Chunk::initWaterSdf(DCInstance *inst) {
         {
             int ax = min.x + dx - 1;
 
-            float waterValue = inst->getBiomesWaterValue(vm::vec2(ax, az), lod) / fSize;
-            waterValue *= -1.f;
+            float waterValue = -inst->getWater(vm::vec2(ax, az), lod) / fSize;
+            // waterValue *= -1.f;
             // waterValue *= -1.1f;
             for (int dy = 0; dy < gridPoints; dy++)
             {
@@ -527,10 +559,10 @@ float Chunk::getHumidityLocal(const int lx, const int lz) const
     int index = lx + lz * size;
     return cachedNoiseField.humidity[index];
 }
-float Chunk::getBiomesWaterLocal(const int lx, const int lz) const
+float Chunk::getWaterFieldLocal(const int lx, const int lz) const
 {
     int index = lx + lz * size;
-    return cachedBiomesWaterField[index];
+    return cachedWaterField[index];
 }
 
 // biomes
