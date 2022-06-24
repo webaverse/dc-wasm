@@ -13,20 +13,6 @@ class DCInstance;
 
 //
 
-class ChunkMultiLock {
-public:
-    DCInstance *inst;
-    std::vector<vm::ivec3> chunkPositions;
-    int lod;
-    std::function<bool()> lockFn;
-    std::function<void()> unlockFn;
-
-    ChunkMultiLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod);
-    ~ChunkMultiLock();
-};
-
-//
-
 class Task {
 public:
     std::vector<vm::ivec3> chunkPositions;

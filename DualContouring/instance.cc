@@ -615,3 +615,11 @@ void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
         chunkLock.unlock();
     }
 }
+bool DCInstance::tryLock(const vm::ivec3 &chunkPosition, int lod) {
+    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+    return chunkLock.try_lock();
+}
+void DCInstance::unlock(const vm::ivec3 &chunkPosition, int lod) {
+    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+    chunkLock.unlock();
+}

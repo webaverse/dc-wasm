@@ -4,6 +4,38 @@
 
 //
 
+ChunkLock::ChunkLock(DCInstance *inst, const vm::ivec3 &chunkPosition, int lod) :
+  inst(inst),
+  chunkPosition(chunkPosition),
+  lod(lod)
+{
+  lockFn = [&]() -> bool {
+    return inst->tryLock(chunkPosition, lod);
+  };
+  unlockFn = [&]() -> void {
+    inst->unlock(chunkPosition, lod);
+  };
+}
+ChunkLock::~ChunkLock() {}
+
+//
+
+ChunkMultiLock::ChunkMultiLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod) :
+  inst(inst),
+  chunkPositions(chunkPositions),
+  lod(lod)
+{
+  lockFn = [&]() -> bool {
+    return inst->tryLock(chunkPositions, lod);    
+  };
+  unlockFn = [&]() -> void {
+    inst->unlock(chunkPositions, lod);
+  };
+}
+ChunkMultiLock::~ChunkMultiLock() {}
+
+//
+
 Task::Task(std::function<bool()> lockFn, std::function<bool()> unlockFn, std::function<void *()> fn) :
   lockFn(lockFn),
   unlockFn(unlockFn),
@@ -13,11 +45,9 @@ Task::~Task() {}
 
 bool Task::tryLock() {
   return lockFn();
-  // return inst->tryLock(chunkPositions, lod);
 }
 void Task::unlock() {
   unlockFn();
-  // inst->unlock(chunkPositions, lod);
 }
 void *Task::run() {
   return fn();

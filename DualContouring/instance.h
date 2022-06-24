@@ -111,6 +111,8 @@ public:
 
     bool tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod);
     void unlock(const std::vector<vm::ivec3> &chunkPositions, int lod);
+    bool tryLock(const vm::ivec3 &chunkPosition, int lod);
+    void unlock(const vm::ivec3 &chunkPosition, int lod);
 };
 
 #endif // _INSTANCE_H_
