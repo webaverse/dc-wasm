@@ -31,11 +31,11 @@ public:
 
     //
 
-    Chunk3D &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int lod);
-    Chunk3D &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int lod);
+    Chunk3D &getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags);
+    Chunk3D &getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags);
 
-    Chunk2D &getChunk(const vm::ivec2 &min, GenerateFlags flags, const int lod);
-    Chunk2D &getChunkAt(const float x, const float z, GenerateFlags flags, const int lod);
+    Chunk2D &getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags);
+    Chunk2D &getChunkAt(const float x, const float z, const int lod, GenerateFlags flags);
     
     //
 

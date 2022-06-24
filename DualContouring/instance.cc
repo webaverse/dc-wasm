@@ -10,7 +10,7 @@ DCInstance::~DCInstance() {}
 
 // chunks
 // 3d
-Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const int lod)
+Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags)
 {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
@@ -18,7 +18,7 @@ Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const i
     if (iter == chunksCache3D.end())
     {
         vm::ivec2 min2D(min.x, min.z);
-        Chunk2D *chunk2d = &getChunk(min2D, flags, lod);
+        Chunk2D *chunk2d = &getChunk(min2D, lod, flags);
         chunksCache3D.emplace(std::make_pair(minHash, Chunk3D(min, lod, chunk2d)));
     }
 
@@ -26,18 +26,18 @@ Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const i
     chunkNoise.generate(this, flags);
     return chunkNoise;
 }
-Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int lod)
+Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags)
 {
     vm::ivec3 min = vm::ivec3(
                         (int)std::floor(x / (float)DualContouring::chunkSize),
                         (int)std::floor(y / (float)DualContouring::chunkSize),
                         (int)std::floor(z / (float)DualContouring::chunkSize)) *
                     DualContouring::chunkSize;
-    return getChunk(min, flags, lod);
+    return getChunk(min, lod, flags);
 }
 
 // 2d
-Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, GenerateFlags flags, const int lod) {
+Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     const auto &iter = chunksCache2D.find(minHash);
@@ -50,13 +50,13 @@ Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, GenerateFlags flags, const i
     chunkNoise.generate(this, flags);
     return chunkNoise;
 }
-Chunk2D &DCInstance::getChunkAt(const float x, const float z, GenerateFlags flags, const int lod)
+Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, GenerateFlags flags)
 {
     vm::ivec2 min = vm::ivec2(
                         (int)std::floor(x / (float)DualContouring::chunkSize),
                         (int)std::floor(z / (float)DualContouring::chunkSize)) *
                     DualContouring::chunkSize;
-    return getChunk(min, flags, lod);
+    return getChunk(min, lod, flags);
 }
 
 // locks
@@ -70,79 +70,27 @@ std::mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
 // fields
 void DCInstance::getChunkHeightfield(int x, int z, int lod, float *heights) {
     const vm::ivec2 octreeMin = vm::ivec2(x, z);
-    Chunk2D &chunkNoise = getChunk(octreeMin, GF_HEIGHTFIELD, lod);
+    Chunk2D &chunkNoise = getChunk(octreeMin, lod, GF_HEIGHTFIELD);
     chunkNoise.getCachedHeightfield(heights);
 }
 void DCInstance::getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights)
 {
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-    Chunk3D &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
+    Chunk3D &chunkNoise = getChunk(octreeMin, lod, GF_AOFIELD);
     chunkNoise.getCachedSkylight(skylights);
 }
 void DCInstance::getChunkAo(int x, int y, int z, int lod, unsigned char *aos)
 {
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-    Chunk3D &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
+    Chunk3D &chunkNoise = getChunk(octreeMin, lod, GF_AOFIELD);
     chunkNoise.getCachedAo(aos);
 }
-/* void DCInstance::getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights)
-{
-    for (int dz = 0; dz < d; dz++)
-    {
-        for (int dy = 0; dy < h; dy++)
-        {
-            for (int dx = 0; dx < w; dx++)
-            {
-                // absolute
-                int ax = x + dx;
-                int ay = y + dy;
-                int az = z + dz;
-
-                Chunk &chunkNoise = getChunkAt(ax, ay, az, GF_AOFIELD, lod);
-
-                // chunk-local
-                int lx = ax - chunkNoise.min.x + 1;
-                int ly = ay - chunkNoise.min.y + 1;
-                int lz = az - chunkNoise.min.z + 1;
-                int skylightIndex = dx + dy * w + dz * w * h; // note: output is y-first, but storage is z-first
-
-                skylights[skylightIndex] = chunkNoise.getSkylightLocal(lx, ly, lz);
-            }
-        }
-    }
-}
-void DCInstance::getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos)
-{
-    for (int dz = 0; dz < d; dz++)
-    {
-        for (int dy = 0; dy < h; dy++)
-        {
-            for (int dx = 0; dx < w; dx++)
-            {
-                // absolute
-                int ax = x + dx;
-                int ay = y + dy;
-                int az = z + dz;
-
-                Chunk &chunkNoise = getChunkAt(ax, ay, az, GF_AOFIELD, lod);
-
-                // chunk-local
-                int lx = ax - chunkNoise.min.x;
-                int ly = ay - chunkNoise.min.y;
-                int lz = az - chunkNoise.min.z;
-                int aoIndex = dx + dy * w + dz * w * h; // note: output is y-first, but storage is z-first
-
-                aos[aoIndex] = chunkNoise.getAoLocal(lx, ly, lz);
-            }
-        }
-    }
-} */
 void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
     countBinding = 0;
 
-    Chunk2D &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+    Chunk2D &chunk = getChunkAt(x, z, lod, GF_HEIGHTFIELD);
 
     float seed = DualContouring::noises->grassNoise.in2D(chunk.min.x, chunk.min.y);
     unsigned int seedInt;
@@ -183,7 +131,7 @@ void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, flo
     unsigned int &countBinding = *count;
 
     countBinding = 0;
-    Chunk2D &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+    Chunk2D &chunk = getChunkAt(x, z, lod, GF_HEIGHTFIELD);
 
     float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.y);
     unsigned int seedInt;
@@ -232,7 +180,7 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
     unsigned int &countBinding = *count;
     countBinding = 0;
 
-    Chunk2D &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
+    Chunk2D &chunk = getChunkAt(x, z, lod, GF_HEIGHTFIELD);
 
     float seed = DualContouring::noises->mobNoise.in2D(chunk.min.x, chunk.min.y);
     unsigned int seedInt;
@@ -278,35 +226,35 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
 // biomes
 // get biome value for a world point
 unsigned char DCInstance::getBiome(const vm::vec2 &worldPosition, const int &lod) {
-    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
     int lx = (int)worldPosition.x - chunkNoise.min.x;
     int lz = (int)worldPosition.y - chunkNoise.min.y;
     return chunkNoise.getCachedBiome(lx, lz);
 }
 // get biomes weights for a world point
 void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
     chunkNoise.getCachedInterpolatedBiome2D(worldPosition, biome, biomeWeights);
 }
 
 //
 
 float DCInstance::getTemperature(const vm::vec2 &worldPosition, const int &lod) {
-    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
     int lx = (int)worldPosition.x - chunkNoise.min.x;
     int lz = (int)worldPosition.y - chunkNoise.min.y;
     return chunkNoise.getTemperatureLocal(lx, lz);
 }
 
 float DCInstance::getHumidity(const vm::vec2 &worldPosition, const int &lod) {
-    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_BIOMES, lod);
+    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
     int lx = (int)worldPosition.x - chunkNoise.min.x;
     int lz = (int)worldPosition.y - chunkNoise.min.y;
     return chunkNoise.getHumidityLocal(lx, lz);
 }
 
 float DCInstance::getWater(const vm::vec2 &worldPosition, const int &lod) {
-    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, GF_WATERFIELD, lod);
+    Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_WATERFIELD);
     int lx = (int)worldPosition.x - chunkNoise.min.x;
     int lz = (int)worldPosition.y - chunkNoise.min.y;
     return chunkNoise.getWaterFieldLocal(lx, lz);
@@ -319,7 +267,7 @@ uint8_t *DCInstance::createTerrainChunkMesh(float x, float y, float z, int lodAr
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
-    Chunk3D &chunk = getChunk(octreeMin, GF_SDF, lod);
+    Chunk3D &chunk = getChunk(octreeMin, lod, GF_SDF);
     ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
@@ -345,7 +293,7 @@ uint8_t *DCInstance::createLiquidChunkMesh(float x, float y, float z, int lodArr
     int lod = lodArray[0];
     const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
 
-    Chunk3D &chunk = getChunk(octreeMin, GF_LIQUIDS, lod);
+    Chunk3D &chunk = getChunk(octreeMin, lod, GF_LIQUIDS);
     ChunkOctree<LiquidDCContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
@@ -394,7 +342,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, GF_SDF, lod);
+                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (chunkNoise.addSphereDamage(x, y, z, radius))
                     {
                         if (*outPositionsCount < maxPositionsCount)
@@ -445,7 +393,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, GF_SDF, lod);
+                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (chunkNoise.removeSphereDamage(x, y, z, radius))
                     {
                         if (*outPositionsCount < maxPositionsCount)
@@ -506,7 +454,7 @@ bool DCInstance::drawCubeDamage(
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, GF_SDF, lod);
+                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (chunkNoise.addCubeDamage(
                             x, y, z,
                             qx, qy, qz, qw,
@@ -570,7 +518,7 @@ bool DCInstance::eraseCubeDamage(
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, GF_SDF, lod);
+                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (chunkNoise.removeCubeDamage(
                             x, y, z,
                             qx, qy, qz, qw,
@@ -601,7 +549,7 @@ bool DCInstance::eraseCubeDamage(
 void DCInstance::injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
 {
     const vm::ivec3 min = vm::ivec3(x, y, z);
-    Chunk3D &chunk = getChunk(min, GF_NONE, lod);
+    Chunk3D &chunk = getChunk(min, lod, GF_NONE);
     chunk.injectDamage(damageBuffer);
 }
 
