@@ -380,6 +380,7 @@ Chunk3D::Chunk3D(Chunk3D &&other) :
                               cachedSkylightField(std::move(other.cachedSkylightField)),
                               cachedAoField(std::move(other.cachedAoField)),
                               cachedSdf(std::move(other.cachedSdf)),
+                              cachedWaterSdf(std::move(other.cachedWaterSdf)),
                               cachedDamageSdf(std::move(other.cachedDamageSdf)),
                               chunk2d(other.chunk2d)
 {
@@ -401,6 +402,7 @@ Chunk3D &Chunk3D::operator=(const Chunk3D &&other)
     cachedSkylightField = std::move(other.cachedSkylightField);
     cachedAoField = std::move(other.cachedAoField);
     cachedSdf = std::move(other.cachedSdf);
+    cachedWaterSdf = std::move(other.cachedWaterSdf);
     cachedDamageSdf = std::move(other.cachedDamageSdf);
     return *this;
 }
