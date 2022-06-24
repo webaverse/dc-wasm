@@ -80,10 +80,11 @@ int resolveGenerateFlags(int flags) {
 
 //
 
-Chunk2D::Chunk2D(Chunk2D &&other) : size(other.size),
-                              gridPoints(other.gridPoints),
+Chunk2D::Chunk2D(Chunk2D &&other) :
                               min(other.min),
+                              size(other.size),
                               lod(other.lod),
+                              gridPoints(other.gridPoints),
                               cachedNoiseField(std::move(other.cachedNoiseField)),
                               cachedBiomesField(std::move(other.cachedBiomesField)),
                               cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
@@ -92,16 +93,18 @@ Chunk2D::Chunk2D(Chunk2D &&other) : size(other.size),
                               cachedHeightField(std::move(other.cachedHeightField))
 {
 }
-Chunk2D::Chunk2D(const vm::ivec2 chunkMin, const int lod) : min(chunkMin),
+Chunk2D::Chunk2D(const vm::ivec2 chunkMin, const int lod) :
+                                                         min(chunkMin),
                                                          size(DualContouring::chunkSize),
-                                                         gridPoints(size + 3 + lod),
-                                                         lod(lod) {}
+                                                         lod(lod),
+                                                         gridPoints(size + 3 + lod)
+                                                         {}
 Chunk2D &Chunk2D::operator=(const Chunk2D &&other)
 {
-    size = other.size;
-    gridPoints = other.gridPoints;
     min = other.min;
+    size = other.size;
     lod = other.lod;
+    gridPoints = other.gridPoints;
     cachedNoiseField = std::move(other.cachedNoiseField);
     cachedBiomesField = std::move(other.cachedBiomesField);
     cachedBiomesVectorField = std::move(other.cachedBiomesVectorField);
@@ -369,10 +372,11 @@ void Chunk2D::getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::iv
 
 //
 
-Chunk3D::Chunk3D(Chunk3D &&other) : size(other.size),
-                              gridPoints(other.gridPoints),
+Chunk3D::Chunk3D(Chunk3D &&other) :
                               min(other.min),
+                              size(other.size),
                               lod(other.lod),
+                              gridPoints(other.gridPoints),
                               cachedSkylightField(std::move(other.cachedSkylightField)),
                               cachedAoField(std::move(other.cachedAoField)),
                               cachedSdf(std::move(other.cachedSdf)),
@@ -380,18 +384,19 @@ Chunk3D::Chunk3D(Chunk3D &&other) : size(other.size),
                               chunk2d(other.chunk2d)
 {
 }
-Chunk3D::Chunk3D(const vm::ivec3 chunkMin, const int lod, Chunk2D *chunk2d) : min(chunkMin),
+Chunk3D::Chunk3D(const vm::ivec3 chunkMin, const int lod, Chunk2D *chunk2d) :
+                                                         min(chunkMin),
                                                          size(DualContouring::chunkSize),
-                                                         gridPoints(size + 3 + lod),
                                                          lod(lod),
+                                                         gridPoints(size + 3 + lod),
                                                          chunk2d(chunk2d)
                                                          {}
 Chunk3D &Chunk3D::operator=(const Chunk3D &&other)
 {
-    size = other.size;
-    gridPoints = other.gridPoints;
     min = other.min;
+    size = other.size;
     lod = other.lod;
+    gridPoints = other.gridPoints;
     chunk2d = other.chunk2d;
     cachedSkylightField = std::move(other.cachedSkylightField);
     cachedAoField = std::move(other.cachedAoField);
@@ -450,6 +455,7 @@ void Chunk3D::initSkylightField()
 
             int index2D = x + z * gridPoints;
             float height = chunk2d->cachedHeightField[index2D];
+            
             int topAY = min.y + gridPoints - 1;
             float skylight = std::min(std::max((float)topAY - height + maxSkyLight, 0.f), maxSkyLight);
 
@@ -549,20 +555,20 @@ void Chunk3D::initAoField()
 void Chunk3D::initSdf()
 {
     cachedSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
-    for (int dz = 0; dz < gridPoints; dz++)
+    for (int z = 0; z < gridPoints; z++)
     {
-        for (int dx = 0; dx < gridPoints; dx++)
+        for (int x = 0; x < gridPoints; x++)
         {
-            int index2D = dx + dz * gridPoints;
+            int index2D = x + z * gridPoints;
             float height = chunk2d->cachedHeightField[index2D];
 
-            for (int dy = 0; dy < gridPoints; dy++)
+            for (int y = 0; y < gridPoints; y++)
             {
-                int index3D = dx + dz * gridPoints + dy * gridPoints * gridPoints;
+                int index3D = x + z * gridPoints + y * gridPoints * gridPoints;
 
-                int ax = min.x + (dx - 1) * lod;
-                int ay = min.y + (dy - 1) * lod;
-                int az = min.z + (dz - 1) * lod;
+                int ax = min.x + (x - 1) * lod;
+                int ay = min.y + (y - 1) * lod;
+                int az = min.z + (z - 1) * lod;
 
                 // height
                 float heightValue = (float)ay - height;
@@ -692,51 +698,6 @@ void Chunk3D::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::iv
         }
     }
 }
-/* std::vector<unsigned char> Chunk3D::getBiomesContainedInChunk() {
-    std::unordered_map<unsigned char, bool> seenBiomes;
-    for (int dz = 0; dz < gridPoints; dz++)
-    {
-        for (int dx = 0; dx < gridPoints; dx++)
-        {
-            int index2D = dx + dz * gridPoints;
-            for (int i = 0; i < 4; i++) {
-                unsigned char b = cachedBiomesVectorField[index2D * 4 + i];
-                seenBiomes[b] = true;
-            }
-        }
-    }
-    // convert the unordered_map to a vector
-    std::vector<unsigned char> biomesVector;
-    biomesVector.reserve(seenBiomes.size());
-    for(auto kv : seenBiomes) {
-        biomesVector.push_back(kv.first);
-    }
-    return std::move(biomesVector);
-} */
-
-/* // height
-float Chunk3D::interpolateHeight1D(const float x, const float z) const
-{
-    const int xf = std::floor(x);
-    const int xc = std::ceil(x);
-    const int indexF = xf + z * gridPoints;
-    const int indexC = xc + z * gridPoints;
-    const float dx = x - xf;
-    return lerp(cachedHeightField[indexF], cachedHeightField[indexC], dx);
-}
-float Chunk3D::interpolateHeight2D(const float x, const float z) const
-{
-    const int zf = std::floor(z);
-    const int zc = std::ceil(z);
-    const float dz = z - zf;
-    return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
-}
-float Chunk::getCachedInterpolatedHeight(const float x, const float z) const
-{
-    const float localX = x - min.x + 1;
-    const float localZ = z - min.z + 1;
-    return interpolateHeight2D(localX, localZ);
-} */
 void Chunk2D::getCachedHeightfield(float *heights) const
 {
     for (int z = 0; z < size; z++)
@@ -745,8 +706,8 @@ void Chunk2D::getCachedHeightfield(float *heights) const
         {
             int index2D = x + z * size;
 
-            int gridX = x + lod;
-            int gridZ = z + lod;
+            int gridX = x + 1;
+            int gridZ = z + 1;
             int gridIndex = gridX + gridZ * gridPoints;
 
             heights[index2D] = cachedHeightField[gridIndex];

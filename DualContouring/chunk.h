@@ -56,10 +56,10 @@ public:
 class Chunk2D
 {
 public:
-    int size;
-    int gridPoints;
-    int lod;
     vm::ivec2 min;
+    int size;
+    int lod;
+    int gridPoints;
 
     NoiseField cachedNoiseField;
     std::vector<uint8_t> cachedBiomesField;
@@ -98,10 +98,10 @@ public:
 class Chunk3D
 {
 public:
-    int size;
-    int gridPoints;
-    int lod;
     vm::ivec3 min;
+    int size;
+    int lod;
+    int gridPoints;
     Chunk2D *chunk2d;
     std::vector<uint8_t> cachedSkylightField;
     std::vector<uint8_t> cachedAoField;
