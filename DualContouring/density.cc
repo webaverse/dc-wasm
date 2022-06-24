@@ -100,7 +100,7 @@ inline float clampPointToRange(float minDistance, const vm::vec3 &position, cons
 
 // negative density means inside the chunk, positive density means outside the chunk
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
-float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
+float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk)
 {
 	const float terrain = chunk.getCachedInterpolatedSdf(position.x, position.y, position.z);
 	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
@@ -120,7 +120,7 @@ float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
 	return minDistance;
 }
 
-float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk &chunk)
+float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk)
 {
 	const float water = chunk.getCachedWaterInterpolatedSdf(position.x, position.y, position.z);
 

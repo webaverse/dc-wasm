@@ -11,7 +11,7 @@
 #include "instance.h"
 
 float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::vec3 &halfDimensions);
-float terrainDensityFn(const vm::vec3 &worldPosition, DCInstance *inst, Chunk &chunk);
-float liquidDensityFn(const vm::vec3 &worldPosition, DCInstance *inst, Chunk &chunk);
+float terrainDensityFn(const vm::vec3 &worldPosition, DCInstance *inst, Chunk3D &chunk);
+float liquidDensityFn(const vm::vec3 &worldPosition, DCInstance *inst, Chunk3D &chunk);
 
 #endif //	DENSITY_H

@@ -20,7 +20,8 @@ public:
     TaskQueue taskQueue;
     ResultQueue resultQueue;
     std::unordered_map<uint64_t, std::mutex> chunkLocks;
-    std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
+    std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
+    std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
 
     //
@@ -30,9 +31,11 @@ public:
 
     //
 
-    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int lod);
-    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int lod);
-    Chunk &getChunkAt(const float x, const float z, GenerateFlags flags, const int lod);
+    Chunk3D &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int lod);
+    Chunk3D &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int lod);
+
+    Chunk2D &getChunk(const vm::ivec2 &min, GenerateFlags flags, const int lod);
+    Chunk2D &getChunkAt(const float x, const float z, GenerateFlags flags, const int lod);
     
     //
 
