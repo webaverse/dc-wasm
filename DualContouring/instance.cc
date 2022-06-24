@@ -3,7 +3,9 @@
 #include "../vector.h"
 
 // constructor/destructor
-DCInstance::DCInstance() {}
+DCInstance::DCInstance() :
+  taskQueue(this)
+  {}
 DCInstance::~DCInstance() {}
 
 // chunks
@@ -573,4 +575,17 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
     clipRange.reset(new vm::box3(
         vm::vec3(min.x, min.y, min.z),
         vm::vec3(max.x, max.y, max.z)));
+}
+
+//
+
+bool DCInstance::canLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) const {
+  // XXX
+  return false;
+}
+void DCInstance::lock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
+  // XXX
+}
+void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
+  // XXX
 }

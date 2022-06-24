@@ -11,12 +11,16 @@
 #include "chunk.h"
 #include "octree.h"
 #include "context.h"
+#include "task.h"
 #include "../vector.h"
 
 class DCInstance {
 public:
+    TaskQueue taskQueue;
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
     std::unique_ptr<vm::box3> clipRange;
+
+    //
 
     DCInstance();
     ~DCInstance();
@@ -95,6 +99,12 @@ public:
     float getTemperature(const vm::vec2 &worldPosition, const int &lod);
     float getHumidity(const vm::vec2 &worldPosition, const int &lod);
     float getWater(const vm::vec2 &worldPosition, const int &lod);
+
+    //
+
+    bool canLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) const;
+    void lock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
+    void unlock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
 };
 
 #endif // _INSTANCE_H_
