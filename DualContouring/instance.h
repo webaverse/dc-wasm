@@ -107,9 +107,8 @@ public:
 
     //
 
-    bool tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
-    // void lock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
-    void unlock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
+    bool tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod);
+    void unlock(const std::vector<vm::ivec3> &chunkPositions, int lod);
 };
 
 #endif // _INSTANCE_H_

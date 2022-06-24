@@ -588,7 +588,7 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 
 //
 
-bool DCInstance::tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
+bool DCInstance::tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
     bool lockedAll = true;
     for (int i = 0; i < chunkPositions.size(); i++) {
         const vm::ivec3 &chunkPosition = chunkPositions[i];
@@ -608,7 +608,7 @@ bool DCInstance::tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod, 
     }
     return lockedAll;
 }
-void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
+void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
     for (int i = 0; i < chunkPositions.size(); i++) {
         const vm::ivec3 &chunkPosition = chunkPositions[i];
         std::mutex &chunkLock = getChunkLock(chunkPosition, lod);

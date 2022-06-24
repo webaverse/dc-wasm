@@ -12,15 +12,28 @@ class DCInstance;
 
 //
 
-class Task {
+class ChunkMultiLock {
 public:
     DCInstance *inst;
     std::vector<vm::ivec3> chunkPositions;
     int lod;
-    int flags;
+    std::function<bool()> lockFn;
+    std::function<void()> unlockFn;
+
+    ChunkMultiLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod);
+    ~ChunkMultiLock();
+};
+
+//
+
+class Task {
+public:
+    std::vector<vm::ivec3> chunkPositions;
+    std::function<bool()> lockFn;
+    std::function<void()> unlockFn;
     std::function<void *()> fn;
 
-    Task(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod, int flags, std::function<void *()> &&fn);
+    Task(std::function<bool()> lockFn, std::function<bool()> unlockFn, std::function<void *()> fn);
     ~Task();
 
     bool tryLock();
