@@ -702,13 +702,13 @@ void Chunk3D::getCachedHeightfield(float *heights) const
             heights[index2D] = cachedHeightField[gridIndex];
         }
     }
-}
-float Chunk3D::getCachedInterpolatedHeight(const float x, const float z) const
+} */
+float Chunk::getCachedInterpolatedHeight(const float x, const float z) const
 {
     const float localX = x - min.x + 1;
     const float localZ = z - min.z + 1;
     return interpolateHeight2D(localX, localZ);
-} */
+}
 
 // lighting
 void Chunk::getCachedSkylight(unsigned char *skylights) const
