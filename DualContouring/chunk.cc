@@ -178,13 +178,13 @@ void Chunk::initNoiseField()
     cachedNoiseField.humidity.resize(size * size);
     cachedNoiseField.ocean.resize(size * size);
     cachedNoiseField.river.resize(size * size);
-    for (int dz = 0; dz < size; dz++)
+    for (int z = 0; z < size; z++)
     {
-        for (int dx = 0; dx < size; dx++)
+        for (int x = 0; x < size; x++)
         {
-            int index = dx + dz * size;
-            int ax = dx + min.x;
-            int az = dz + min.z;
+            int index = x + z * size;
+            int ax = x * lod + min.x;
+            int az = z * lod + min.z;
 
             float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(ax, az);
             cachedNoiseField.temperature[index] = tNoise;
@@ -203,11 +203,11 @@ void Chunk::initNoiseField()
 void Chunk::initBiomesField()
 {
     cachedBiomesField.resize(size * size);
-    for (int dz = 0; dz < size; dz++)
+    for (int z = 0; z < size; z++)
     {
-        for (int dx = 0; dx < size; dx++)
+        for (int x = 0; x < size; x++)
         {
-            int index = dx + dz * size;
+            int index = x + z * size;
             unsigned char &biome = cachedBiomesField[index];
             biome = 0xFF;
 
@@ -261,8 +261,8 @@ void Chunk::initHeightField(DCInstance *inst)
         for (int x = 0; x < gridPoints; x++)
         {
             int index2D = x + z * gridPoints;
-            int ax = x + min.x - 1;
-            int az = z + min.z - 1;
+            int ax = (x - 1) * lod + min.x;
+            int az = (z - 1) * lod + min.z;
             
             // int lx = x - 1;
             // int lz = z - 1;
@@ -327,8 +327,8 @@ void Chunk::initWaterField(DCInstance *inst)
     {
         for (int x = 0; x < size; x++)
         {
-            int ax = x + min.x;
-            int az = z + min.z;
+            int ax = x * lod + min.x;
+            int az = z * lod + min.z;
 
             int lx = x;
             int lz = z;
@@ -477,9 +477,9 @@ void Chunk::initSdf()
             {
                 int index3D = dx + dz * gridPoints + dy * gridPoints * gridPoints;
 
-                int ax = min.x + dx - 1;
-                int ay = min.y + dy - 1;
-                int az = min.z + dz - 1;
+                int ax = min.x + (dx - 1) * lod;
+                int ay = min.y + (dy - 1) * lod;
+                int az = min.z + (dz - 1) * lod;
 
                 // height
                 float heightValue = (float)ay - height;
