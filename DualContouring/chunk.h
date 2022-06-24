@@ -98,10 +98,7 @@ public:
     void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
 
     // height
-    float interpolateHeight1D(const float x, const float z) const;
-    float interpolateHeight2D(const float x, const float z) const;
     void getCachedHeightfield(float *heights) const;
-    float getCachedInterpolatedHeight(const float x, const float z) const;
 
     // lighting
 

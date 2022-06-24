@@ -687,7 +687,13 @@ float Chunk3D::interpolateHeight2D(const float x, const float z) const
     const float dz = z - zf;
     return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
 }
-void Chunk3D::getCachedHeightfield(float *heights) const
+float Chunk::getCachedInterpolatedHeight(const float x, const float z) const
+{
+    const float localX = x - min.x + 1;
+    const float localZ = z - min.z + 1;
+    return interpolateHeight2D(localX, localZ);
+} */
+void Chunk::getCachedHeightfield(float *heights) const
 {
     for (int z = 0; z < size; z++)
     {
@@ -702,12 +708,6 @@ void Chunk3D::getCachedHeightfield(float *heights) const
             heights[index2D] = cachedHeightField[gridIndex];
         }
     }
-} */
-float Chunk::getCachedInterpolatedHeight(const float x, const float z) const
-{
-    const float localX = x - min.x + 1;
-    const float localZ = z - min.z + 1;
-    return interpolateHeight2D(localX, localZ);
 }
 
 // lighting
