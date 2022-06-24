@@ -12,11 +12,13 @@
 #include "octree.h"
 #include "context.h"
 #include "task.h"
+#include "result.h"
 #include "../vector.h"
 
 class DCInstance {
 public:
     TaskQueue taskQueue;
+    ResultQueue resultQueue;
     std::unordered_map<uint64_t, std::mutex> chunkLocks;
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
     std::unique_ptr<vm::box3> clipRange;
@@ -56,7 +58,7 @@ public:
     
     //
     
-    void clearChunkRoot(float x, float y, float z);
+    // void clearChunkRoot(float x, float y, float z);
     uint8_t *createTerrainChunkMesh(float x, float y, float z, int lodArray[8]);
     uint8_t *createLiquidChunkMesh(float x, float y, float z, int lodArray[8]);
     bool drawSphereDamage(const float &x, const float &y, const float &z,

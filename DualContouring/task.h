@@ -3,6 +3,7 @@
 
 #include "vectorMath.h"
 #include <vector>
+#include <deque>
 #include <mutex>
 #include <semaphore>
 
@@ -48,7 +49,7 @@ public:
 class TaskQueue {
 public:
     DCInstance *inst;
-    std::vector<Task *> tasks;
+    std::deque<Task *> tasks;
     std::mutex taskLock;
     std::condition_variable taskCondVar;
 
