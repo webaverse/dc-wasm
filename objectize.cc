@@ -7,6 +7,8 @@ EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
     DualContouring::initialize(chunkSize, seed);
 }
 
+// 
+
 EMSCRIPTEN_KEEPALIVE DCInstance *createInstance() {
     return DualContouring::createInstance();
 }
@@ -14,8 +16,13 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
     DualContouring::destroyInstance(instance);
 }
 
-EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(DCInstance *inst, int x, int z, int w, int h, int lod, float *heights) {
+// 
+
+/* EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(DCInstance *inst, int x, int z, int w, int h, int lod, float *heights) {
     return inst->getHeightfieldRange(x, z, w, h, lod, heights);
+} */
+EMSCRIPTEN_KEEPALIVE void getChunkHeightfield(DCInstance *inst, int x, int z, int lod, float *heights) {
+    return inst->getChunkHeightfield(x, z, lod, heights);
 }
 EMSCRIPTEN_KEEPALIVE void getChunkSkylight(DCInstance *inst, int x, int y, int z, int lod, unsigned char *skylights) {
     return inst->getChunkSkylight(x, y, z, lod, skylights);
@@ -23,15 +30,17 @@ EMSCRIPTEN_KEEPALIVE void getChunkSkylight(DCInstance *inst, int x, int y, int z
 EMSCRIPTEN_KEEPALIVE void getChunkAo(DCInstance *inst, int x, int y, int z, int lod, unsigned char *aos) {
     return inst->getChunkAo(x, y, z, lod, aos);
 }
-EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
+/* EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
     return inst->getSkylightFieldRange(x, y, z, w, h, d, lod, skylights);
 }
 EMSCRIPTEN_KEEPALIVE void getAoFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos) {
     return inst->getAoFieldRange(x, y, z, w, h, d, lod, aos);
-}
+} */
 /* EMSCRIPTEN_KEEPALIVE void getBiomesContainedInChunk(DCInstance *inst, int x, int z, unsigned char *biomes, unsigned int *biomesCount) {
     return inst->getBiomesContainedInChunk(x, z, biomes, biomesCount, 1);        
 } */
+
+// 
 
 EMSCRIPTEN_KEEPALIVE void createGrassSplat(DCInstance *inst, float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
     return inst->createGrassSplat(x, z, lod, ps, qs, instances, count);

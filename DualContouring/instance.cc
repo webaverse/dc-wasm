@@ -41,21 +41,10 @@ Chunk &DCInstance::getChunkAt(const float x, const float z, GenerateFlags flags,
 }
 
 // chunks
-void DCInstance::getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights)
-{
-    for (int dz = 0; dz < h; dz++)
-    {
-        for (int dx = 0; dx < w; dx++)
-        {
-            int ax = x + dx;
-            int az = z + dz;
-
-            Chunk &chunkNoise = getChunkAt(ax, az, GF_HEIGHTFIELD, lod);
-            float height = chunkNoise.getCachedInterpolatedHeight(ax, az);
-            float caveValue = DualContouring::getComputedCaveNoise(ax, height, az) * 1.1f;
-            heights[dz * w + dx] = height - caveValue;
-        }
-    }
+void DCInstance::getChunkHeightfield(int x, int z, int lod, float *heights) {
+    const vm::ivec3 octreeMin = vm::ivec3(x, 0, z);
+    Chunk &chunkNoise = getChunk(octreeMin, GF_HEIGHTFIELD, lod);
+    chunkNoise.getCachedHeightfield(heights);
 }
 void DCInstance::getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights)
 {
@@ -69,7 +58,7 @@ void DCInstance::getChunkAo(int x, int y, int z, int lod, unsigned char *aos)
     Chunk &chunkNoise = getChunk(octreeMin, GF_AOFIELD, lod);
     chunkNoise.getCachedAo(aos);
 }
-void DCInstance::getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights)
+/* void DCInstance::getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights)
 {
     for (int dz = 0; dz < d; dz++)
     {
@@ -120,7 +109,7 @@ void DCInstance::getAoFieldRange(int x, int y, int z, int w, int h, int d, int l
             }
         }
     }
-}
+} */
 void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
@@ -161,8 +150,8 @@ void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *q
 void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
-    countBinding = 0;
 
+    countBinding = 0;
     Chunk &chunk = getChunkAt(x, z, GF_HEIGHTFIELD, lod);
 
     float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.z);

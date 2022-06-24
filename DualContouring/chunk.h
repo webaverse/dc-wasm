@@ -100,7 +100,7 @@ public:
     // height
     float interpolateHeight1D(const float x, const float z) const;
     float interpolateHeight2D(const float x, const float z) const;
-
+    void getCachedHeightfield(float *heights) const;
     float getCachedInterpolatedHeight(const float x, const float z) const;
 
     // lighting
@@ -113,8 +113,8 @@ public:
     // skylight
     void getCachedSkylight(unsigned char *skylights) const;
     void getCachedAo(unsigned char *aos) const;
-    unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const; // XXX not used?
-    unsigned char getAoLocal(const int lx, const int ly, const int lz) const;
+    // unsigned char getSkylightLocal(const int lx, const int ly, const int lz) const; // XXX not used?
+    // unsigned char getAoLocal(const int lx, const int ly, const int lz) const;
 
     // signed distance field function for a box at the origin
     // returns negative for points inside the box, zero at the box's surface, and positive for points outside the box

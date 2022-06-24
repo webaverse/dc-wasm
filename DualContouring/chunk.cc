@@ -695,6 +695,22 @@ float Chunk::interpolateHeight2D(const float x, const float z) const
     const int index = localX + localZ * gridPoints;
     return (cachedHeightField[index] + 1.f) / 2.f;
 } */
+void Chunk::getCachedHeightfield(float *heights) const
+{
+    for (int z = 0; z < size; z++)
+    {
+        for (int x = 0; x < size; x++)
+        {
+            int index2D = x + z * size;
+
+            int gridX = x + lod;
+            int gridZ = z + lod;
+            int gridIndex = gridX + gridZ * gridPoints;
+
+            heights[index2D] = cachedHeightField[gridIndex];
+        }
+    }
+}
 float Chunk::getCachedInterpolatedHeight(const float x, const float z) const
 {
     const float localX = x - min.x + 1;
@@ -772,7 +788,7 @@ float Chunk::getCachedDamageInterpolatedSdf(const float x, const float y, const 
 }
 
 // skylight
-unsigned char Chunk::getSkylightLocal(const int lx, const int ly, const int lz) const
+/* unsigned char Chunk::getSkylightLocal(const int lx, const int ly, const int lz) const
 {
     int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
     return cachedSkylightField[index];
@@ -783,7 +799,7 @@ unsigned char Chunk::getAoLocal(const int lx, const int ly, const int lz) const
 {
     int index = lx + lz * size + ly * size * size;
     return cachedAoField[index];
-}
+} */
 
 // signed distance field function for a box at the origin
 // returns negative for points inside the box, zero at the box's surface, and positive for points outside the box
