@@ -25,9 +25,7 @@ public:
     ~ChunkLock();
 };
 
-//
-
-class ChunkMultiLock {
+class MultiChunkLock {
 public:
     DCInstance *inst;
     std::vector<vm::ivec3> chunkPositions;
@@ -35,8 +33,26 @@ public:
     std::function<bool()> lockFn;
     std::function<void()> unlockFn;
 
-    ChunkMultiLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod);
-    ~ChunkMultiLock();
+    MultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod);
+    ~MultiChunkLock();
+};
+
+//
+
+class AutoChunkLock {
+public:
+    ChunkLock chunkLock;
+
+    AutoChunkLock(DCInstance *inst, const vm::ivec3 &chunkPosition, int lod);
+    ~AutoChunkLock();
+};
+
+class AutoMultiChunkLock {
+public:
+    MultiChunkLock multiChunkLock;
+
+    AutoMultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod);
+    ~AutoMultiChunkLock();
 };
 
 #endif // LOCK_H

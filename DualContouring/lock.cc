@@ -1,4 +1,4 @@
-#include "task.h"
+#include "lock.h"
 #include "instance.h"
 #include <iostream>
 
@@ -20,9 +20,9 @@ ChunkLock::~ChunkLock() {}
 
 //
 
-ChunkMultiLock::ChunkMultiLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod) :
+MultiChunkLock::MultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod) :
   inst(inst),
-  chunkPositions(chunkPositions),
+  chunkPositions(std::move(chunkPositions)),
   lod(lod)
 {
   lockFn = [&]() -> bool {
@@ -32,56 +32,24 @@ ChunkMultiLock::ChunkMultiLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkP
     inst->unlock(chunkPositions, lod);
   };
 }
-ChunkMultiLock::~ChunkMultiLock() {}
+MultiChunkLock::~MultiChunkLock() {}
 
 //
 
-Task::Task(std::function<bool()> lockFn, std::function<bool()> unlockFn, std::function<void *()> fn) :
-  lockFn(lockFn),
-  unlockFn(unlockFn),
-  fn(fn)
-  {}
-Task::~Task() {}
-
-bool Task::tryLock() {
-  return lockFn();
+AutoChunkLock::AutoChunkLock(DCInstance *inst, const vm::ivec3 &chunkPosition, int lod) :
+  chunkLock(inst, chunkPosition, lod)
+{
+  chunkLock.lockFn();
 }
-void Task::unlock() {
-  unlockFn();
-}
-void *Task::run() {
-  return fn();
+AutoChunkLock::~AutoChunkLock() {
+  chunkLock.unlockFn();
 }
 
-//
-
-TaskQueue::TaskQueue(DCInstance *inst) :
-  inst(inst)
-  {}
-TaskQueue::~TaskQueue() {}
-
-void TaskQueue::pushTask(Task *task) {
-  std::unique_lock<std::mutex> lock(taskLock);
-  tasks.push_back(task);
-  taskCondVar.notify_all();
+AutoMultiChunkLock::AutoMultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod) :
+  multiChunkLock(inst, std::move(chunkPositions), lod)
+{
+  multiChunkLock.lockFn();
 }
-Task *TaskQueue::popLockTask() {
-  std::unique_lock<std::mutex> lock(taskLock);
-
-  Task *task = nullptr;
-  taskCondVar.wait(lock, [&]() -> bool {
-    for (int i = 0; i < tasks.size(); i++) {
-      if (tasks[i]->tryLock()) {
-        task = tasks[i];
-        tasks.erase(tasks.begin() + i);
-        return true;
-      }
-    }
-    return false;
-  });
-  if (task == nullptr) {
-    std::cout << "failed to pop task!" << std::endl;
-    abort();
-  }
-  return task;
+AutoMultiChunkLock::~AutoMultiChunkLock() {
+  multiChunkLock.unlockFn();
 }
