@@ -142,7 +142,11 @@ void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *q
         float ax = (float)chunk.min.x + dx;
         float az = (float)chunk.min.z + dz;
 
-        float height = chunk.getCachedInterpolatedHeight(ax, az);
+        int idx = (int)dx + 1;
+        int idz = (int)dz + 1;
+        int index2D = idx + idz * DualContouring::chunkSize;
+        float height = chunk.cachedHeightField[index2D];
+
         ps[countBinding * 3] = ax;
         ps[countBinding * 3 + 1] = height;
         ps[countBinding * 3 + 2] = az;
@@ -229,7 +233,11 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
 
         if (noiseValue < mobRate)
         {
-            float height = chunk.getCachedInterpolatedHeight(ax, az);
+            int idx = (int)dx + 1;
+            int idz = (int)dz + 1;
+            int index2D = idx + idz * DualContouring::chunkSize;
+            float height = chunk.cachedHeightField[index2D];
+            // float height = chunk.getCachedInterpolatedHeight(ax, az);
             ps[countBinding * 3] = ax;
             ps[countBinding * 3 + 1] = height;
             ps[countBinding * 3 + 2] = az;
