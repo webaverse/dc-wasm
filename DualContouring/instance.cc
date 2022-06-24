@@ -9,7 +9,7 @@ DCInstance::DCInstance() :
 DCInstance::~DCInstance() {}
 
 // chunks
-Chunk &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const int &lod)
+Chunk &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const int lod)
 {
     uint64_t minHash = hashOctreeMin(min);
 
@@ -23,7 +23,7 @@ Chunk &DCInstance::getChunk(const vm::ivec3 &min, GenerateFlags flags, const int
     chunkNoise.generate(this, flags);
     return chunkNoise;
 }
-Chunk &DCInstance::getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int &lod)
+Chunk &DCInstance::getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int lod)
 {
     vm::ivec3 min = vm::ivec3(
                         (int)std::floor(x / (float)DualContouring::chunkSize),
@@ -32,7 +32,7 @@ Chunk &DCInstance::getChunkAt(const float x, const float y, const float z, Gener
                     DualContouring::chunkSize;
     return getChunk(min, flags, lod);
 }
-Chunk &DCInstance::getChunkAt(const float x, const float z, GenerateFlags flags, const int &lod)
+Chunk &DCInstance::getChunkAt(const float x, const float z, GenerateFlags flags, const int lod)
 {
     vm::ivec3 min = vm::ivec3(
                         (int)std::floor(x / (float)DualContouring::chunkSize),
@@ -42,7 +42,16 @@ Chunk &DCInstance::getChunkAt(const float x, const float z, GenerateFlags flags,
     return getChunk(min, flags, lod);
 }
 
-// chunks
+
+// locks
+std::mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
+    vm::ivec3 min(worldPos.x, 0, worldPos.z);
+    uint64_t minLodHash = hashOctreeMinLod(min, lod);
+    std::mutex &chunkLock = chunkLocks[minLodHash];
+    return chunkLock;
+}
+
+// fields
 void DCInstance::getChunkHeightfield(int x, int z, int lod, float *heights) {
     const vm::ivec3 octreeMin = vm::ivec3(x, 0, z);
     Chunk &chunkNoise = getChunk(octreeMin, GF_HEIGHTFIELD, lod);
@@ -579,13 +588,30 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 
 //
 
-bool DCInstance::canLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) const {
-  // XXX
-  return false;
-}
-void DCInstance::lock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
-  // XXX
+bool DCInstance::tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
+    bool lockedAll = true;
+    for (int i = 0; i < chunkPositions.size(); i++) {
+        const vm::ivec3 &chunkPosition = chunkPositions[i];
+        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+        if (chunkLock.try_lock()) {
+            // nothing
+        } else {
+            // bail out; unlock all locks
+            for (int j = 0; j < i; j++) {
+                const vm::ivec3 &chunkPosition = chunkPositions[j];
+                std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+                chunkLock.unlock();
+            }
+            lockedAll = false;
+            break;
+        }
+    }
+    return lockedAll;
 }
 void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) {
-  // XXX
+    for (int i = 0; i < chunkPositions.size(); i++) {
+        const vm::ivec3 &chunkPosition = chunkPositions[i];
+        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+        chunkLock.unlock();
+    }
 }

@@ -23,7 +23,7 @@ public:
     Task(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod, int flags, std::function<void *()> &&fn);
     ~Task();
 
-    bool canLock() const;
+    bool tryLock();
     void lock();
     void unlock();
     void *run();

@@ -17,6 +17,7 @@
 class DCInstance {
 public:
     TaskQueue taskQueue;
+    std::unordered_map<uint64_t, std::mutex> chunkLocks;
     std::unordered_map<uint64_t, Chunk> chunksNoiseHashMap;
     std::unique_ptr<vm::box3> clipRange;
 
@@ -27,9 +28,13 @@ public:
 
     //
 
-    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int &lod);
-    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int &lod);
-    Chunk &getChunkAt(const float x, const float z, GenerateFlags flags, const int &lod);
+    Chunk &getChunk(const vm::ivec3 &min, GenerateFlags flags, const int lod);
+    Chunk &getChunkAt(const float x, const float y, const float z, GenerateFlags flags, const int lod);
+    Chunk &getChunkAt(const float x, const float z, GenerateFlags flags, const int lod);
+    
+    //
+
+    std::mutex &getChunkLock(const vm::ivec3 &worldPos, const int lod);
 
     //
 
@@ -102,8 +107,8 @@ public:
 
     //
 
-    bool canLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags) const;
-    void lock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
+    bool tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
+    // void lock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
     void unlock(const std::vector<vm::ivec3> &chunkPositions, int lod, int flags);
 };
 

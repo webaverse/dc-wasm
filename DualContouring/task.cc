@@ -13,11 +13,8 @@ Task::Task(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod, i
   {}
 Task::~Task() {}
 
-bool Task::canLock() const {
-  return inst->canLock(chunkPositions, lod, flags);
-}
-void Task::lock() {
-  inst->lock(chunkPositions, lod, flags);
+bool Task::tryLock() {
+  return inst->tryLock(chunkPositions, lod, flags);
 }
 void Task::unlock() {
   inst->unlock(chunkPositions, lod, flags);
@@ -44,7 +41,7 @@ Task *TaskQueue::popLockTask() {
   Task *task = nullptr;
   taskCondVar.wait(lock, [&]() -> bool {
     for (int i = 0; i < tasks.size(); i++) {
-      if (tasks[i]->canLock()) {
+      if (tasks[i]->tryLock()) {
         task = tasks[i];
         tasks.erase(tasks.begin() + i);
         return true;
@@ -56,6 +53,5 @@ Task *TaskQueue::popLockTask() {
     std::cout << "failed to pop task!" << std::endl;
     abort();
   }
-  task->lock();
   return task;
 }
