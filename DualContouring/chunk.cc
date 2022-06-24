@@ -648,7 +648,7 @@ void Chunk::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec
         }
     }
 }
-/* std::vector<unsigned char> Chunk::getBiomesContainedInChunk() {
+/* std::vector<unsigned char> Chunk3D::getBiomesContainedInChunk() {
     std::unordered_map<unsigned char, bool> seenBiomes;
     for (int dz = 0; dz < gridPoints; dz++)
     {
@@ -670,8 +670,8 @@ void Chunk::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec
     return std::move(biomesVector);
 } */
 
-// height
-float Chunk::interpolateHeight1D(const float x, const float z) const
+/* // height
+float Chunk3D::interpolateHeight1D(const float x, const float z) const
 {
     const int xf = std::floor(x);
     const int xc = std::ceil(x);
@@ -680,22 +680,14 @@ float Chunk::interpolateHeight1D(const float x, const float z) const
     const float dx = x - xf;
     return lerp(cachedHeightField[indexF], cachedHeightField[indexC], dx);
 }
-float Chunk::interpolateHeight2D(const float x, const float z) const
+float Chunk3D::interpolateHeight2D(const float x, const float z) const
 {
     const int zf = std::floor(z);
     const int zc = std::ceil(z);
     const float dz = z - zf;
     return lerp(interpolateHeight1D(x, zf), interpolateHeight1D(x, zc), dz);
 }
-
-/* float Chunk::getRawHeight(const int x, const int z) const
-{
-    const int localX = x - min.x + 1;
-    const int localZ = z - min.z + 1;
-    const int index = localX + localZ * gridPoints;
-    return (cachedHeightField[index] + 1.f) / 2.f;
-} */
-void Chunk::getCachedHeightfield(float *heights) const
+void Chunk3D::getCachedHeightfield(float *heights) const
 {
     for (int z = 0; z < size; z++)
     {
@@ -711,12 +703,12 @@ void Chunk::getCachedHeightfield(float *heights) const
         }
     }
 }
-float Chunk::getCachedInterpolatedHeight(const float x, const float z) const
+float Chunk3D::getCachedInterpolatedHeight(const float x, const float z) const
 {
     const float localX = x - min.x + 1;
     const float localZ = z - min.z + 1;
     return interpolateHeight2D(localX, localZ);
-}
+} */
 
 // lighting
 void Chunk::getCachedSkylight(unsigned char *skylights) const
