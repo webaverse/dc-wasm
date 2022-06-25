@@ -693,3 +693,67 @@ uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, un
 
     return id;
 }
+uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
+    uint32_t id = resultQueue.getNextId();
+
+    std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -1, 1);
+    MultiChunkLock2D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPositionXZ,
+        lod,
+        ps, qs, instances,
+        count,
+        id
+    ]() -> void {
+        createGrassSplatAsync(worldPositionXZ, lod, ps, qs, instances, count);
+        void *result = nullptr;
+        resultQueue.pushResult(id, result);
+    });
+    taskQueue.pushTask(task);
+
+    return id;
+}
+uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
+    uint32_t id = resultQueue.getNextId();
+    
+    std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -1, 1);
+    MultiChunkLock2D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPositionXZ,
+        lod,
+        ps, qs, instances,
+        count,
+        id
+    ]() -> void {
+        createVegetationSplatAsync(worldPositionXZ, lod, ps, qs, instances, count);
+        void *result = nullptr;
+        resultQueue.pushResult(id, result);
+    });
+
+    return id;
+}
+uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
+    uint32_t id = resultQueue.getNextId();
+    
+    std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -1, 1);
+    MultiChunkLock2D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPositionXZ,
+        lod,
+        ps, qs, instances,
+        count,
+        id
+    ]() -> void {
+        createMobSplatAsync(worldPositionXZ, lod, ps, qs, instances, count);
+        void *result = nullptr;
+        resultQueue.pushResult(id, result);
+    });
+
+    return id;
+}

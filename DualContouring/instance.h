@@ -165,6 +165,10 @@ public:
     uint32_t getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights);
     uint32_t getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights);
     uint32_t getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos);
+
+    uint32_t createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    uint32_t createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    uint32_t createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
 };
 
 #endif // _INSTANCE_H_
