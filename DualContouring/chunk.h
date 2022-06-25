@@ -108,6 +108,7 @@ public:
     std::vector<float> cachedSdf;
     std::vector<float> cachedWaterSdf;
     std::vector<float> cachedDamageSdf;
+    std::vector<float> cachedAdditionSdf;
     
     Chunk3D() = delete;
     Chunk3D(Chunk3D &&other);
@@ -123,6 +124,7 @@ public:
     void initSdf();
     void initWaterSdf(DCInstance *inst);
     void initDamageSdf();
+    void initAdditionSdf();
 
     // biomes
     void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
@@ -132,6 +134,7 @@ public:
     // sdf
     float getCachedInterpolatedSdf(const float x, const float y, const float z) const;
     float getCachedDamageInterpolatedSdf(const float x, const float y, const float z) const;
+    float getCachedAdditionInterpolatedSdf(const float x, const float y, const float z) const;
     float getCachedWaterInterpolatedSdf(const float x, const float y, const float z) const;
 
     // skylight
@@ -154,6 +157,7 @@ public:
     void patchFrontier(std::vector<bool> &erased);
 
     bool addSphereDamage(const float &x, const float &y, const float &z, const float radius);
+    bool addSphereAddition(const float &x, const float &y, const float &z, const float radius);
     bool removeSphereDamage(const float &x, const float &y, const float &z, const float radius);
 
     bool addCubeDamage(

@@ -104,8 +104,11 @@ float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chun
 {
 	const float terrain = chunk.getCachedInterpolatedSdf(position.x, position.y, position.z);
 	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
+	const float addition = chunk.getCachedAdditionInterpolatedSdf(position.x, position.y, position.z);
 
-	float minDistance = std::max(terrain, -damage);
+	// float minDistance = std::min(terrain, addition);
+	float minDistance = std::min(terrain, -addition);
+
 	if (inst->clipRange) { // range clipper enabled
 	  minDistance = clampPointToRange(minDistance, position, *inst->clipRange);
 	}

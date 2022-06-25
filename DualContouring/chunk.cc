@@ -404,6 +404,7 @@ Chunk3D &Chunk3D::operator=(const Chunk3D &&other)
     cachedSdf = std::move(other.cachedSdf);
     cachedWaterSdf = std::move(other.cachedWaterSdf);
     cachedDamageSdf = std::move(other.cachedDamageSdf);
+    cachedAdditionSdf = std::move(other.cachedAdditionSdf);
     return *this;
 }
 
@@ -424,6 +425,10 @@ void Chunk3D::generate(DCInstance *inst, int flags)
         if (cachedDamageSdf.size() == 0)
         {
             initDamageSdf();
+        }
+        if (cachedAdditionSdf.size() == 0)
+        {
+            initAdditionSdf();
         }
     }
     if (flags & GenerateFlags::GF_LIQUIDS) {
@@ -600,6 +605,10 @@ void Chunk3D::initSdf()
 void Chunk3D::initDamageSdf()
 {
     cachedDamageSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
+}
+void Chunk3D::initAdditionSdf()
+{
+    cachedAdditionSdf.resize(gridPoints * gridPoints * gridPoints, -MAX_HEIGHT);
 }
 
 // liquids
@@ -785,6 +794,15 @@ float Chunk3D::getCachedDamageInterpolatedSdf(const float x, const float y, cons
         cachedDamageSdf,
         gridPoints);
 }
+float Chunk3D::getCachedAdditionInterpolatedSdf(const float x, const float y, const float z) const {
+    const float localX = x - min.x + 1;
+    const float localY = y - min.y + 1;
+    const float localZ = z - min.z + 1;
+    return trilinear<float>(
+        vm::vec3(localX, localY, localZ),
+        cachedAdditionSdf,
+        gridPoints);
+}
 
 // skylight
 /* unsigned char Chunk3D::getSkylightLocal(const int lx, const int ly, const int lz) const
@@ -932,6 +950,41 @@ bool Chunk3D::addSphereDamage(const float &x, const float &y, const float &z, co
     }
     return drew;
 }
+bool Chunk3D::addSphereAddition(const float &x, const float &y, const float &z, const float radius)
+{
+
+    bool drew = false;
+    for (int ly = 0; ly < gridPoints; ly++)
+    {
+        for (int lz = 0; lz < gridPoints; lz++)
+        {
+            for (int lx = 0; lx < gridPoints; lx++)
+            {
+                int ax = min.x + lx - 1;
+                int ay = min.y + ly - 1;
+                int az = min.z + lz - 1;
+
+                float newDistance = -signedDistanceToSphere(x, y, z, radius, ax, ay, az);
+
+                int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
+                float oldDistance = cachedAdditionSdf[index];
+
+                if (newDistance > oldDistance)
+                {
+                    cachedAdditionSdf[index] = newDistance;
+                    drew = true;
+                }
+            }
+        }
+    }
+
+    // if (drew)
+    // {
+    //     patchFrontier(erased);
+    // }
+
+    return drew;
+}
 bool Chunk3D::removeSphereDamage(const float &x, const float &y, const float &z, const float radius)
 {
     // int bx = int(x);
@@ -951,28 +1004,24 @@ bool Chunk3D::removeSphereDamage(const float &x, const float &y, const float &z,
                 int ay = min.y + ly - 1;
                 int az = min.z + lz - 1;
 
-                float newDistance = signedDistanceToSphere(x, y, z, radius, ax, ay, az);
+                float newDistance = -signedDistanceToSphere(x, y, z, radius, ax, ay, az);
 
                 int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
                 float oldDistance = cachedDamageSdf[index];
 
-                if (
-                    newDistance <= 0.f ||      // new point is inside the sphere
-                    newDistance <= oldDistance // new point affects this index
-                )
+                if (newDistance > oldDistance)
                 {
-                    cachedDamageSdf[index] = (float)size; // max outside distance for a chunk
-                    erased[index] = true;
+                    cachedDamageSdf[index] = newDistance;
                     drew = true;
                 }
             }
         }
     }
 
-    if (drew)
-    {
-        patchFrontier(erased);
-    }
+    // if (drew)
+    // {
+    //     patchFrontier(erased);
+    // }
 
     return drew;
 }
