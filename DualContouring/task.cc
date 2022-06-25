@@ -25,9 +25,7 @@ void Task::run() {
 
 //
 
-TaskQueue::TaskQueue(DCInstance *inst) :
-  inst(inst)
-  {}
+TaskQueue::TaskQueue() {}
 TaskQueue::~TaskQueue() {}
 
 void TaskQueue::pushTask(Task *task) {

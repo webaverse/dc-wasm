@@ -39,7 +39,7 @@ public:
     std::mutex taskLock;
     std::condition_variable taskCondVar;
 
-    TaskQueue(DCInstance *inst);
+    TaskQueue();
     ~TaskQueue();
     
     void pushTask(Task *task);

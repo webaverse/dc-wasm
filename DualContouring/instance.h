@@ -12,13 +12,11 @@
 #include "octree.h"
 #include "context.h"
 #include "task.h"
-#include "result.h"
+// #include "result.h"
 #include "../vector.h"
 
 class DCInstance {
 public:
-    TaskQueue taskQueue;
-    ResultQueue resultQueue;
     std::unordered_map<uint64_t, std::mutex> chunkLocks2D;
     std::unordered_map<uint64_t, std::mutex> chunkLocks3D;
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;

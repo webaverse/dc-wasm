@@ -9,6 +9,7 @@
 #include <memory>
 #include "instance.h"
 #include "noises.h"
+#include "result.h"
 #include "vectorMath.h"
 
 class Noises;
@@ -18,9 +19,13 @@ namespace DualContouring {
     // globals
     extern int chunkSize;
     extern Noises *noises;
+    extern int numThreads;
+    extern std::vector<std::thread> threads;
+    extern TaskQueue taskQueue;
+    extern ResultQueue resultQueue;
 
     // initialization
-    void initialize(int newChunkSize, int seed);
+    void initialize(int newChunkSize, int seed, int numThreads);
     
     // instances
     DCInstance *createInstance();

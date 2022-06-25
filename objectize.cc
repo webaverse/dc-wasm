@@ -3,8 +3,8 @@
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
-    DualContouring::initialize(chunkSize, seed);
+EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed, int numThreads) {
+    DualContouring::initialize(chunkSize, seed, numThreads);
 }
 
 // 
@@ -21,13 +21,13 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
 /* EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(DCInstance *inst, int x, int z, int w, int h, int lod, float *heights) {
     return inst->getHeightfieldRange(x, z, w, h, lod, heights);
 } */
-EMSCRIPTEN_KEEPALIVE uint32_t getChunkHeightfield(DCInstance *inst, int x, int z, int lod, float *heights) {
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkHeightfieldAsync(DCInstance *inst, int x, int z, int lod, float *heights) {
     return inst->getChunkHeightfieldAsync(vm::ivec2(x, z), lod, heights);
 }
-EMSCRIPTEN_KEEPALIVE uint32_t getChunkSkylight(DCInstance *inst, int x, int y, int z, int lod, unsigned char *skylights) {
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkSkylightAsync(DCInstance *inst, int x, int y, int z, int lod, unsigned char *skylights) {
     return inst->getChunkSkylightAsync(vm::ivec3(x, y, z), lod, skylights);
 }
-EMSCRIPTEN_KEEPALIVE uint32_t getChunkAo(DCInstance *inst, int x, int y, int z, int lod, unsigned char *aos) {
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkAoAsync(DCInstance *inst, int x, int y, int z, int lod, unsigned char *aos) {
     return inst->getChunkAoAsync(vm::ivec3(x, y, z), lod, aos);
 }
 /* EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
@@ -42,14 +42,14 @@ EMSCRIPTEN_KEEPALIVE void getAoFieldRange(DCInstance *inst, int x, int y, int z,
 
 // 
 
-EMSCRIPTEN_KEEPALIVE void createGrassSplat(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
-    return inst->createGrassSplat(vm::ivec2(x, z), lod, ps, qs, instances, count);
+EMSCRIPTEN_KEEPALIVE uint32_t createGrassSplatAsync(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+    return inst->createGrassSplatAsync(vm::ivec2(x, z), lod, ps, qs, instances, count);
 }
-EMSCRIPTEN_KEEPALIVE void createVegetationSplat(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
-    return inst->createVegetationSplat(vm::ivec2(x, z), lod, ps, qs, instances, count);
+EMSCRIPTEN_KEEPALIVE uint32_t createVegetationSplatAsync(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+    return inst->createVegetationSplatAsync(vm::ivec2(x, z), lod, ps, qs, instances, count);
 }
-EMSCRIPTEN_KEEPALIVE void createMobSplat(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
-    return inst->createMobSplat(vm::ivec2(x, z), lod, ps, qs, instances, count);
+EMSCRIPTEN_KEEPALIVE uint32_t createMobSplatAsync(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
+    return inst->createMobSplatAsync(vm::ivec2(x, z), lod, ps, qs, instances, count);
 }
 
 /* EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
@@ -58,12 +58,12 @@ EMSCRIPTEN_KEEPALIVE void createMobSplat(DCInstance *inst, int x, int z, int lod
 
 //
 
-EMSCRIPTEN_KEEPALIVE uint32_t createTerrainChunkMesh(DCInstance *inst, int x, int y, int z, int *lodArray) {
+EMSCRIPTEN_KEEPALIVE uint32_t createTerrainChunkMeshAsync(DCInstance *inst, int x, int y, int z, int *lodArray) {
     return inst->createTerrainChunkMeshAsync(vm::ivec3(x, y, z), lodArray);
 }
 
-EMSCRIPTEN_KEEPALIVE uint8_t *createLiquidChunkMesh(DCInstance *inst, int x, int y, int z, int *lodArray) {
-    return inst->createLiquidChunkMesh(vm::ivec3(x, y, z), lodArray);
+EMSCRIPTEN_KEEPALIVE uint32_t createLiquidChunkMeshAsync(DCInstance *inst, int x, int y, int z, int *lodArray) {
+    return inst->createLiquidChunkMeshAsync(vm::ivec3(x, y, z), lodArray);
 }
 
 //

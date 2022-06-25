@@ -1,8 +1,10 @@
 #include "main.h"
 #include "octree.h"
 #include "instance.h"
-#include "../worley.h"
 #include "noises.h"
+// #include "result.h"
+#include "../worley.h"
+#include <thread>
 
 // namespace ChunkMesh
 // {
@@ -17,6 +19,10 @@ namespace DualContouring
     // chunk settings
     int chunkSize = 16;
     Noises *noises = nullptr;
+    int numThreads = 1;
+    std::vector<std::thread> threads;
+    TaskQueue taskQueue;
+    ResultQueue resultQueue;
 
     // storing the octrees that we would delete after mesh construction
     // std::vector<OctreeNode *> neighbourNodes;
@@ -24,11 +30,18 @@ namespace DualContouring
     // storing the octree roots here for search
     // std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
 
-    void initialize(int newChunkSize, int seed)
+    void initialize(int newChunkSize, int seed, int newNumThreads)
     {
         chunkSize = newChunkSize;
-
         noises = new Noises(seed);
+        numThreads = newNumThreads;
+
+        for (int i = 0; i < numThreads; i++) {
+            std::thread thread([]() -> void {
+                taskQueue.runLoop();
+            });
+            threads.push_back(std::move(thread));
+        }
     }
 
     DCInstance *createInstance() {
