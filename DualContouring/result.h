@@ -6,30 +6,22 @@
 #include <deque>
 #include <mutex>
 #include <semaphore>
-
-//
-
-class Result {
-public:
-    unsigned int id;
-    void *result;
-
-    Result(unsigned int id, void *result);
-    ~Result();
-};
+#include <unordered_map>
 
 //
 
 class ResultQueue {
 public:
-    std::deque<Result *> results;
+    uint32_t ids;
+    std::unordered_map<uint32_t, void *> results;
     std::mutex resultLock;
 
     ResultQueue();
     ~ResultQueue();
     
-    void pushResult(Result *result);
-    Result *popResult();
+    uint32_t getNextId();
+    void pushResult(uint32_t id, void *result);
+    void *popResult(uint32_t id);
 };
 
 #endif // RESULT_H

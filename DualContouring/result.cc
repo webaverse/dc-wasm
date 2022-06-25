@@ -3,24 +3,26 @@
 
 //
 
-Result::Result(unsigned int id, void *result) : id(id), result(result) {}
-Result::~Result() {}
-
-//
-
-ResultQueue::ResultQueue() {}
+ResultQueue::ResultQueue() :
+  ids(0)
+  {}
 ResultQueue::~ResultQueue() {}
 
-void ResultQueue::pushResult(Result *result) {
-  std::unique_lock<std::mutex> lock(resultLock);
-  results.push_back(result);
+uint32_t ResultQueue::getNextId() {
+  return ++ids;
 }
-Result *ResultQueue::popResult() {
+void ResultQueue::pushResult(uint32_t id, void *result) {
   std::unique_lock<std::mutex> lock(resultLock);
-  if (results.size() == 0) {
+  results.emplace(std::make_pair(id, result));
+}
+void *ResultQueue::popResult(uint32_t id) {
+  std::unique_lock<std::mutex> lock(resultLock);
+  const auto &iter = results.find(id);
+  if (iter != results.end()) {
+    void *result = iter->second;
+    results.erase(iter);
+    return result;
+  } else {
     return nullptr;
   }
-  Result *result = results.front();
-  results.pop_front();
-  return result;
 }

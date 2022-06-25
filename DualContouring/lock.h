@@ -18,7 +18,7 @@ public:
     DCInstance *inst;
     vm::ivec3 chunkPosition;
     int lod;
-    std::function<bool()> lockFn;
+    std::function<bool()> tryLockFn;
     std::function<void()> unlockFn;
 
     ChunkLock(DCInstance *inst, const vm::ivec3 &chunkPosition, int lod);
@@ -30,7 +30,7 @@ public:
     DCInstance *inst;
     std::vector<vm::ivec3> chunkPositions;
     int lod;
-    std::function<bool()> lockFn;
+    std::function<bool()> tryLockFn;
     std::function<void()> unlockFn;
 
     MultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod);

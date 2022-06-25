@@ -16,17 +16,17 @@ class DCInstance;
 class Task {
 public:
     std::vector<vm::ivec3> chunkPositions;
-    std::function<bool()> lockFn;
+    std::function<bool()> tryLockFn;
     std::function<void()> unlockFn;
-    std::function<void *()> fn;
+    std::function<void()> fn;
 
-    Task(std::function<bool()> lockFn, std::function<bool()> unlockFn, std::function<void *()> fn);
+    Task(std::function<bool()> &&tryLockFn, std::function<void()> &&unlockFn, std::function<void()> &&fn);
     ~Task();
 
     bool tryLock();
     void lock();
     void unlock();
-    void *run();
+    void run();
     std::pair<bool, void *> tryLockRun();
 };
 
@@ -44,6 +44,7 @@ public:
     
     void pushTask(Task *task);
     Task *popLockTask();
+    void runLoop();
 };
 
 #endif // TASK_H

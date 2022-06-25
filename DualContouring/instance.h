@@ -13,6 +13,7 @@
 #include "context.h"
 #include "task.h"
 #include "result.h"
+#include "lock.h"
 #include "../vector.h"
 
 class DCInstance {
@@ -43,9 +44,9 @@ public:
 
     //
 
-    void getChunkHeightfield(int x, int z, int lod, float *heights);
-    void getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights);
-    void getChunkAo(int x, int y, int z, int lod, unsigned char *ao);
+    void getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod, float *heights);
+    void getChunkSkylight(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights);
+    void getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned char *ao);
     
     //
     
@@ -55,15 +56,20 @@ public:
     
     //
 
-    void createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    void createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    void createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    void createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
     
     //
     
     // void clearChunkRoot(float x, float y, float z);
-    uint8_t *createTerrainChunkMesh(float x, float y, float z, int lodArray[8]);
-    uint8_t *createLiquidChunkMesh(float x, float y, float z, int lodArray[8]);
+    uint8_t *createTerrainChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8]);
+    uint32_t createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8]);
+    uint8_t *createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8]);
+    uint32_t createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8]);
+
+    //
+
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                           const int &lod);

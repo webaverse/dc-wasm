@@ -4,23 +4,23 @@
 
 //
 
-Task::Task(std::function<bool()> lockFn, std::function<bool()> unlockFn, std::function<void *()> fn) :
-  lockFn(lockFn),
-  unlockFn(unlockFn),
-  fn(fn)
+Task::Task(std::function<bool()> &&tryLockFn, std::function<void()> &&unlockFn, std::function<void()> &&fn) :
+  tryLockFn(std::move(tryLockFn)),
+  unlockFn(std::move(unlockFn)),
+  fn(std::move(fn))
   {}
 Task::~Task() {}
 
 bool Task::tryLock() {
-  return lockFn();
+  return tryLockFn();
   // return inst->tryLock(chunkPositions, lod);
 }
 void Task::unlock() {
   unlockFn();
   // inst->unlock(chunkPositions, lod);
 }
-void *Task::run() {
-  return fn();
+void Task::run() {
+  fn();
 }
 
 //
@@ -43,7 +43,6 @@ Task *TaskQueue::popLockTask() {
     for (int i = 0; i < tasks.size(); i++) {
       if (tasks[i]->tryLock()) {
         task = tasks[i];
-        tasks.erase(tasks.begin() + i);
         return true;
       }
     }
@@ -54,4 +53,14 @@ Task *TaskQueue::popLockTask() {
     abort();
   }
   return task;
+}
+void TaskQueue::runLoop() {
+  Task *task;
+  while ((task = popLockTask())) {
+    task->run();
+    task->unlockFn();
+    delete task;
+  }
+  std::cerr << "thread exited due to no task!" << std::endl;
+  abort();
 }

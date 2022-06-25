@@ -9,7 +9,7 @@ ChunkLock::ChunkLock(DCInstance *inst, const vm::ivec3 &chunkPosition, int lod) 
   chunkPosition(chunkPosition),
   lod(lod)
 {
-  lockFn = [&]() -> bool {
+  tryLockFn = [&]() -> bool {
     return inst->tryLock(chunkPosition, lod);
   };
   unlockFn = [&]() -> void {
@@ -25,7 +25,7 @@ MultiChunkLock::MultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkP
   chunkPositions(std::move(chunkPositions)),
   lod(lod)
 {
-  lockFn = [&]() -> bool {
+  tryLockFn = [&]() -> bool {
     return inst->tryLock(chunkPositions, lod);    
   };
   unlockFn = [&]() -> void {
@@ -39,7 +39,10 @@ MultiChunkLock::~MultiChunkLock() {}
 AutoChunkLock::AutoChunkLock(DCInstance *inst, const vm::ivec3 &chunkPosition, int lod) :
   chunkLock(inst, chunkPosition, lod)
 {
-  chunkLock.lockFn();
+  if (!chunkLock.tryLockFn()) {
+    std::cerr << "AutoChunkLock failed to lock chunk!" << std::endl;
+    abort();
+  }
 }
 AutoChunkLock::~AutoChunkLock() {
   chunkLock.unlockFn();
@@ -48,7 +51,10 @@ AutoChunkLock::~AutoChunkLock() {
 AutoMultiChunkLock::AutoMultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod) :
   multiChunkLock(inst, std::move(chunkPositions), lod)
 {
-  multiChunkLock.lockFn();
+  if (!multiChunkLock.tryLockFn()) {
+    std::cerr << "AutoMultiChunkLock failed to lock chunks!" << std::endl;
+    abort();
+  }
 }
 AutoMultiChunkLock::~AutoMultiChunkLock() {
   multiChunkLock.unlockFn();

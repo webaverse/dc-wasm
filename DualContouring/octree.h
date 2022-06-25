@@ -164,7 +164,7 @@ public:
     int size;
 
     // constructors
-    ChunkOctree(DCInstance *inst, Chunk3D &chunk, int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
+    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
     {
         std::shared_ptr<OctreeNode> rootNode = std::make_shared<OctreeNode>(OctreeNode(min, size, Node_Internal));
         std::vector<std::shared_ptr<OctreeNode>> voxelNodes = generateVoxelNodes(inst, chunk);
