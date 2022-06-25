@@ -21,14 +21,14 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
 /* EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(DCInstance *inst, int x, int z, int w, int h, int lod, float *heights) {
     return inst->getHeightfieldRange(x, z, w, h, lod, heights);
 } */
-EMSCRIPTEN_KEEPALIVE void getChunkHeightfield(DCInstance *inst, int x, int z, int lod, float *heights) {
-    return inst->getChunkHeightfield(vm::ivec2(x, z), lod, heights);
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkHeightfield(DCInstance *inst, int x, int z, int lod, float *heights) {
+    return inst->getChunkHeightfieldAsync(vm::ivec2(x, z), lod, heights);
 }
-EMSCRIPTEN_KEEPALIVE void getChunkSkylight(DCInstance *inst, int x, int y, int z, int lod, unsigned char *skylights) {
-    return inst->getChunkSkylight(vm::ivec3(x, y, z), lod, skylights);
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkSkylight(DCInstance *inst, int x, int y, int z, int lod, unsigned char *skylights) {
+    return inst->getChunkSkylightAsync(vm::ivec3(x, y, z), lod, skylights);
 }
-EMSCRIPTEN_KEEPALIVE void getChunkAo(DCInstance *inst, int x, int y, int z, int lod, unsigned char *aos) {
-    return inst->getChunkAo(vm::ivec3(x, y, z), lod, aos);
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkAo(DCInstance *inst, int x, int y, int z, int lod, unsigned char *aos) {
+    return inst->getChunkAoAsync(vm::ivec3(x, y, z), lod, aos);
 }
 /* EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
     return inst->getSkylightFieldRange(x, y, z, w, h, d, lod, skylights);

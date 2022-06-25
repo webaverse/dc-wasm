@@ -1,5 +1,6 @@
 #include "instance.h"
 #include "main.h"
+#include "lock.h"
 #include "../vector.h"
 
 // constructor/destructor
@@ -60,10 +61,14 @@ Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, Gen
 }
 
 // locks
+std::mutex &DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
+    uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
+    std::mutex &chunkLock = chunkLocks2D[minLodHash];
+    return chunkLock;
+}
 std::mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
-    vm::ivec3 min(worldPos.x, 0, worldPos.z);
-    uint64_t minLodHash = hashOctreeMinLod(min, lod);
-    std::mutex &chunkLock = chunkLocks[minLodHash];
+    uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
+    std::mutex &chunkLock = chunkLocks3D[minLodHash];
     return chunkLock;
 }
 
@@ -82,6 +87,8 @@ void DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned ch
     Chunk3D &chunkNoise = getChunk(worldPosition, lod, GF_AOFIELD);
     chunkNoise.getCachedAo(aos);
 }
+
+// splats
 void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
@@ -273,6 +280,17 @@ std::vector<vm::ivec3> getChunkRangeInclusive(const vm::ivec3 &worldPosition, in
     }
     return result;
 }
+std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, int minChunkDelta, int maxChunkDelta) {
+    std::vector<vm::ivec2> result;
+    for (int dz = -minChunkDelta; dz <= maxChunkDelta; dz++)
+    {
+        for (int dx = -minChunkDelta; dx <= maxChunkDelta; dx++)
+        {
+            result.push_back(vm::ivec2(worldPosition.x + dx, worldPosition.y + dz));
+        }
+    }
+    return result;
+}
 
 //
 
@@ -299,29 +317,6 @@ uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, cons
 
     return vertexBuffer.getBuffer();
 }
-uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
-{
-    uint32_t id = resultQueue.getNextId();
-
-    int lod = lodArray[0];
-    std::vector<int> lodVector(lodArray, lodArray + 8);
-    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -1, 1);
-    MultiChunkLock multiChunkLock(this, std::move(chunkPositions), lod);
-    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
-        this,
-        worldPosition,
-        lod,
-        lodVector = std::move(lodVector),
-        id
-    ]() -> void {
-        uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
-        resultQueue.pushResult(id, result);
-    });
-    taskQueue.pushTask(task);
-
-    return id;
-}
-
 uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
@@ -344,28 +339,6 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
     }
 
     return vertexBuffer.getBuffer();
-}
-uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
-{
-    uint32_t id = resultQueue.getNextId();
-
-    int lod = lodArray[0];
-    std::vector<int> lodVector(lodArray, lodArray + 8);
-    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -1, 1);
-    MultiChunkLock multiChunkLock(this, std::move(chunkPositions), lod);
-    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
-        this,
-        worldPosition,
-        lod,
-        lodVector = std::move(lodVector),
-        id
-    ]() -> void {
-        uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
-        resultQueue.pushResult(id, result);
-    });
-    taskQueue.pushTask(task);
-
-    return id;
 }
 
 //
@@ -616,38 +589,107 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 
 //
 
-bool DCInstance::tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
-    bool lockedAll = true;
-    for (int i = 0; i < chunkPositions.size(); i++) {
-        const vm::ivec3 &chunkPosition = chunkPositions[i];
-        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-        if (chunkLock.try_lock()) {
-            // nothing
-        } else {
-            // bail out; unlock all locks
-            for (int j = 0; j < i; j++) {
-                const vm::ivec3 &chunkPosition = chunkPositions[j];
-                std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-                chunkLock.unlock();
-            }
-            lockedAll = false;
-            break;
-        }
-    }
-    return lockedAll;
+uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
+{
+    uint32_t id = resultQueue.getNextId();
+
+    int lod = lodArray[0];
+    std::vector<int> lodVector(lodArray, lodArray + 8);
+    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -1, 1);
+    MultiChunkLock3D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPosition,
+        lod,
+        lodVector = std::move(lodVector),
+        id
+    ]() -> void {
+        uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
+        resultQueue.pushResult(id, result);
+    });
+    taskQueue.pushTask(task);
+
+    return id;
 }
-void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
-    for (int i = 0; i < chunkPositions.size(); i++) {
-        const vm::ivec3 &chunkPosition = chunkPositions[i];
-        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-        chunkLock.unlock();
-    }
+uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
+{
+    uint32_t id = resultQueue.getNextId();
+
+    int lod = lodArray[0];
+    std::vector<int> lodVector(lodArray, lodArray + 8);
+    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -1, 1);
+    MultiChunkLock3D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPosition,
+        lod,
+        lodVector = std::move(lodVector),
+        id
+    ]() -> void {
+        uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
+        resultQueue.pushResult(id, result);
+    });
+    taskQueue.pushTask(task);
+
+    return id;
 }
-bool DCInstance::tryLock(const vm::ivec3 &chunkPosition, int lod) {
-    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-    return chunkLock.try_lock();
+uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
+    uint32_t id = resultQueue.getNextId();
+    
+    std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -1, 1);
+    MultiChunkLock2D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPositionXZ,
+        lod,
+        heights,
+        id
+    ]() -> void {
+        getChunkHeightfield(worldPositionXZ, lod, heights);
+        void *result = nullptr;
+        resultQueue.pushResult(id, result);
+    });
+    taskQueue.pushTask(task);
+
+    return id;
 }
-void DCInstance::unlock(const vm::ivec3 &chunkPosition, int lod) {
-    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-    chunkLock.unlock();
+uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
+    uint32_t id = resultQueue.getNextId();
+    
+    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -1, 1);
+    MultiChunkLock3D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPosition,
+        lod,
+        skylights,
+        id
+    ]() -> void {
+        getChunkSkylight(worldPosition, lod, skylights);
+        void *result = nullptr;
+        resultQueue.pushResult(id, result);
+    });
+    taskQueue.pushTask(task);
+
+    return id;
+}
+uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
+    uint32_t id = resultQueue.getNextId();
+    
+    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -1, 1);
+    MultiChunkLock3D multiChunkLock(this, std::move(chunkPositions), lod);
+    Task *task = new Task(std::move(multiChunkLock.tryLockFn), std::move(multiChunkLock.unlockFn), [
+        this,
+        worldPosition,
+        lod,
+        aos,
+        id
+    ]() -> void {
+        getChunkAo(worldPosition, lod, aos);
+        void *result = nullptr;
+        resultQueue.pushResult(id, result);
+    });
+    taskQueue.pushTask(task);
+
+    return id;
 }
