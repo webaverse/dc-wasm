@@ -4,8 +4,6 @@
 #include "vectorMath.h"
 #include <vector>
 #include <deque>
-#include <mutex>
-#include <semaphore>
 #include "instance.h"
 
 //

@@ -59,14 +59,14 @@ Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, Gen
 }
 
 // locks
-std::mutex &DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
+Mutex &DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
-    std::mutex &chunkLock = chunkLocks2D[minLodHash];
+    Mutex &chunkLock = chunkLocks2D[minLodHash];
     return chunkLock;
 }
-std::mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
+Mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
-    std::mutex &chunkLock = chunkLocks3D[minLodHash];
+    Mutex &chunkLock = chunkLocks3D[minLodHash];
     return chunkLock;
 }
 

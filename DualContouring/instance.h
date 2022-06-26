@@ -17,8 +17,8 @@
 
 class DCInstance {
 public:
-    std::unordered_map<uint64_t, std::mutex> chunkLocks2D;
-    std::unordered_map<uint64_t, std::mutex> chunkLocks3D;
+    std::unordered_map<uint64_t, Mutex> chunkLocks2D;
+    std::unordered_map<uint64_t, Mutex> chunkLocks3D;
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
     std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
@@ -38,8 +38,8 @@ public:
     
     //
 
-    std::mutex &getChunkLock(const vm::ivec3 &worldPos, const int lod);
-    std::mutex &getChunkLock(const vm::ivec2 &worldPos, const int lod);
+    Mutex &getChunkLock(const vm::ivec3 &worldPos, const int lod);
+    Mutex &getChunkLock(const vm::ivec2 &worldPos, const int lod);
 
     //
 
@@ -117,12 +117,12 @@ public:
     
     template<typename PositionType>
     bool tryLock(const PositionType &chunkPosition, int lod) {
-        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+        Mutex &chunkLock = getChunkLock(chunkPosition, lod);
         return chunkLock.try_lock();
     }
     template<typename PositionType>
     void unlock(const PositionType &chunkPosition, int lod) {
-        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+        Mutex &chunkLock = getChunkLock(chunkPosition, lod);
         chunkLock.unlock();
     }
     template<typename PositionType>
@@ -130,14 +130,14 @@ public:
         bool lockedAll = true;
         for (int i = 0; i < chunkPositions.size(); i++) {
             const PositionType &chunkPosition = chunkPositions[i];
-            std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+            Mutex &chunkLock = getChunkLock(chunkPosition, lod);
             if (chunkLock.try_lock()) {
                 // nothing
             } else {
                 // bail out; unlock all locks
                 for (int j = 0; j < i; j++) {
                     const PositionType &chunkPosition = chunkPositions[j];
-                    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+                    Mutex &chunkLock = getChunkLock(chunkPosition, lod);
                     chunkLock.unlock();
                 }
                 lockedAll = false;
@@ -150,7 +150,7 @@ public:
     void unlockAll(const std::vector<PositionType> &chunkPositions, int lod) {
         for (int i = 0; i < chunkPositions.size(); i++) {
             const PositionType &chunkPosition = chunkPositions[i];
-            std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
+            Mutex &chunkLock = getChunkLock(chunkPosition, lod);
             chunkLock.unlock();
         }
     }

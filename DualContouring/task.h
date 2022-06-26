@@ -2,40 +2,15 @@
 #define TASK_H
 
 #include "vectorMath.h"
+#include "sync.h"
 #include <vector>
 #include <deque>
-#include <mutex>
 // #include <semaphore>
 #include <atomic>
 
 //
 
 class DCInstance;
-
-//
-
-class Mutex {
-public:
-  std::atomic_flag flag;
-
-  Mutex();
-  ~Mutex();
-  void lock();
-  void unlock();
-};
-
-// implements a semaphore using only c++ atomic value
-class Semaphore {
-public:
-  Mutex mutex;
-  std::atomic<int> value;
-
-  Semaphore(int value);
-  Semaphore();
-  ~Semaphore();
-  void wait();
-  void signal();
-};
 
 //
 
