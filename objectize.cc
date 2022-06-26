@@ -145,7 +145,7 @@ EMSCRIPTEN_KEEPALIVE void runLoop() {
 //
 
 /* int main() {
-    std::cout << "run " << emscripten_wasm_worker_self_id() << " " << std::endl;
+    // std::cout << "run " << emscripten_wasm_worker_self_id() << " " << std::endl;
     return 0;
 } */
 
