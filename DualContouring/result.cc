@@ -35,6 +35,6 @@ void result_em_func_vii(int id, int result) {
   }, id_, result_);
 }
 void ResultQueue::pushResult(uint32_t id, void *result) {
-  emscripten_wasm_worker_post_function_vii(DualContouring::parentThreadId, result_em_func_vii, (int)id, (int)result);
+  emscripten_wasm_worker_post_function_vii(0, result_em_func_vii, (int)id, (int)result);
   // emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, result);
 }

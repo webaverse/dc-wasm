@@ -2,6 +2,7 @@
 #include "main.h"
 #include "lock.h"
 #include "../vector.h"
+#include <emscripten.h>
 
 // constructor/destructor
 DCInstance::DCInstance() {}
@@ -274,11 +275,11 @@ float DCInstance::getWater(const vm::vec2 &worldPosition, const int &lod) {
 
 std::vector<vm::ivec3> getChunkRangeInclusive(const vm::ivec3 &worldPosition, int minChunkDelta, int maxChunkDelta, int chunkSize) {
     std::vector<vm::ivec3> result;
-    for (int dy = -minChunkDelta; dy <= maxChunkDelta; dy++)
+    for (int dy = minChunkDelta; dy <= maxChunkDelta; dy++)
     {
-        for (int dz = -minChunkDelta; dz <= maxChunkDelta; dz++)
+        for (int dz = minChunkDelta; dz <= maxChunkDelta; dz++)
         {
-            for (int dx = -minChunkDelta; dx <= maxChunkDelta; dx++)
+            for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
             {
                 result.push_back(vm::ivec3(
                     worldPosition.x + dx * chunkSize,
@@ -288,13 +289,16 @@ std::vector<vm::ivec3> getChunkRangeInclusive(const vm::ivec3 &worldPosition, in
             }
         }
     }
+    /* EM_ASM({
+      console.log('range 3d', $0);
+    }, result.size()); */
     return result;
 }
 std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, int minChunkDelta, int maxChunkDelta, int chunkSize) {
     std::vector<vm::ivec2> result;
-    for (int dz = -minChunkDelta; dz <= maxChunkDelta; dz++)
+    for (int dz = minChunkDelta; dz <= maxChunkDelta; dz++)
     {
-        for (int dx = -minChunkDelta; dx <= maxChunkDelta; dx++)
+        for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
         {
             result.push_back(vm::ivec2(
                 worldPosition.x + dx * chunkSize,
@@ -302,6 +306,9 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
             ));
         }
     }
+    /* EM_ASM({
+      console.log('range 2d', $0);
+    }, result.size()); */
     return result;
 }
 

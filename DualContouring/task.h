@@ -36,6 +36,7 @@ class TaskQueue {
 public:
     DCInstance *inst;
     std::deque<Task *> tasks;
+    std::deque<Task *> lockedTasks;
     // std::atomic<size_t> numTasks;
     Mutex taskMutex;
     Semaphore taskSemaphore;
@@ -46,6 +47,7 @@ public:
     void pushTask(Task *task);
     Task *popLockTask();
     void runLoop();
+    void flushTasks();
 };
 
 #endif // TASK_H
