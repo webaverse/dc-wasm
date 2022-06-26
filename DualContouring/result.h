@@ -5,12 +5,13 @@
 #include <vector>
 #include <deque>
 #include <unordered_map>
+#include <atomic>
 
 //
 
 class ResultQueue {
 public:
-    uint32_t ids;
+    std::atomic<uint32_t> ids;
 
     ResultQueue();
     ~ResultQueue();

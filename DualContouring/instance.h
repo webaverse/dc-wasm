@@ -17,6 +17,7 @@
 
 class DCInstance {
 public:
+    Mutex locksMutex;
     std::unordered_map<uint64_t, Mutex> chunkLocks2D;
     std::unordered_map<uint64_t, Mutex> chunkLocks3D;
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;

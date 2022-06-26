@@ -34,9 +34,9 @@ namespace DualContouring
     // std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
 
     void runLoop() {
-        std::cout << "run loop 1" << std::endl;
+        // std::cout << "run loop 1" << std::endl;
         taskQueue.runLoop();
-        std::cout << "run loop 2" << std::endl;
+        // std::cout << "run loop 2" << std::endl;
     }
     void initialize(int newChunkSize, int seed, int newNumThreads)
     {
@@ -48,7 +48,7 @@ namespace DualContouring
         // std::cout << "check thread " << parentThreadId << " " << numThreads << std::endl;
         threads.reserve(numThreads);
         for (int i = 0; i < numThreads; i++) {
-            std::cout << "create thread" << std::endl;
+            // std::cout << "create thread" << std::endl;
             threads.push_back(emscripten_malloc_wasm_worker(stackSize));
             if (!threads[i]) {
             //   std::cout << "bad thread " << threads[i] << std::endl;

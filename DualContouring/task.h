@@ -3,6 +3,7 @@
 
 #include "vectorMath.h"
 #include "sync.h"
+#include "lock.h"
 #include <vector>
 #include <deque>
 // #include <semaphore>
@@ -16,12 +17,10 @@ class DCInstance;
 
 class Task {
 public:
-    std::vector<vm::ivec3> chunkPositions;
-    std::function<bool()> tryLockFn;
-    std::function<void()> unlockFn;
+    MultiChunkLock multiChunkLock;
     std::function<void()> fn;
 
-    Task(std::function<bool()> &&tryLockFn, std::function<void()> &&unlockFn, std::function<void()> &&fn);
+    Task(MultiChunkLock &&multiChunkLock, std::function<void()> &&fn);
     ~Task();
 
     bool tryLock();
@@ -37,7 +36,7 @@ class TaskQueue {
 public:
     DCInstance *inst;
     std::deque<Task *> tasks;
-    std::atomic<size_t> numTasks;
+    // std::atomic<size_t> numTasks;
     Mutex taskMutex;
     Semaphore taskSemaphore;
 

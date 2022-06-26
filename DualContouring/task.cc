@@ -5,18 +5,20 @@
 
 //
 
-Task::Task(std::function<bool()> &&tryLockFn, std::function<void()> &&unlockFn, std::function<void()> &&fn) :
-  tryLockFn(std::move(tryLockFn)),
-  unlockFn(std::move(unlockFn)),
+Task::Task(MultiChunkLock &&multiChunkLock, std::function<void()> &&fn) :
+  multiChunkLock(std::move(multiChunkLock)),
   fn(std::move(fn))
   {}
 Task::~Task() {}
 
 bool Task::tryLock() {
-  return tryLockFn();
+  EM_ASM({
+    console.log('task try lock');
+  });
+  return multiChunkLock.tryLockFn();
 }
 void Task::unlock() {
-  unlockFn();
+  multiChunkLock.unlockFn();
 }
 void Task::run() {
   fn();
@@ -34,7 +36,7 @@ void TaskQueue::pushTask(Task *task) {
       console.log('push task start', SharedArrayBuffer, $0, $1);
     }, tasks.size(), (void *)this); */
     tasks.push_back(task);
-    numTasks++;
+    // numTasks++;
     /* EM_ASM({
       console.log('push task end', $0);
     }, tasks.size()); */
@@ -56,6 +58,12 @@ Task *TaskQueue::popLockTask() {
     std::unique_lock<Mutex> lock(taskMutex);
     // lock.lock();
 
+    if (tasks.size() == 0) {
+      abort();
+    }
+
+    // XXX lock here; perhaps have a queue of only requirement fulfilled tasks
+
     task = tasks.front();
     tasks.pop_front();
   }
@@ -71,11 +79,14 @@ void TaskQueue::runLoop() {
   /* EM_ASM(
     console.log('run loop');
   ); */
-  Task *task;
-  while ((task = popLockTask())) {
-    task->run();
-    task->unlockFn();
-    delete task;
+  {
+    Task *task = nullptr;
+    while ((task = popLockTask())) {
+      task->run();
+      task->unlock();
+      delete task;
+      task = nullptr;
+    }
   }
   /* EM_ASM(
     console.log('thread exited due to no task!');

@@ -101,6 +101,7 @@ uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod)
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod)
 {
     uint64_t result = uint16_t(min.x);
+    result = (result << 16) + uint16_t(0);
     result = (result << 16) + uint16_t(min.y);
     result = (result << 16) + uint16_t(lod);
     return result;
