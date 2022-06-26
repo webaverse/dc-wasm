@@ -14,6 +14,31 @@ class DCInstance;
 
 //
 
+class Mutex {
+public:
+  std::atomic_flag flag;
+
+  Mutex();
+  ~Mutex();
+  void lock();
+  void unlock();
+};
+
+// implements a semaphore using only c++ atomic value
+class Semaphore {
+public:
+  Mutex mutex;
+  std::atomic<int> value;
+
+  Semaphore(int value);
+  Semaphore();
+  ~Semaphore();
+  void wait();
+  void signal();
+};
+
+//
+
 class Task {
 public:
     std::vector<vm::ivec3> chunkPositions;
@@ -38,13 +63,12 @@ public:
     DCInstance *inst;
     std::deque<Task *> tasks;
     std::atomic<size_t> numTasks;
-    std::mutex taskLock;
-    std::condition_variable taskCondVar;
+    Mutex taskMutex;
+    Semaphore taskSemaphore;
 
     TaskQueue();
     ~TaskQueue();
     
-    Task *tryLockTask();
     void pushTask(Task *task);
     Task *popLockTask();
     void runLoop();
