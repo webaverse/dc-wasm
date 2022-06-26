@@ -18,33 +18,38 @@ void Mutex::lock() {
   }
 }
 void Mutex::unlock() {
-  flag.clear();
-  flag.notify_all();
+  flag.clear(std::memory_order_release);
+  flag.notify_one();
 }
 
 // implement a semaphore using std::atomic<int> value;
 Semaphore::Semaphore(int value) : value(value) {}
-Semaphore::Semaphore() : Semaphore(0) {}
+Semaphore::Semaphore() : value(0) {}
 Semaphore::~Semaphore() {}
 void Semaphore::wait() {
   for (;;) {
     int newValue;
     {
       std::unique_lock<Mutex> lock(mutex);
+      /* EM_ASM({
+        console.log('test value', $0);
+      }, (int)value); */
       newValue = --value;
       if (newValue >= 0) {
         break;
       } else {
-        newValue++;
+        newValue = ++value;
       }
     }
     value.wait(newValue);
   }
 }
 void Semaphore::signal() {
-  std::unique_lock<Mutex> lock(mutex);
-  value++;
-  value.notify_all();
+  {
+    std::unique_lock<Mutex> lock(mutex);
+    value++;
+  }
+  value.notify_one();
 }
 
 //
