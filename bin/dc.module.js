@@ -1708,15 +1708,12 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  37640: ($0, $1) => { console.log('push task start', SharedArrayBuffer, $0, $1); },  
- 37703: ($0) => { console.log('push task end', $0); },  
- 37741: ($0, $1, $2, $3) => { console.log('check lock task ok start A', $0, $1, $2, $3); },  
- 37804: ($0, $1, $2, $3) => { console.log('check lock task ok start B', $0, $1, $2, $3); },  
- 37867: ($0, $1, $2) => { console.log('check lock task ok end', $0, $1, $2); },  
- 37922: () => { console.log('failed to pop task!'); },  
- 37958: () => { console.log('run loop'); },  
- 37983: () => { console.log('thread exited due to no task!'); },  
- 38029: ($0, $1) => { const id = $0; const result = $1; console.log('dc threader got result', {id, result, lol: globalThis.lol}); if (!globalThis.resultEvent) { globalThis.resultEvent = new MessageEvent('result', { data: { id: 0, result: 0, }, }); } globalThis.resultEvent.data.id = id;; globalThis.resultEvent.data.result = result; globalThis.dispatchEvent(globalThis.resultEvent); }
+  37576: ($0, $1) => { console.log('push task start', SharedArrayBuffer, $0, $1); },  
+ 37639: ($0) => { console.log('push task end', $0); },  
+ 37677: () => { console.log('failed to pop task!'); },  
+ 37713: () => { console.log('run loop'); },  
+ 37738: () => { console.log('thread exited due to no task!'); },  
+ 37784: ($0, $1) => { const id = $0; const result = $1; console.log('dc threader got result', {id, result, lol: globalThis.lol}); if (!globalThis.resultEvent) { globalThis.resultEvent = new MessageEvent('result', { data: { id: 0, result: 0, }, }); } globalThis.resultEvent.data.id = id;; globalThis.resultEvent.data.result = result; globalThis.dispatchEvent(globalThis.resultEvent); }
 };
 
 
@@ -2154,6 +2151,15 @@ var ASM_CONSTS = {
       return _wasm_workers_id++;
     }
 
+  function __emscripten_date_now() {
+      return Date.now();
+    }
+
+  var nowIsMonotonic = true;;
+  function __emscripten_get_now_is_monotonic() {
+      return nowIsMonotonic;
+    }
+
   var __wasm_worker_delayedMessageQueue = [];
   function __wasm_worker_initializeRuntime() {
       let m = Module;
@@ -2210,6 +2216,14 @@ var ASM_CONSTS = {
       if (!ASM_CONSTS.hasOwnProperty(code)) abort('No EM_ASM constant found at address ' + code);
       return ASM_CONSTS[code].apply(null, args);
     }
+
+  var _emscripten_get_now;if (ENVIRONMENT_IS_NODE) {
+    _emscripten_get_now = () => {
+      var t = process['hrtime']();
+      return t[0] * 1e3 + t[1] / 1e6;
+    };
+  } else _emscripten_get_now = () => performance.now();
+  ;
 
   function _emscripten_memcpy_big(dest, src, num) {
       HEAPU8.copyWithin(dest, src, src + num);
@@ -5194,8 +5208,11 @@ var asmLibraryArg = {
   "__cxa_uncaught_exceptions": ___cxa_uncaught_exceptions,
   "__resumeException": ___resumeException,
   "_emscripten_create_wasm_worker": __emscripten_create_wasm_worker,
+  "_emscripten_date_now": __emscripten_date_now,
+  "_emscripten_get_now_is_monotonic": __emscripten_get_now_is_monotonic,
   "abort": _abort,
   "emscripten_asm_const_int": _emscripten_asm_const_int,
+  "emscripten_get_now": _emscripten_get_now,
   "emscripten_memcpy_big": _emscripten_memcpy_big,
   "emscripten_resize_heap": _emscripten_resize_heap,
   "emscripten_wasm_worker_post_function_vii": _emscripten_wasm_worker_post_function_vii,
@@ -5225,6 +5242,7 @@ var asmLibraryArg = {
   "invoke_iiiiiiiiiii": invoke_iiiiiiiiiii,
   "invoke_iiiiiiiiiiii": invoke_iiiiiiiiiiii,
   "invoke_iiiiiiiiiiiii": invoke_iiiiiiiiiiiii,
+  "invoke_j": invoke_j,
   "invoke_jii": invoke_jii,
   "invoke_jiiii": invoke_jiiii,
   "invoke_v": invoke_v,
@@ -5365,6 +5383,9 @@ var dynCall_jii = Module["dynCall_jii"] = createExportWrapper("dynCall_jii");
 
 /** @type {function(...*):?} */
 var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji");
+
+/** @type {function(...*):?} */
+var dynCall_j = Module["dynCall_j"] = createExportWrapper("dynCall_j");
 
 /** @type {function(...*):?} */
 var dynCall_viijii = Module["dynCall_viijii"] = createExportWrapper("dynCall_viijii");
@@ -5716,6 +5737,17 @@ function invoke_jii(index,a1,a2) {
   var sp = stackSave();
   try {
     return dynCall_jii(index,a1,a2);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_j(index) {
+  var sp = stackSave();
+  try {
+    return dynCall_j(index);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0) throw e;
