@@ -79,14 +79,14 @@ TaskQueue::~TaskQueue() {}
 void TaskQueue::pushTask(Task *task) {
   {
     std::unique_lock<Mutex> lock(taskMutex);
-    EM_ASM({
+    /* EM_ASM({
       console.log('push task start', SharedArrayBuffer, $0, $1);
-    }, tasks.size(), (void *)this);
+    }, tasks.size(), (void *)this); */
     tasks.push_back(task);
     numTasks++;
-    EM_ASM({
+    /* EM_ASM({
       console.log('push task end', $0);
-    }, tasks.size());
+    }, tasks.size()); */
   }
   taskSemaphore.signal();
 }
@@ -96,9 +96,9 @@ Task *TaskQueue::popLockTask() {
   ); */
   taskSemaphore.wait();
 
-  EM_ASM(
+  /* EM_ASM(
     console.log('pop lock sema waited');
-  );
+  ); */
 
   Task *task;
   {
@@ -109,25 +109,25 @@ Task *TaskQueue::popLockTask() {
     tasks.pop_front();
   }
   if (task == nullptr) {
-    EM_ASM(
+    /* EM_ASM(
       console.log('failed to pop task!');
-    );
+    ); */
     abort();
   }
   return task;
 }
 void TaskQueue::runLoop() {
-  EM_ASM(
+  /* EM_ASM(
     console.log('run loop');
-  );
+  ); */
   Task *task;
   while ((task = popLockTask())) {
     task->run();
     task->unlockFn();
     delete task;
   }
-  EM_ASM(
+  /* EM_ASM(
     console.log('thread exited due to no task!');
-  );
+  ); */
   abort();
 }
