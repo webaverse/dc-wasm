@@ -19,7 +19,7 @@ void Mutex::lock() {
 }
 void Mutex::unlock() {
   flag.clear();
-  flag.notify_one();
+  flag.notify_all();
 }
 
 // implement a semaphore using std::atomic<int> value;
@@ -91,13 +91,14 @@ Task *TaskQueue::popLockTask() {
   ); */
   taskSemaphore.wait();
 
+  EM_ASM(
+    console.log('pop lock sema waited');
+  );
+
   Task *task;
   {
     std::unique_lock<Mutex> lock(taskMutex);
     // lock.lock();
-    /* EM_ASM(
-      console.log('pop lock task 2');
-    ); */
 
     task = tasks.front();
     tasks.pop_front();
