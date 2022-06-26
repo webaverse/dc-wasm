@@ -1710,10 +1710,11 @@ var tempI64;
 var ASM_CONSTS = {
   37576: ($0, $1) => { console.log('push task start', SharedArrayBuffer, $0, $1); },  
  37639: ($0) => { console.log('push task end', $0); },  
- 37677: () => { console.log('failed to pop task!'); },  
- 37713: () => { console.log('run loop'); },  
- 37738: () => { console.log('thread exited due to no task!'); },  
- 37784: ($0, $1) => { const id = $0; const result = $1; console.log('dc threader got result', {id, result, lol: globalThis.lol}); if (!globalThis.resultEvent) { globalThis.resultEvent = new MessageEvent('result', { data: { id: 0, result: 0, }, }); } globalThis.resultEvent.data.id = id;; globalThis.resultEvent.data.result = result; globalThis.dispatchEvent(globalThis.resultEvent); }
+ 37677: () => { console.log('pop lock sema waited'); },  
+ 37714: () => { console.log('failed to pop task!'); },  
+ 37750: () => { console.log('run loop'); },  
+ 37775: () => { console.log('thread exited due to no task!'); },  
+ 37821: ($0, $1) => { const id = $0; const result = $1; console.log('dc threader got result', {id, result, lol: globalThis.lol}); if (!globalThis.resultEvent) { globalThis.resultEvent = new MessageEvent('result', { data: { id: 0, result: 0, }, }); } globalThis.resultEvent.data.id = id;; globalThis.resultEvent.data.result = result; globalThis.dispatchEvent(globalThis.resultEvent); }
 };
 
 
