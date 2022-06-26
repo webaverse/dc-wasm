@@ -58,11 +58,9 @@ Task::~Task() {}
 
 bool Task::tryLock() {
   return tryLockFn();
-  // return inst->tryLock(chunkPositions, lod);
 }
 void Task::unlock() {
   unlockFn();
-  // inst->unlock(chunkPositions, lod);
 }
 void Task::run() {
   fn();
