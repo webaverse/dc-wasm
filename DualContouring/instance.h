@@ -125,35 +125,6 @@ public:
         Mutex &chunkLock = getChunkLock(chunkPosition, lod);
         chunkLock.unlock();
     }
-    template<typename PositionType>
-    bool tryLockAll(const std::vector<PositionType> &chunkPositions, int lod) {
-        bool lockedAll = true;
-        for (int i = 0; i < chunkPositions.size(); i++) {
-            const PositionType &chunkPosition = chunkPositions[i];
-            Mutex &chunkLock = getChunkLock(chunkPosition, lod);
-            if (chunkLock.try_lock()) {
-                // nothing
-            } else {
-                // bail out; unlock all locks
-                for (int j = 0; j < i; j++) {
-                    const PositionType &chunkPosition = chunkPositions[j];
-                    Mutex &chunkLock = getChunkLock(chunkPosition, lod);
-                    chunkLock.unlock();
-                }
-                lockedAll = false;
-                break;
-            }
-        }
-        return lockedAll;
-    }
-    template<typename PositionType>
-    void unlockAll(const std::vector<PositionType> &chunkPositions, int lod) {
-        for (int i = 0; i < chunkPositions.size(); i++) {
-            const PositionType &chunkPosition = chunkPositions[i];
-            Mutex &chunkLock = getChunkLock(chunkPosition, lod);
-            chunkLock.unlock();
-        }
-    }
 
     //
 

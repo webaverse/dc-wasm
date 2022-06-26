@@ -32,28 +32,145 @@ public:
     ~ChunkLock() {}
 };
 
-template<typename PositionType>
+// template<typename PositionType>
 class MultiChunkLock {
 public:
     DCInstance *inst;
-    std::vector<PositionType> chunkPositions;
-    int lod;
+    // std::vector<PositionType> chunkPositions;
+    // int lod;
+    std::vector<std::pair<vm::ivec2, int>> chunkPositions2D;
+    std::vector<std::pair<vm::ivec3, int>> chunkPositions3D;
     std::function<bool()> tryLockFn;
     std::function<void()> unlockFn;
 
-    MultiChunkLock(DCInstance *inst, std::vector<PositionType> &&chunkPositions, int lod) :
-        inst(inst),
-        chunkPositions(std::move(chunkPositions)),
-        lod(lod)
+    MultiChunkLock(DCInstance *inst) :
+        inst(inst)
     {
         tryLockFn = [&]() -> bool {
-            return inst->tryLockAll(chunkPositions, lod);    
+            for (int i = 0; i < chunkPositions2D.size(); i++) {
+                const std::pair<vm::ivec2, int> &chunkSpec = chunkPositions2D[i];
+                const vm::ivec2 &chunkPosition = chunkSpec.first;
+                int lod = chunkSpec.second;
+                
+                Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                if (chunkLock.try_lock()) {
+                    // nothing
+                } else {
+                    // bail out; unlock all locks
+                    for (int j = 0; j < i; j++) {
+                        const std::pair<vm::ivec2, int> &chunkSpec = chunkPositions2D[i];
+                        const vm::ivec2 &chunkPosition = chunkSpec.first;
+                        int lod = chunkSpec.second;
+
+                        Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                        chunkLock.unlock();
+                    }
+                    return false;
+                }
+            }
+            for (int i = 0; i < chunkPositions3D.size(); i++) {
+                const std::pair<vm::ivec3, int> &chunkSpec = chunkPositions3D[i];
+                const vm::ivec3 &chunkPosition = chunkSpec.first;
+                int lod = chunkSpec.second;
+
+                Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                if (chunkLock.try_lock()) {
+                    // nothing
+                } else {
+                    // bail out; unlock all locks
+                    for (int j = 0; j < chunkPositions2D.size(); j++) {
+                        const std::pair<vm::ivec2, int> &chunkSpec = chunkPositions2D[j];
+                        const vm::ivec2 &chunkPosition = chunkSpec.first;
+                        int lod = chunkSpec.second;
+
+                        Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                        chunkLock.unlock();
+                    }
+                    for (int j = 0; j < i; j++) {
+                        const std::pair<vm::ivec3, int> &chunkSpec = chunkPositions3D[j];
+                        const vm::ivec3 &chunkPosition = chunkSpec.first;
+                        int lod = chunkSpec.second;
+
+                        Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                        chunkLock.unlock();
+                    }
+                    return false;
+                    break;
+                }
+            }
+            return true;
         };
         unlockFn = [&]() -> void {
-            inst->unlockAll(chunkPositions, lod);
+            for (int j = 0; j < chunkPositions2D.size(); j++) {
+                const std::pair<vm::ivec2, int> &chunkSpec = chunkPositions2D[j];
+                const vm::ivec2 &chunkPosition = chunkSpec.first;
+                int lod = chunkSpec.second;
+
+                Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                chunkLock.unlock();
+            }
+            for (int j = 0; j < chunkPositions3D.size(); j++) {
+                const std::pair<vm::ivec3, int> &chunkSpec = chunkPositions3D[j];
+                const vm::ivec3 &chunkPosition = chunkSpec.first;
+                int lod = chunkSpec.second;
+
+                Mutex &chunkLock = inst->getChunkLock(chunkPosition, lod);
+                chunkLock.unlock();
+            }
         };
     }
     ~MultiChunkLock() {}
+
+    void pushPosition(const vm::ivec2 &position, int lod) {
+        chunkPositions2D.push_back(std::make_pair(position, lod));
+    }
+    void pushPosition(const vm::ivec3 &position, int lod) {
+        chunkPositions3D.push_back(std::make_pair(position, lod));
+    }
+    void pushPositions(const std::vector<vm::ivec2> &positions, int lod) {
+        for (const std::pair<vm::ivec2, int> &chunkSpec : chunkPositions2D) {
+            const vm::ivec2 &chunkPosition = chunkSpec.first;
+            int lod = chunkSpec.second;
+            pushPosition(chunkPosition, lod);
+        }
+    }
+    void pushPositions(const std::vector<vm::ivec3> &position, int lod) {
+        for (const std::pair<vm::ivec3, int> &chunkSpec : chunkPositions3D) {
+            const vm::ivec3 &chunkPosition = chunkSpec.first;
+            int lod = chunkSpec.second;
+            pushPosition(chunkPosition, lod);
+        }
+    }
+
+
+
+    /* bool tryLockAll(const std::vector<PositionType> &chunkPositions, int lod) {
+        bool lockedAll = true;
+        for (int i = 0; i < chunkPositions.size(); i++) {
+            const PositionType &chunkPosition = chunkPositions[i];
+            Mutex &chunkLock = getChunkLock(chunkPosition, lod);
+            if (chunkLock.try_lock()) {
+                // nothing
+            } else {
+                // bail out; unlock all locks
+                for (int j = 0; j < i; j++) {
+                    const PositionType &chunkPosition = chunkPositions[j];
+                    Mutex &chunkLock = getChunkLock(chunkPosition, lod);
+                    chunkLock.unlock();
+                }
+                lockedAll = false;
+                break;
+            }
+        }
+        return lockedAll;
+    }
+    void unlockAll(const std::vector<PositionType> &chunkPositions, int lod) {
+        for (int i = 0; i < chunkPositions.size(); i++) {
+            const PositionType &chunkPosition = chunkPositions[i];
+            Mutex &chunkLock = getChunkLock(chunkPosition, lod);
+            chunkLock.unlock();
+        }
+    } */
 };
 
 //
@@ -76,13 +193,12 @@ public:
     }
 };
 
-template<typename PositionType>
 class AutoMultiChunkLock {
 public:
-    MultiChunkLock<PositionType> multiChunkLock;
+    MultiChunkLock multiChunkLock;
 
-    AutoMultiChunkLock(DCInstance *inst, std::vector<vm::ivec3> &&chunkPositions, int lod) :
-        multiChunkLock(inst, std::move(chunkPositions), lod)
+    AutoMultiChunkLock(DCInstance *inst) :
+        multiChunkLock(inst)
     {
         if (!multiChunkLock.tryLockFn()) {
             std::cerr << "AutoMultiChunkLock failed to lock chunks!" << std::endl;
@@ -92,12 +208,19 @@ public:
     ~AutoMultiChunkLock() {
         multiChunkLock.unlockFn();
     }
+
+    void pushPosition(const vm::ivec2 &position, int lod) {
+        multiChunkLock.pushPosition(position, lod);
+    }
+    void pushPosition(const vm::ivec3 &position, int lod) {
+        multiChunkLock.pushPosition(position, lod);
+    }
+    void pushPositions(const std::vector<vm::ivec2> &positions, int lod) {
+        multiChunkLock.pushPositions(positions, lod);
+    }
+    void pushPositions(const std::vector<vm::ivec3> &position, int lod) {
+        multiChunkLock.pushPositions(position, lod);
+    }
 };
-
-typedef ChunkLock<vm::ivec2> ChunkLock2D;
-typedef ChunkLock<vm::ivec3> ChunkLock3D;
-
-typedef MultiChunkLock<vm::ivec2> MultiChunkLock2D;
-typedef MultiChunkLock<vm::ivec3> MultiChunkLock3D;
 
 #endif // LOCK_H
