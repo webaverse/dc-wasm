@@ -4,7 +4,7 @@
 #include "noises.h"
 // #include "result.h"
 #include "../worley.h"
-#include <thread>
+// #include <thread>
 
 // namespace ChunkMesh
 // {
@@ -20,9 +20,12 @@ namespace DualContouring
     int chunkSize = 16;
     Noises *noises = nullptr;
     int numThreads = 1;
-    std::vector<std::thread> threads;
+    std::vector<emscripten_wasm_worker_t> threads;
     TaskQueue taskQueue;
     ResultQueue resultQueue;
+    uint32_t parentThreadId;
+
+    constexpr uint32_t stackSize = 1024 * 1024;
 
     // storing the octrees that we would delete after mesh construction
     // std::vector<OctreeNode *> neighbourNodes;
@@ -30,17 +33,32 @@ namespace DualContouring
     // storing the octree roots here for search
     // std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
 
+    void runLoop() {
+        std::cout << "run loop 1" << std::endl;
+        taskQueue.runLoop();
+        std::cout << "run loop 2" << std::endl;
+    }
     void initialize(int newChunkSize, int seed, int newNumThreads)
     {
         chunkSize = newChunkSize;
         noises = new Noises(seed);
         numThreads = newNumThreads;
 
+        parentThreadId = emscripten_wasm_worker_self_id();
+        // std::cout << "check thread " << parentThreadId << " " << numThreads << std::endl;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; i++) {
-            std::thread thread([]() -> void {
+            std::cout << "create thread" << std::endl;
+            threads.push_back(emscripten_malloc_wasm_worker(stackSize));
+            if (!threads[i]) {
+            //   std::cout << "bad thread " << threads[i] << std::endl;
+              abort();
+            }
+            // emscripten_wasm_worker_post_function_v(threads[i], runLoop);
+            /* std::thread thread([]() -> void {
                 taskQueue.runLoop();
             });
-            threads.push_back(std::move(thread));
+            threads.push_back(std::move(thread)); */
         }
     }
 

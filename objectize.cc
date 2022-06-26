@@ -136,4 +136,17 @@ EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
     free(ptr);
 }
 
+//
+
+EMSCRIPTEN_KEEPALIVE void runLoop() {
+    DualContouring::runLoop();
+}
+
+//
+
+/* int main() {
+    std::cout << "run " << emscripten_wasm_worker_self_id() << " " << std::endl;
+    return 0;
+} */
+
 } // extern "C"

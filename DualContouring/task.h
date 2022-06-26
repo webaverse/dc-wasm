@@ -5,7 +5,8 @@
 #include <vector>
 #include <deque>
 #include <mutex>
-#include <semaphore>
+// #include <semaphore>
+#include <atomic>
 
 //
 
@@ -36,12 +37,14 @@ class TaskQueue {
 public:
     DCInstance *inst;
     std::deque<Task *> tasks;
+    std::atomic<size_t> numTasks;
     std::mutex taskLock;
     std::condition_variable taskCondVar;
 
     TaskQueue();
     ~TaskQueue();
     
+    Task *tryLockTask();
     void pushTask(Task *task);
     Task *popLockTask();
     void runLoop();
