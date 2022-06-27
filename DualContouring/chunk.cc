@@ -311,7 +311,7 @@ void Chunk2D::initWaterField(DCInstance *inst)
             int lz = z;
             int index2D = x + z * size;
             
-            std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
+            // std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
             int numSamples = 0;
             for (int dz = -size/2; dz < size/2; dz++)
             {
