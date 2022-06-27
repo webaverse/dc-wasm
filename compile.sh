@@ -10,7 +10,7 @@ emcc -s TOTAL_MEMORY=99942400 -s ALLOW_MEMORY_GROWTH=0 -sWASM_WORKERS -O3 -g -s 
   -o bin/dc.js
 
   sed -Ei 's/var Module=typeof Module!="undefined"\?Module:\{\};/var Module = globalThis.Module??{};/g' bin/dc.js
-  sed -Ei 's/var asm=createWasm\(\);/asmLibraryArg.__cxa_atexit=()=>{};var asm=createWasm();/g' bin/dc.js
+  # sed -Ei 's/var asm=createWasm\(\);/asmLibraryArg.__cxa_atexit=()=>{};var asm=createWasm();/g' bin/dc.js
   sed -Ei 's/importScripts\(d.js\);/d.js="\/dc.js";importScripts(d.js);Module._runLoop();/g' bin/dc.ww.js
   echo 'let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;' >> bin/dc.js
   cp bin/dc.js bin/dc.module.js
