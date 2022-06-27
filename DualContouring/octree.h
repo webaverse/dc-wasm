@@ -254,7 +254,7 @@ public:
         else
         {
             for (int i = 0; i < 8; i++)
-                findOctreeNodesRecursively(node->children.at(i), func, nodes);
+                findOctreeNodesRecursively(node->children[i], func, nodes);
         }
     }
 
@@ -385,7 +385,7 @@ public:
                         const vm::ivec3 childPos = parentPos + ((parentSize / 2) * CHILD_MIN_OFFSETS[i]);
                         if (childPos == node->min)
                         {
-                            parentNode->children.at(i) = node;
+                            parentNode->children[i] = node;
                             foundParentNode = true;
                             break;
                         }
@@ -557,7 +557,7 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
                 }
                 else
                 {
-                    edgeNodes[j] = node[j]->children.at(c[j]);
+                    edgeNodes[j] = node[j]->children[c[j]];
                 }
             }
 
@@ -603,7 +603,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer)
                 }
                 else
                 {
-                    faceNodes[j] = node[j]->children.at(c[j]);
+                    faceNodes[j] = node[j]->children[c[j]];
                 }
             }
 
@@ -635,7 +635,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer)
                 }
                 else
                 {
-                    edgeNodes[j] = node[order[j]]->children.at(c[j]);
+                    edgeNodes[j] = node[order[j]]->children[c[j]];
                 }
             }
 
@@ -653,7 +653,7 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer)
 
     for (int i = 0; i < 8; i++)
     {
-        contourCellProc<isSeam>(node->children.at(i), indexBuffer);
+        contourCellProc<isSeam>(node->children[i], indexBuffer);
     }
 
     for (int i = 0; i < 12; i++)
@@ -661,8 +661,8 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer)
         OctreeNode *faceNodes[2];
         const int c[2] = {cellProcFaceMask[i][0], cellProcFaceMask[i][1]};
 
-        faceNodes[0] = node->children.at(c[0]);
-        faceNodes[1] = node->children.at(c[1]);
+        faceNodes[0] = node->children[c[0]];
+        faceNodes[1] = node->children[c[1]];
 
         contourFaceProc<isSeam>(faceNodes, cellProcFaceMask[i][2], indexBuffer);
     }
@@ -680,7 +680,7 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer)
 
         for (int j = 0; j < 4; j++)
         {
-            edgeNodes[j] = node->children.at(c[j]);
+            edgeNodes[j] = node->children[c[j]];
         }
 
         contourEdgeProc<isSeam>(edgeNodes, cellProcEdgeMask[i][4], indexBuffer);
@@ -724,7 +724,7 @@ void generateVertexIndices(OctreeNode *node, DCContextType &dcContext)
         }
         for (int i = 0; i < 8; i++)
         {
-            generateVertexIndices(node->children.at(i), dcContext);
+            generateVertexIndices(node->children[i], dcContext);
         }
     }
 }
