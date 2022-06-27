@@ -607,19 +607,20 @@ void Chunk3D::initWaterSdf(DCInstance *inst) {
     cachedWaterSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
 
     const float fSize = (float)gridPoints;
-    for (int dz = 0; dz < gridPoints; dz++)
+    for (int z = 0; z < gridPoints; z++)
     {
-        int az = min.z + dz - 1;
-        for (int dx = 0; dx < gridPoints; dx++)
+        int az = min.z + z - 1;
+        for (int x = 0; x < gridPoints; x++)
         {
-            int ax = min.x + dx - 1;
+            int ax = min.x + x - 1;
 
-            float waterValue = -inst->getWater(vm::vec2(ax, az), lod) / fSize;
-            // waterValue *= -1.f;
+            int index2D = x + z * gridPoints;
+            float waterValue = chunk2d->cachedWaterField[index2D];
+            // float waterValue = -inst->getWater(vm::vec2(ax, az), lod) / fSize;
             // waterValue *= -1.1f;
-            for (int dy = 0; dy < gridPoints; dy++)
+            for (int y = 0; y < gridPoints; y++)
             {
-                int ay = min.y + dy - 1;
+                int ay = min.y + y - 1;
 
                 float heightValue = (float)ay - waterBaseHeight;
                 heightValue = std::min(
@@ -632,7 +633,7 @@ void Chunk3D::initWaterSdf(DCInstance *inst) {
                 
                 float value = std::max(waterValue, heightValue);
 
-                int index3D = dx + dz * gridPoints + dy * gridPoints * gridPoints;
+                int index3D = x + z * gridPoints + y * gridPoints * gridPoints;
                 cachedWaterSdf[index3D] = value;
             }
         }
