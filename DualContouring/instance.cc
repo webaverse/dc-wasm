@@ -13,37 +13,37 @@ DCInstance::~DCInstance() {}
 // chunks
 // 3d
 Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags) {
-    if (lod != 1) {
+    /* if (lod != 1) {
         EM_ASM({
           console.log('getChunk 3d bad lod', $0);
         }, lod);
         abort();
-    }
+    } */
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
-    if (tryLock(min, lod)) {
+    /* if (tryLock(min, lod)) {
         EM_ASM({
             console.log('chunk was not locked 3d', $0, $1, $2, $3);
         }, min.x, min.y, min.z, lod);
         abort();
-    }
+    } */
 
     Chunk3D *chunkNoise;
     {
         std::unique_lock<Mutex> lock(cachesMutex);
-        chunkNoise = &getChunkLockFree(min, lod);
+        chunkNoise = &getChunkInternal(min, lod);
     }
     // chunkNoise->chunk2d->generate(this, flags);
     chunkNoise->generate(this, flags);
     return *chunkNoise;
 }
-Chunk3D &DCInstance::getChunkLockFree(const vm::ivec3 &min, int lod) {
+Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     const auto &iter = chunksCache3D.find(minHash);
     if (iter == chunksCache3D.end()) {
         vm::ivec2 min2D(min.x, min.z);
-        Chunk2D *chunk2d = &getChunkLockFree(min2D, lod);
+        Chunk2D *chunk2d = &getChunkInternal(min2D, lod);
         chunksCache3D.emplace(std::make_pair(minHash, Chunk3D(min, lod, chunk2d)));
     }
     Chunk3D &chunkNoise = chunksCache3D.find(minHash)->second;
@@ -60,30 +60,30 @@ Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, con
 
 // 2d
 Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags) {
-    if (lod != 1) {
+    /* if (lod != 1) {
         EM_ASM({
           console.log('getChunk 2d bad lod', $0);
         }, lod);
         abort();
-    }
+    } */
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
-    if (tryLock(min, lod)) {
+    /* if (tryLock(min, lod)) {
         EM_ASM({
             console.log('chunk was not locked 2d', $0, $1, $2);
         }, min.x, min.y, lod);
         abort();
-    }
+    } */
 
     Chunk2D *chunkNoise;
     {
         std::unique_lock<Mutex> lock(cachesMutex);
-        chunkNoise = &getChunkLockFree(min, lod);
+        chunkNoise = &getChunkInternal(min, lod);
     }
     chunkNoise->generate(this, flags);
     return *chunkNoise;
 }
-Chunk2D &DCInstance::getChunkLockFree(const vm::ivec2 &min, int lod) {
+Chunk2D &DCInstance::getChunkInternal(const vm::ivec2 &min, int lod) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     const auto &iter = chunksCache2D.find(minHash);
@@ -104,12 +104,12 @@ Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, Gen
 
 // locks
 Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
-    if (lod != 1) {
+    /* if (lod != 1) {
         EM_ASM({
           console.log('getChunkLock 2d bad lod', $0);
         }, lod);
         abort();
-    }
+    } */
     
     Mutex *chunkLock;
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
@@ -120,12 +120,12 @@ Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
     return chunkLock;
 }
 Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
-    if (lod != 1) {
+    /* if (lod != 1) {
         EM_ASM({
           console.log('getChunkLock 3d bad lod', $0);
         }, lod);
         abort();
-    }
+    } */
 
     Mutex *chunkLock;
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
