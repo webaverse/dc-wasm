@@ -20,6 +20,7 @@ public:
     Mutex locksMutex;
     std::unordered_map<uint64_t, Mutex> chunkLocks2D;
     std::unordered_map<uint64_t, Mutex> chunkLocks3D;
+    Mutex cachesMutex;
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
     std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
@@ -32,9 +33,11 @@ public:
     //
 
     Chunk3D &getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags);
+    Chunk3D &getChunkLockFree(const vm::ivec3 &min, int lod);
     Chunk3D &getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags);
 
     Chunk2D &getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags);
+    Chunk2D &getChunkLockFree(const vm::ivec2 &min, int lod);
     Chunk2D &getChunkAt(const float x, const float z, const int lod, GenerateFlags flags);
     
     //

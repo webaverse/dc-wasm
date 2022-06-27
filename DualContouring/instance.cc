@@ -10,24 +10,38 @@ DCInstance::~DCInstance() {}
 
 // chunks
 // 3d
-Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags)
-{
+Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags) {
+    uint64_t minHash = hashOctreeMinLod(min, lod);
+
+    if (tryLock(min, lod)) {
+        EM_ASM({
+            console.log('chunk was not locked 3d', $0, $1, $2, $3);
+        }, min.x, min.y, min.z, lod);
+        abort();
+    }
+
+    Chunk3D *chunkNoise;
+    {
+        std::unique_lock<Mutex> lock(cachesMutex);
+        chunkNoise = &getChunkLockFree(min, lod);
+    }
+    chunkNoise->chunk2d->generate(this, flags);
+    chunkNoise->generate(this, flags);
+    return *chunkNoise;
+}
+Chunk3D &DCInstance::getChunkLockFree(const vm::ivec3 &min, int lod) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     const auto &iter = chunksCache3D.find(minHash);
-    if (iter == chunksCache3D.end())
-    {
+    if (iter == chunksCache3D.end()) {
         vm::ivec2 min2D(min.x, min.z);
-        Chunk2D *chunk2d = &getChunk(min2D, lod, flags);
+        Chunk2D *chunk2d = &getChunkLockFree(min2D, lod);
         chunksCache3D.emplace(std::make_pair(minHash, Chunk3D(min, lod, chunk2d)));
     }
-
     Chunk3D &chunkNoise = chunksCache3D.find(minHash)->second;
-    chunkNoise.generate(this, flags);
     return chunkNoise;
 }
-Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags)
-{
+Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags) {
     vm::ivec3 min = vm::ivec3(
                         (int)std::floor(x / (float)DualContouring::chunkSize),
                         (int)std::floor(y / (float)DualContouring::chunkSize),
@@ -40,14 +54,29 @@ Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, con
 Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
-    const auto &iter = chunksCache2D.find(minHash);
-    if (iter == chunksCache2D.end())
-    {
-        chunksCache2D.emplace(std::make_pair(minHash, Chunk2D(min, lod)));
+    if (tryLock(min, lod)) {
+        EM_ASM({
+            console.log('chunk was not locked 2d', $0, $1, $2);
+        }, min.x, min.y, lod);
+        abort();
     }
 
+    Chunk2D *chunkNoise;
+    {
+        std::unique_lock<Mutex> lock(cachesMutex);
+        chunkNoise = &getChunkLockFree(min, lod);
+    }
+    chunkNoise->generate(this, flags);
+    return *chunkNoise;
+}
+Chunk2D &DCInstance::getChunkLockFree(const vm::ivec2 &min, int lod) {
+    uint64_t minHash = hashOctreeMinLod(min, lod);
+
+    const auto &iter = chunksCache2D.find(minHash);
+    if (iter == chunksCache2D.end()) {
+        chunksCache2D.emplace(std::make_pair(minHash, Chunk2D(min, lod)));
+    }
     Chunk2D &chunkNoise = chunksCache2D.find(minHash)->second;
-    chunkNoise.generate(this, flags);
     return chunkNoise;
 }
 Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, GenerateFlags flags)
