@@ -694,7 +694,7 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
         this,
         worldPosition,
         lod,
-        lodVector,
+        lodVector = std::move(lodVector),
         id
     ]() -> void {
         uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
@@ -717,7 +717,7 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
         this,
         worldPosition,
         lod,
-        lodVector,
+        lodVector = std::move(lodVector),
         id
     ]() -> void {
         uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
