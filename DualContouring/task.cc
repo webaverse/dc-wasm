@@ -1,13 +1,12 @@
 #include "task.h"
-#include "instance.h"
 #include <iostream>
-#include <emscripten.h>
 
 //
 
 Task::Task(MultiChunkLock &&multiChunkLock, std::function<void()> &&fn) :
   multiChunkLock(std::move(multiChunkLock)),
-  fn(std::move(fn))
+  fn(std::move(fn)),
+  popped(false)
   {}
 Task::~Task() {}
 
@@ -23,11 +22,29 @@ void Task::unlock() {
 void Task::run() {
   fn();
 }
+void Task::ensurePop() {
+  if (popped.test_and_set(std::memory_order_acquire)) {
+    EM_ASM(
+      console.log('double task pop!');
+    );
+    abort();
+  } /* else {
+    EM_ASM(
+      console.log('ok task pop.');
+    );
+  } */
+}
+
 
 //
 
 TaskQueue::TaskQueue() {}
-TaskQueue::~TaskQueue() {}
+TaskQueue::~TaskQueue() {
+  EM_ASM({
+    console.log('task queue destructor');
+  });
+  abort();
+}
 
 void TaskQueue::pushTask(Task *task) {
   {
@@ -67,6 +84,8 @@ Task *TaskQueue::popLockTask() {
 
     task = lockedTasks.front();
     lockedTasks.pop_front();
+
+    task->ensurePop();
   }
   if (task == nullptr) {
     /* EM_ASM(

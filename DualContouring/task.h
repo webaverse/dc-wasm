@@ -8,6 +8,7 @@
 #include <deque>
 // #include <semaphore>
 #include <atomic>
+#include <emscripten.h>
 
 //
 
@@ -19,6 +20,7 @@ class Task {
 public:
     MultiChunkLock multiChunkLock;
     std::function<void()> fn;
+    std::atomic_flag popped;
 
     Task(MultiChunkLock &&multiChunkLock, std::function<void()> &&fn);
     ~Task();
@@ -27,7 +29,8 @@ public:
     void lock();
     void unlock();
     void run();
-    std::pair<bool, void *> tryLockRun();
+    // std::pair<bool, void *> tryLockRun();
+    void ensurePop();
 };
 
 //
