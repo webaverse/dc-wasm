@@ -299,17 +299,15 @@ void Chunk2D::initHeightField(DCInstance *inst)
 }
 void Chunk2D::initWaterField(DCInstance *inst)
 {
-    cachedWaterField.resize(size * size);
-    for (int z = 0; z < size; z++)
+    cachedWaterField.resize(gridPoints * gridPoints, 0);
+    for (int z = 0; z < gridPoints; z++)
     {
-        for (int x = 0; x < size; x++)
+        for (int x = 0; x < gridPoints; x++)
         {
-            int ax = x * lod + min.x;
-            int az = z * lod + min.y;
+            int ax = min.x + (x - 1) * lod;
+            int az = min.y + (z - 1) * lod;
 
-            int lx = x;
-            int lz = z;
-            int index2D = x + z * size;
+            int index2D = x + z * gridPoints;
             
             // std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
             int numSamples = 0;
@@ -340,11 +338,11 @@ float Chunk2D::getHumidityLocal(const int lx, const int lz) const
     int index = lx + lz * size;
     return cachedNoiseField.humidity[index];
 }
-float Chunk2D::getWaterFieldLocal(const int lx, const int lz) const
+/* float Chunk2D::getWaterFieldLocal(const int lx, const int lz) const
 {
     int index = lx + lz * size;
     return cachedWaterField[index];
-}
+} */
 
 // biomes
 unsigned char Chunk2D::getCachedBiome(const int lx, const int lz) const
@@ -614,8 +612,10 @@ void Chunk3D::initWaterSdf(DCInstance *inst) {
         {
             int ax = min.x + x - 1;
 
+            // int lx = x + 1;
+            // int lz = z + 1;
             int index2D = x + z * gridPoints;
-            float waterValue = chunk2d->cachedWaterField[index2D];
+            float waterValue = -chunk2d->cachedWaterField[index2D] / fSize;
             // float waterValue = -inst->getWater(vm::vec2(ax, az), lod) / fSize;
             // waterValue *= -1.1f;
             for (int y = 0; y < gridPoints; y++)

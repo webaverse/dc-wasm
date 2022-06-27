@@ -85,7 +85,7 @@ public:
     // noises
     float getTemperatureLocal(const int lx, const int lz) const;
     float getHumidityLocal(const int lx, const int lz) const;
-    float getWaterFieldLocal(const int lx, const int lz) const;
+    // float getWaterFieldLocal(const int lx, const int lz) const;
 
     // biomes
     unsigned char getCachedBiome(const int lx, const int lz) const;

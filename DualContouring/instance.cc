@@ -321,12 +321,12 @@ float DCInstance::getHumidity(const vm::vec2 &worldPosition, const int &lod) {
     return chunkNoise.getHumidityLocal(lx, lz);
 }
 
-float DCInstance::getWater(const vm::vec2 &worldPosition, const int &lod) {
+/* float DCInstance::getWater(const vm::vec2 &worldPosition, const int &lod) {
     Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_WATERFIELD);
     int lx = (int)worldPosition.x - chunkNoise.min.x;
     int lz = (int)worldPosition.y - chunkNoise.min.y;
     return chunkNoise.getWaterFieldLocal(lx, lz);
-}
+} */
 
 //
 

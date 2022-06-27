@@ -116,7 +116,7 @@ public:
 
     float getTemperature(const vm::vec2 &worldPosition, const int &lod);
     float getHumidity(const vm::vec2 &worldPosition, const int &lod);
-    float getWater(const vm::vec2 &worldPosition, const int &lod);
+    // float getWater(const vm::vec2 &worldPosition, const int &lod);
 
     //
     
