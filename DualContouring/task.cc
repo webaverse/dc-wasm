@@ -122,10 +122,11 @@ void TaskQueue::flushTasks() {
     bool lockedTask = true;
     while (lockedTask) {
       lockedTask = false;
-      for (int i = 0; i < tasks.size(); i++) {
-        if (tasks[i]->tryLock()) {
-          lockedTasks.push_back(tasks[i]);
-          tasks.erase(tasks.begin() + i);
+      for (auto iter = tasks.begin(); iter != tasks.end(); iter++) {
+        Task *task = *iter;
+        if (task->tryLock()) {
+          lockedTasks.push_back(task);
+          tasks.erase(iter);
 
           taskSemaphore.signal();
 
