@@ -44,9 +44,12 @@ public:
     std::vector<std::pair<vm::ivec2, int>> chunkPositions2D;
     std::vector<std::pair<vm::ivec3, int>> chunkPositions3D;
 
+    MultiChunkLock() = delete;
     MultiChunkLock(DCInstance *inst);
     MultiChunkLock(MultiChunkLock &&other);
     ~MultiChunkLock();
+
+    MultiChunkLock &operator=(const MultiChunkLock &other) = delete;
 
     bool tryLockFn();
     void unlockFn();
