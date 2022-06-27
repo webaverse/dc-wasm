@@ -51,7 +51,7 @@ void Semaphore::wait() {
 void Semaphore::signal() {
   {
     std::unique_lock<Mutex> lock(mutex);
-    value++;
+    value.fetch_add(1, std::memory_order_seq_cst);
+    value.notify_one();
   }
-  value.notify_one();
 }
