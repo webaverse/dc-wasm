@@ -139,7 +139,7 @@ EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
 //
 
 EMSCRIPTEN_KEEPALIVE void runLoop() {
-    DualContouring::runLoop2();
+    DualContouring::runLoop();
 }
 
 //

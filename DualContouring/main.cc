@@ -40,7 +40,7 @@ namespace DualContouring
         for (int i = 0; i < numThreads; i++) {
             // std::cout << "create thread" << std::endl;
             std::thread([]() -> void {
-                runLoop2();
+                runLoop();
             }).detach();
             /* threads.push_back(emscripten_malloc_wasm_worker(stackSize));
             if (!threads[i]) {
@@ -55,13 +55,11 @@ namespace DualContouring
         }
     }
 
-extern "C" {
-    void runLoop2() {
+    void runLoop() {
         // std::cout << "run loop 1" << std::endl;
         taskQueue.runLoop();
         // std::cout << "run loop 2" << std::endl;
     }
-}
 
     void initialize(int newChunkSize, int seed)
     {

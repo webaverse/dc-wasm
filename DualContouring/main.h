@@ -37,9 +37,7 @@ namespace DualContouring {
 
     // threads
     void start();
-extern "C" {
-    void runLoop2();
-}
+    void runLoop();
 
     // biomes
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
