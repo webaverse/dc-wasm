@@ -1,1 +1,1 @@
-onmessage=function(d){onmessage=null;d=d.data;self.Module=d;d["instantiateWasm"]=(info,receiveInstance)=>{var instance=new WebAssembly.Instance(d["wasm"],info);receiveInstance(instance,d["wasm"]);return instance.exports};d.js="/dc.js";importScripts(d.js);Module._runLoop();d.wasm=d.mem=d.js=0};
+onmessage=function(d){onmessage=null;d=d.data;self.Module=d;d["instantiateWasm"]=(info,receiveInstance)=>{var instance=new WebAssembly.Instance(d["wasm"],info);receiveInstance(instance,d["wasm"]);return instance.exports};d.js="/dc.js";importScripts(d.js);d.wasm=d.mem=d.js=0};
