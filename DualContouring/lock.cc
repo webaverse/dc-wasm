@@ -124,8 +124,8 @@ void MultiChunkLock::pushPositions(const std::vector<vm::ivec2> &positions, int 
       pushPosition(chunkPosition, lod);
   }
 }
-void MultiChunkLock::pushPositions(const std::vector<vm::ivec3> &position, int lod) {
-  for (const vm::ivec3 &chunkPosition : position) {
+void MultiChunkLock::pushPositions(const std::vector<vm::ivec3> &positions, int lod) {
+  for (const vm::ivec3 &chunkPosition : positions) {
       pushPosition(chunkPosition, lod);
   }
 }

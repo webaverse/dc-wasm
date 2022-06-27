@@ -56,7 +56,7 @@ public:
     void pushPosition(const vm::ivec2 &position, int lod);
     void pushPosition(const vm::ivec3 &position, int lod);
     void pushPositions(const std::vector<vm::ivec2> &positions, int lod);
-    void pushPositions(const std::vector<vm::ivec3> &position, int lod);
+    void pushPositions(const std::vector<vm::ivec3> &positions, int lod);
 };
 
 //
