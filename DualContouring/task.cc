@@ -5,21 +5,23 @@
 
 //
 
-Task::Task(MultiChunkLock &&multiChunkLock, std::function<void()> fn) :
-  multiChunkLock(std::move(multiChunkLock)),
+Task::Task(MultiChunkLock *multiChunkLock, std::function<void()> fn) :
+  multiChunkLock(multiChunkLock),
   fn(fn),
   popped(false)
   {}
-Task::~Task() {}
+Task::~Task() {
+  delete multiChunkLock;
+}
 
 bool Task::tryLock() {
   /* EM_ASM({
     console.log('task try lock');
   }); */
-  return multiChunkLock.tryLockFn();
+  return multiChunkLock->tryLockFn();
 }
 void Task::unlock() {
-  multiChunkLock.unlockFn();
+  multiChunkLock->unlockFn();
 }
 void Task::run() {
   fn();

@@ -687,10 +687,10 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
     std::vector<int> lodVector(lodArray, lodArray + 8);
     std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
     std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions2D, lod);
-    multiChunkLock.pushPositions(chunkPositions3D, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions2D, lod);
+    multiChunkLock->pushPositions(chunkPositions3D, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPosition,
         lod,
@@ -711,9 +711,9 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
     std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPosition,
         lod,
@@ -731,9 +731,9 @@ uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, 
     uint32_t id = DualContouring::resultQueue->getNextId();
     
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPositionXZ,
         lod,
@@ -753,10 +753,10 @@ uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int l
     
     std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -1, 1, DualContouring::chunkSize);
     std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions2D, lod);
-    multiChunkLock.pushPositions(chunkPositions3D, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions2D, lod);
+    multiChunkLock->pushPositions(chunkPositions3D, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPosition,
         lod,
@@ -776,10 +776,10 @@ uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, un
     
     std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -1, 1, DualContouring::chunkSize);
     std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions2D, lod);
-    multiChunkLock.pushPositions(chunkPositions3D, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions2D, lod);
+    multiChunkLock->pushPositions(chunkPositions3D, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPosition,
         lod,
@@ -799,9 +799,9 @@ uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, con
     uint32_t id = DualContouring::resultQueue->getNextId();
 
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPositionXZ,
         lod,
@@ -822,9 +822,9 @@ uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ
     uint32_t id = DualContouring::resultQueue->getNextId();
     
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPositionXZ,
         lod,
@@ -845,9 +845,9 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
     uint32_t id = DualContouring::resultQueue->getNextId();
     
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock multiChunkLock(this);
-    multiChunkLock.pushPositions(chunkPositions, lod);
-    Task *task = new Task(std::move(multiChunkLock), [
+    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+    multiChunkLock->pushPositions(chunkPositions, lod);
+    Task *task = new Task(multiChunkLock, [
         this,
         worldPositionXZ,
         lod,
