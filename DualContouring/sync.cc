@@ -5,14 +5,12 @@
 //
 
 Mutex::Mutex() : flag(false) {}
-Mutex::Mutex(const Mutex &other) : flag(other.flag.test()) {}
-Mutex::Mutex(Mutex &&other) : flag(other.flag.test()) {}
 Mutex::~Mutex() {
   abort();
 }
 void Mutex::lock() {
   for (;;) {
-    bool oldValue = flag.test_and_set(std::memory_order_seq_cst);
+    bool oldValue = flag.test_and_set(std::memory_order_acquire);
     if (!oldValue) {
       break;
     } else {
@@ -21,20 +19,12 @@ void Mutex::lock() {
   }
 }
 void Mutex::unlock() {
-  flag.clear(std::memory_order_seq_cst);
-  flag.notify_all();
+  flag.clear(std::memory_order_release);
+  flag.notify_one();
 }
 bool Mutex::try_lock() {
-  bool oldValue = flag.test_and_set(std::memory_order_seq_cst);
+  bool oldValue = flag.test_and_set(std::memory_order_acquire);
   return !oldValue;
-}
-Mutex &Mutex::operator=(const Mutex &other) {
-  if (other.flag.test()) {
-    flag.test_and_set(std::memory_order_seq_cst);
-  } else {
-    flag.clear(std::memory_order_seq_cst);
-  }
-  return *this;
 }
 
 //
@@ -46,15 +36,11 @@ void Semaphore::wait() {
   for (;;) {
     int oldValue;
     {
-      // std::unique_lock<Mutex> lock(mutex);
-      /* EM_ASM({
-        console.log('test value', $0);
-      }, (int)value); */
-      oldValue = value.fetch_sub(1, std::memory_order_seq_cst);
+      oldValue = value.fetch_sub(1, std::memory_order_acquire);
       if (oldValue > 0) {
         break;
       } else {
-        value.fetch_add(1, std::memory_order_seq_cst);
+        value.fetch_add(1, std::memory_order_release);
       }
     }
     value.wait(oldValue);
@@ -62,8 +48,7 @@ void Semaphore::wait() {
 }
 void Semaphore::signal() {
   {
-    // std::unique_lock<Mutex> lock(mutex);
-    value.fetch_add(1, std::memory_order_seq_cst);
-    value.notify_all();
+    value.fetch_add(1, std::memory_order_release);
+    value.notify_one();
   }
 }

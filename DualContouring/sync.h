@@ -17,9 +17,6 @@ public:
   std::atomic_flag flag;
 
   Mutex();
-  Mutex(const Mutex &other);
-  Mutex(Mutex &&other);
-  Mutex &operator=(const Mutex &other);
   ~Mutex();
   void lock();
   void unlock();
