@@ -25,7 +25,7 @@ Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags
         std::unique_lock<Mutex> lock(cachesMutex);
         chunkNoise = &getChunkLockFree(min, lod);
     }
-    chunkNoise->chunk2d->generate(this, flags);
+    // chunkNoise->chunk2d->generate(this, flags);
     chunkNoise->generate(this, flags);
     return *chunkNoise;
 }
