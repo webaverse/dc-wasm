@@ -562,7 +562,7 @@ void Chunk3D::initSdf()
         for (int x = 0; x < gridPoints; x++)
         {
             int index2D = x + z * gridPoints;
-            float height = chunk2d->cachedHeightField[index2D];
+            float height = chunk2d->cachedHeightField.at(index2D);
 
             for (int y = 0; y < gridPoints; y++)
             {
@@ -592,7 +592,7 @@ void Chunk3D::initSdf()
                 ); */
 
                 // result
-                cachedSdf[index3D] = f;
+                cachedSdf.at(index3D) = f;
             }
         }
     }
