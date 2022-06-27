@@ -89,31 +89,23 @@ Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, Gen
 }
 
 // locks
-Mutex &DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
+Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
     Mutex *chunkLock;
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
     {
         std::unique_lock<Mutex> lock(locksMutex);
-        auto iter = chunkLocks2D.find(minLodHash);
-        if (iter == chunkLocks2D.end()) {
-          chunkLocks2D.emplace(std::make_pair(minLodHash, Mutex()));            
-        }
-        chunkLock = &chunkLocks2D.find(minLodHash)->second;
+        chunkLock = &chunkLocks2D[minLodHash];
     }
-    return *chunkLock;
+    return chunkLock;
 }
-Mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
+Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
     Mutex *chunkLock;
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
     {
         std::unique_lock<Mutex> lock(locksMutex);
-        auto iter = chunkLocks3D.find(minLodHash);
-        if (iter == chunkLocks3D.end()) {
-          chunkLocks3D.emplace(std::make_pair(minLodHash, Mutex()));            
-        }
-        chunkLock = &chunkLocks3D.find(minLodHash)->second;
+        chunkLock = &chunkLocks3D[minLodHash];
     }
-    return *chunkLock;
+    return chunkLock;
 }
 
 // fields

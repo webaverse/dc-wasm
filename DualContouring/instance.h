@@ -43,8 +43,8 @@ public:
     
     //
 
-    Mutex &getChunkLock(const vm::ivec3 &worldPos, const int lod);
-    Mutex &getChunkLock(const vm::ivec2 &worldPos, const int lod);
+    Mutex *getChunkLock(const vm::ivec3 &worldPos, const int lod);
+    Mutex *getChunkLock(const vm::ivec2 &worldPos, const int lod);
 
     //
 
@@ -122,13 +122,13 @@ public:
     
     template<typename PositionType>
     bool tryLock(const PositionType &chunkPosition, int lod) {
-        Mutex &chunkLock = getChunkLock(chunkPosition, lod);
-        return chunkLock.try_lock();
+        Mutex *chunkLock = getChunkLock(chunkPosition, lod);
+        return chunkLock->try_lock();
     }
     template<typename PositionType>
     void unlock(const PositionType &chunkPosition, int lod) {
-        Mutex &chunkLock = getChunkLock(chunkPosition, lod);
-        chunkLock.unlock();
+        Mutex *chunkLock = getChunkLock(chunkPosition, lod);
+        chunkLock->unlock();
     }
 
     //
