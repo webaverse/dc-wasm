@@ -145,13 +145,13 @@ EMSCRIPTEN_KEEPALIVE void runLoop() {
 //
 
 int main() {
-    EM_ASM({
+    /* EM_ASM({
         console.log('run main 1');
-    });
+    }); */
     DualContouring::start();
-    EM_ASM({
+    /* EM_ASM({
         console.log('run main 2');
-    });
+    }); */
     // std::cout << "run " << emscripten_wasm_worker_self_id() << " " << std::endl;
     return 0;
 }

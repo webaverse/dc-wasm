@@ -15,7 +15,7 @@
 //     OctreeNode *seamRoot;
 // };
 
-constexpr int numThreads = 10;
+constexpr int numThreads = NUM_THREADS;
 constexpr uint32_t stackSize = 1024 * 1024;
 
 namespace DualContouring
