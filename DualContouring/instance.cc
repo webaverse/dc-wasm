@@ -13,6 +13,12 @@ DCInstance::~DCInstance() {}
 // chunks
 // 3d
 Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags) {
+    if (lod != 1) {
+        EM_ASM({
+          console.log('getChunk 3d bad lod', $0);
+        }, lod);
+        abort();
+    }
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     if (tryLock(min, lod)) {
@@ -54,6 +60,12 @@ Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, con
 
 // 2d
 Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags) {
+    if (lod != 1) {
+        EM_ASM({
+          console.log('getChunk 2d bad lod', $0);
+        }, lod);
+        abort();
+    }
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     if (tryLock(min, lod)) {
@@ -92,6 +104,13 @@ Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, Gen
 
 // locks
 Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
+    if (lod != 1) {
+        EM_ASM({
+          console.log('getChunkLock 2d bad lod', $0);
+        }, lod);
+        abort();
+    }
+    
     Mutex *chunkLock;
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
     {
@@ -101,6 +120,13 @@ Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod) {
     return chunkLock;
 }
 Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
+    if (lod != 1) {
+        EM_ASM({
+          console.log('getChunkLock 3d bad lod', $0);
+        }, lod);
+        abort();
+    }
+
     Mutex *chunkLock;
     uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
     {
