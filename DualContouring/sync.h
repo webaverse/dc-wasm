@@ -5,6 +5,9 @@
 #include <vector>
 #include <deque>
 #include <atomic>
+#include <emscripten.h>
+#include <emscripten/atomic.h>
+#include <emscripten/wasm_worker.h>
 
 //
 
@@ -15,7 +18,7 @@ class DCInstance;
 class Mutex {
 public:
   // volatile std::atomic_flag flag;
-  uint32_t flag;
+  emscripten_lock_t flag; 
 
   Mutex();
   Mutex(const Mutex &other);
@@ -45,7 +48,7 @@ public:
 class Semaphore {
 public:
   Mutex mutex;
-  std::atomic<int> value;
+  emscripten_semaphore_t sema;
 
   Semaphore(int value);
   Semaphore();
