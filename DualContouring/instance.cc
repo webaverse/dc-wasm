@@ -710,9 +710,11 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
-    std::vector<vm::ivec3> chunkPositions = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
+    std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
+    std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
     MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPositions(chunkPositions, lod);
+    multiChunkLock->pushPositions(chunkPositions2D, lod);
+    multiChunkLock->pushPositions(chunkPositions3D, lod);
     Task *task = new Task(multiChunkLock, [
         this,
         worldPosition,
