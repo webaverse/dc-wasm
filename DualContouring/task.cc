@@ -120,7 +120,8 @@ void TaskQueue::runLoop() {
   abort();
 }
 void TaskQueue::flushTasks() {
-  // {
+  int numSignals = 0;
+  {
     std::unique_lock<Mutex> lock(taskMutex);
 
     bool lockedTask = true;
@@ -132,12 +133,16 @@ void TaskQueue::flushTasks() {
           lockedTasks.push_back(task);
           tasks.erase(iter);
 
-          taskSemaphore.signal();
+          numSignals++;
 
           lockedTask = true;
           break;
         }
       }
     }
-  // }
+  }
+
+  for (int i = 0; i < numSignals; i++) {
+    taskSemaphore.signal();
+  }
 }
