@@ -1,11 +1,13 @@
 #include "task.h"
+#include "instance.h"
 #include <iostream>
+#include <emscripten/atomic.h>
 
 //
 
-Task::Task(MultiChunkLock &&multiChunkLock, std::function<void()> &&fn) :
+Task::Task(MultiChunkLock &&multiChunkLock, std::function<void()> fn) :
   multiChunkLock(std::move(multiChunkLock)),
-  fn(std::move(fn)),
+  fn(fn),
   popped(false)
   {}
 Task::~Task() {}

@@ -22,7 +22,7 @@ public:
     std::function<void()> fn;
     std::atomic_flag popped;
 
-    Task(MultiChunkLock &&multiChunkLock, std::function<void()> &&fn);
+    Task(MultiChunkLock &&multiChunkLock, std::function<void()> fn);
     ~Task();
 
     bool tryLock();
