@@ -56,7 +56,7 @@ namespace DualContouring
             //   std::cout << "bad thread " << threads[i] << std::endl;
               abort();
             }
-            // emscripten_wasm_worker_post_function_v(threads[i], runLoop);
+            emscripten_wasm_worker_post_function_v(threads[i], runLoop);
             /* std::thread thread([]() -> void {
                 taskQueue.runLoop();
             });
