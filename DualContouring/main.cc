@@ -20,9 +20,8 @@ namespace DualContouring
     int chunkSize = 16;
     Noises *noises = nullptr;
     int numThreads = 1;
-    std::vector<emscripten_wasm_worker_t> threads;
-    TaskQueue taskQueue;
-    ResultQueue resultQueue;
+    TaskQueue *taskQueue;
+    ResultQueue *resultQueue;
     uint32_t parentThreadId;
 
     constexpr uint32_t stackSize = 1024 * 1024;
@@ -35,7 +34,7 @@ namespace DualContouring
 
     void runLoop() {
         // std::cout << "run loop 1" << std::endl;
-        taskQueue.runLoop();
+        taskQueue->runLoop();
         // std::cout << "run loop 2" << std::endl;
     }
     void initialize(int newChunkSize, int seed, int newNumThreads)
@@ -43,9 +42,12 @@ namespace DualContouring
         chunkSize = newChunkSize;
         noises = new Noises(seed);
         numThreads = newNumThreads;
-
+        taskQueue = new TaskQueue();
+        resultQueue = new ResultQueue();
         parentThreadId = emscripten_wasm_worker_self_id();
         // std::cout << "check thread " << parentThreadId << " " << numThreads << std::endl;
+        
+        std::vector<emscripten_wasm_worker_t> threads;
         threads.reserve(numThreads);
         for (int i = 0; i < numThreads; i++) {
             // std::cout << "create thread" << std::endl;

@@ -21,9 +21,9 @@ namespace DualContouring {
     extern int chunkSize;
     extern Noises *noises;
     extern int numThreads;
-    extern std::vector<emscripten_wasm_worker_t> threads;
-    extern TaskQueue taskQueue;
-    extern ResultQueue resultQueue;
+    // extern std::vector<emscripten_wasm_worker_t> threads;
+    extern TaskQueue *taskQueue;
+    extern ResultQueue *resultQueue;
     extern uint32_t parentThreadId;
 
     // initialization
