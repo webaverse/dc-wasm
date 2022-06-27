@@ -681,7 +681,7 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 
 uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
@@ -698,15 +698,15 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
         id
     ]() -> void {
         uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
@@ -721,14 +721,14 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
         id
     ]() -> void {
         uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
     
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
     MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
@@ -742,14 +742,14 @@ uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, 
     ]() -> void {
         getChunkHeightfield(worldPositionXZ, lod, heights);
         void *result = nullptr;
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
     
     std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -1, 1, DualContouring::chunkSize);
     std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
@@ -765,14 +765,14 @@ uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int l
     ]() -> void {
         getChunkSkylight(worldPosition, lod, skylights);
         void *result = nullptr;
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
     
     std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -1, 1, DualContouring::chunkSize);
     std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
@@ -788,15 +788,15 @@ uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, un
     ]() -> void {
         getChunkAo(worldPosition, lod, aos);
         void *result = nullptr;
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
 
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
     MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
@@ -811,15 +811,15 @@ uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, con
     ]() -> void {
         createGrassSplat(worldPositionXZ, lod, ps, qs, instances, count);
         void *result = nullptr;
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
     
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
     MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
@@ -834,15 +834,15 @@ uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ
     ]() -> void {
         createVegetationSplat(worldPositionXZ, lod, ps, qs, instances, count);
         void *result = nullptr;
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }
 uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
-    uint32_t id = DualContouring::resultQueue->getNextId();
+    uint32_t id = DualContouring::resultQueue.getNextId();
     
     std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
     MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
@@ -857,9 +857,9 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
     ]() -> void {
         createMobSplat(worldPositionXZ, lod, ps, qs, instances, count);
         void *result = nullptr;
-        DualContouring::resultQueue->pushResult(id, result);
+        DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue->pushTask(task);
+    DualContouring::taskQueue.pushTask(task);
 
     return id;
 }

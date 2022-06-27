@@ -7,7 +7,8 @@
 #include <ctime>
 #include <string.h>
 #include <memory>
-#include <emscripten/wasm_worker.h>
+#include <pthread.h>
+// #include <emscripten/wasm_worker.h>
 #include "instance.h"
 #include "noises.h"
 #include "result.h"
@@ -20,21 +21,25 @@ namespace DualContouring {
     // globals
     extern int chunkSize;
     extern Noises *noises;
-    extern int numThreads;
     // extern std::vector<emscripten_wasm_worker_t> threads;
-    extern TaskQueue *taskQueue;
-    extern ResultQueue *resultQueue;
-    extern uint32_t parentThreadId;
+    extern TaskQueue taskQueue;
+    extern ResultQueue resultQueue;
+
+    extern pthread_t parentThreadId;
+    // extern std::vector<emscripten_wasm_worker_t> threads;
 
     // initialization
-    void initialize(int newChunkSize, int seed, int numThreads);
+    void initialize(int newChunkSize, int seed);
     
     // instances
     DCInstance *createInstance();
     void destroyInstance(DCInstance *instance);
 
     // threads
-    void runLoop();
+    void start();
+extern "C" {
+    void runLoop2();
+}
 
     // biomes
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);

@@ -1,6 +1,7 @@
 #include "result.h"
 #include "main.h"
 #include <iostream>
+#include <emscripten/threading.h>
 
 //
 
@@ -12,6 +13,9 @@ ResultQueue::~ResultQueue() {}
 uint32_t ResultQueue::getNextId() {
   return ++ids;
 }
+
+extern "C" {
+
 void result_em_func_vii(int id, int result) {
   uint32_t id_ = (uint32_t)id;
   void *result_ = (void *)result;
@@ -34,7 +38,14 @@ void result_em_func_vii(int id, int result) {
     globalThis.dispatchEvent(globalThis.resultEvent);
   }, id_, result_);
 }
+
+}
+
 void ResultQueue::pushResult(uint32_t id, void *result) {
-  emscripten_wasm_worker_post_function_vii(0, result_em_func_vii, (int)id, (int)result);
+  /* EM_ASM({
+    console.log('post result');
+  }); */
+  emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, (int)result);
+  // emscripten_wasm_worker_post_function_vii(DualContouring::parentThreadId, result_em_func_vii, (int)id, (int)result);
   // emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, result);
 }

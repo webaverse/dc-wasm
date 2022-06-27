@@ -1,53 +1,69 @@
 #include "sync.h"
 #include <iostream>
+#include <emscripten.h>
 
 //
 
-Mutex::Mutex() : flag(0) {
-  emscripten_lock_init(&flag);
-}
-Mutex::Mutex(const Mutex &other) : flag(other.flag) {
-  emscripten_lock_init(&flag);
-}
-Mutex::Mutex(Mutex &&other) : flag(other.flag) {
-  emscripten_lock_init(&flag);
-}
+Mutex::Mutex() : flag(false) {}
+Mutex::Mutex(const Mutex &other) : flag(other.flag.test()) {}
+Mutex::Mutex(Mutex &&other) : flag(other.flag.test()) {}
 Mutex::~Mutex() {
-  EM_ASM({
-    console.log('mutex destroy');
-  });
-  // abort();
+  abort();
 }
 void Mutex::lock() {
-  emscripten_lock_waitinf_acquire(&flag);
+  for (;;) {
+    bool oldValue = flag.test_and_set(std::memory_order_seq_cst);
+    if (!oldValue) {
+      break;
+    } else {
+      flag.wait(oldValue);
+    }
+  }
 }
 void Mutex::unlock() {
-  emscripten_lock_release(&flag);
+  flag.clear(std::memory_order_seq_cst);
+  flag.notify_all();
 }
 bool Mutex::try_lock() {
-  return emscripten_lock_try_acquire(&flag);
+  bool oldValue = flag.test_and_set(std::memory_order_seq_cst);
+  return !oldValue;
 }
 Mutex &Mutex::operator=(const Mutex &other) {
-  flag = other.flag;
-  emscripten_lock_init(&flag);
-  /* if (other.flag.test()) {
+  if (other.flag.test()) {
     flag.test_and_set(std::memory_order_seq_cst);
   } else {
     flag.clear(std::memory_order_seq_cst);
-  } */
+  }
   return *this;
 }
 
 //
 
-Semaphore::Semaphore(int value) : sema(value) {
-  emscripten_semaphore_init(&sema, value);
-}
-Semaphore::Semaphore() : sema(0) {}
+Semaphore::Semaphore(int value) : value(value) {}
+Semaphore::Semaphore() : value(0) {}
 Semaphore::~Semaphore() {}
 void Semaphore::wait() {
-  emscripten_semaphore_waitinf_acquire(&sema, 1);
+  for (;;) {
+    int oldValue;
+    {
+      // std::unique_lock<Mutex> lock(mutex);
+      /* EM_ASM({
+        console.log('test value', $0);
+      }, (int)value); */
+      oldValue = value.fetch_sub(1, std::memory_order_seq_cst);
+      if (oldValue > 0) {
+        break;
+      } else {
+        value.fetch_add(1, std::memory_order_seq_cst);
+      }
+    }
+    value.wait(oldValue);
+  }
 }
 void Semaphore::signal() {
-  emscripten_semaphore_release(&sema, 1);
+  {
+    // std::unique_lock<Mutex> lock(mutex);
+    value.fetch_add(1, std::memory_order_seq_cst);
+    value.notify_all();
+  }
 }

@@ -3,8 +3,8 @@
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed, int numThreads) {
-    DualContouring::initialize(chunkSize, seed, numThreads);
+EMSCRIPTEN_KEEPALIVE void initialize(int chunkSize, int seed) {
+    DualContouring::initialize(chunkSize, seed);
 }
 
 // 
@@ -139,14 +139,21 @@ EMSCRIPTEN_KEEPALIVE void doFree(void *ptr) {
 //
 
 EMSCRIPTEN_KEEPALIVE void runLoop() {
-    DualContouring::runLoop();
+    DualContouring::runLoop2();
 }
 
 //
 
-/* int main() {
+int main() {
+    EM_ASM({
+        console.log('run main 1');
+    });
+    DualContouring::start();
+    EM_ASM({
+        console.log('run main 2');
+    });
     // std::cout << "run " << emscripten_wasm_worker_self_id() << " " << std::endl;
     return 0;
-} */
+}
 
 } // extern "C"
