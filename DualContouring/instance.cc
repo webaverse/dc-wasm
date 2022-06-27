@@ -4,7 +4,7 @@
 #include "../vector.h"
 #include <emscripten.h>
 
-constexpr int CHUNK_RANGE = 2;
+constexpr int CHUNK_RANGE = 1;
 
 // constructor/destructor
 DCInstance::DCInstance() {}
