@@ -21,6 +21,7 @@ public:
     std::unordered_map<uint64_t, Mutex> chunkLocks2D;
     std::unordered_map<uint64_t, Mutex> chunkLocks3D;
     Mutex cachesMutex;
+    // Mutex generateMutex;
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
     std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
