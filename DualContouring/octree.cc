@@ -113,12 +113,15 @@ VertexData::VertexData() : index(-1), corners(0) {}
 
 //
 
-OctreeNode::OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type) : min(min), size(size), vertexData(nullptr), type(type)
-{
-    children.resize(8);
-}
+OctreeNode::OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type) :
+  children(8),
+  min(min),
+  size(size),
+  vertexData(nullptr),
+  type(type)
+{}
 
-void clampPositionToMassPoint(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
+void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
 {
 
     const vm::vec3 min = vm::vec3(voxelNode->min.x, voxelNode->min.y, voxelNode->min.z);
