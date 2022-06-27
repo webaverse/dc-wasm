@@ -347,24 +347,37 @@ uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, cons
 {
     int lod = lodArray[0];
     Chunk3D &chunk = getChunk(worldPosition, lod, GF_SDF);
-    ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
-    if (!chunkOctree.root)
     {
-        // printf("Chunk Has No Data\n");
-        return nullptr;
-    }
-    TerrainDCContext vertexContext;
-    generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
-    generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
+        /* if (generateMutex.try_lock())
+        {
+            generateMutex.unlock();
+        } else {
+            EM_ASM(
+                console.log('generateMutex failed to lock');
+            );
+            abort();
+        }
+        std::unique_lock<Mutex> lock(generateMutex); */
 
-    auto &vertexBuffer = vertexContext.vertexBuffer;
-    if (vertexBuffer.indices.size() == 0)
-    {
-        // printf("Generated Mesh Is Not Valid\n");
-        return nullptr;
-    }
+        ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
+        if (!chunkOctree.root)
+        {
+            // printf("Chunk Has No Data\n");
+            return nullptr;
+        }
+        TerrainDCContext vertexContext;
+        generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
+        generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
 
-    return vertexBuffer.getBuffer();
+        auto &vertexBuffer = vertexContext.vertexBuffer;
+        if (vertexBuffer.indices.size() == 0)
+        {
+            // printf("Generated Mesh Is Not Valid\n");
+            return nullptr;
+        }
+
+        return vertexBuffer.getBuffer();
+    }
 }
 uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
