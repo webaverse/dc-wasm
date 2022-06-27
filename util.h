@@ -51,14 +51,14 @@ T trilinear(
   int i011 = p011.x + p011.z * gridPoints + p011.y * gridPoints * gridPoints;
   int i111 = p111.x + p111.z * gridPoints + p111.y * gridPoints * gridPoints;
 
-  const T &v000 = data[i000];
-  const T &v100 = data[i100];
-  const T &v010 = data[i010];
-  const T &v110 = data[i110];
-  const T &v001 = data[i001];
-  const T &v101 = data[i101];
-  const T &v011 = data[i011];
-  const T &v111 = data[i111];
+  const T &v000 = data.at(i000);
+  const T &v100 = data.at(i100);
+  const T &v010 = data.at(i010);
+  const T &v110 = data.at(i110);
+  const T &v001 = data.at(i001);
+  const T &v101 = data.at(i101);
+  const T &v011 = data.at(i011);
+  const T &v111 = data.at(i111);
 
   float tx = location.x - p000.x;
   float ty = location.y - p000.y;
