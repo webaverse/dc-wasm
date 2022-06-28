@@ -5,6 +5,7 @@
 #include "promise.h"
 #include <vector>
 #include <deque>
+#include <tuple>
 
 //
 
@@ -15,7 +16,7 @@ class DCInstance;
 class MultiChunkLock {
 public:
     DCInstance *inst;
-    std::vector<std::pair<vm::ivec2, int>> chunkPositions2D;
+    std::vector<std::tuple<vm::ivec2, int, int>> chunkPositions2D;
     std::vector<std::pair<vm::ivec3, int>> chunkPositions3D;
     std::vector<Promise *> promises;
 
@@ -30,8 +31,8 @@ public:
 
     //
 
-    void pushPosition(const vm::ivec2 &position, int lod);
     void pushPosition(const vm::ivec3 &position, int lod);
+    void pushPosition(const vm::ivec2 &position, int lod, int flags);
     // void pushPositions(const std::vector<vm::ivec2> &positions, int lod);
     // void pushPositions(const std::vector<vm::ivec3> &positions, int lod);
     

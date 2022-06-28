@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 #include <deque>
+#include <emscripten.h>
 
 class DCInstance;
 
@@ -76,15 +77,18 @@ public:
     Mutex mutex;
     std::atomic<bool> flag;
 
-    CachedValue() {}
+    CachedValue() : flag(false) {}
     ~CachedValue() {}
 
     void ensure(DCInstance *inst, ChunkType *chunk) {
-        if (!flag) {
+        /* EM_ASM({
+            console.log('cached value check', $0);
+        }, (int)flag.load()); */
+        if (!flag.load()) {
             std::unique_lock<Mutex> lock(mutex);
-            if (!flag) {
+            if (!flag.load()) {
                 value = fn(inst, chunk);
-                flag = true;
+                flag.store(true);
             }
         }
     }

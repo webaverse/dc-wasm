@@ -90,20 +90,56 @@ const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
     result = (result << 16) + uint16_t(min.z);
     return result;
 } */
+/* int getLayer(GenerateFlags flags) {
+    if (flags & GF_NOISE) {
+        return 0;
+    } else if (flags & GF_BIOMES) {
+        return 1;
+    } else if (flags & GF_HEIGHTFIELD) {
+        return 2;
+    } else if (flags & GF_WATERFIELD) {
+        return 3;
+    } else if (flags & GF_AOFIELD) {
+        return 4;
+    } else if (flags & GF_SDF) {
+        return 5;
+    } else if (flags & GF_LIQUIDS) {
+        return 6;
+    } else {
+        abort();
+        return -1;
+    }
+} */
 uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod)
 {
     uint64_t result = uint16_t(min.x);
     result = (result << 16) | uint16_t(min.y);
     result = (result << 16) | uint16_t(min.z);
-    result = (result << 16) | uint16_t(lod);
+    result = (result << 16) | uint8_t(lod);
     return result;
 }
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod)
 {
     uint64_t result = uint16_t(min.x);
-    // result = (result << 16) + uint16_t(0);
     result = (result << 16) | uint16_t(min.y);
     result = (result << 16) | uint16_t(lod);
+    return result;
+}
+/* uint64_t hashOctreeMinLodLayer(const vm::ivec3 &min, int lod, int layer)
+{
+    uint64_t result = uint16_t(min.x);
+    result = (result << 16) | uint16_t(min.y);
+    result = (result << 16) | uint16_t(min.z);
+    result = (result << 16) | uint8_t(lod);
+    result = (result << 8) | uint8_t(layer);
+    return result;
+} */
+uint64_t hashOctreeMinLodLayer(const vm::ivec2 &min, int lod, int layer)
+{
+    uint64_t result = uint16_t(min.x);
+    result = (result << 16) | uint16_t(min.y);
+    result = (result << 16) | uint16_t(lod);
+    result = (result << 16) | uint16_t(layer);
     return result;
 }
 

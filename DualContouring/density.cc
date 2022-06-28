@@ -128,5 +128,11 @@ float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk
 	if (inst->clipRange) { // range clipper enabled
     minDistance = clampPointToRange(minDistance, position, *inst->clipRange);
 	}
+	if (isnan(minDistance)) {
+		EM_ASM({
+			console.log('liquid density nan', 'water=', $0, 'chunk=', $1, $2, $3, ', worldPosition=', $4, $5, $6);
+		}, water, chunk.min.x, chunk.min.y, chunk.min.z, position.x, position.y, position.z);
+		abort();
+	}
 	return minDistance;
 }

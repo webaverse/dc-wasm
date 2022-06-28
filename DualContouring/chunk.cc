@@ -420,7 +420,13 @@ void Chunk3D::generate(DCInstance *inst, int flags)
         cachedDamageSdf.ensure(inst, this);
     }
     if (flags & GenerateFlags::GF_LIQUIDS) {
+        /* EM_ASM({
+            console.log('ensure cachedWaterSdf A', $0, $1, $2, $3);
+        }, min.x, min.y, min.z, lod); */
         cachedWaterSdf.ensure(inst, this);
+        /* EM_ASM({
+            console.log('ensure cachedWaterSdf B', $0, $1, $2, $3, $4);
+        }, min.x, min.y, min.z, lod, cachedWaterSdf.value.size()); */
     }
     if (flags & GenerateFlags::GF_AOFIELD) {
         cachedSkylightField.ensure(inst, this);
@@ -603,6 +609,9 @@ std::vector<float> Chunk3D::initDamageSdf(DCInstance *inst, Chunk3D *chunk) {
 
 // liquids
 std::vector<float> Chunk3D::initWaterSdf(DCInstance *inst, Chunk3D *chunk) {
+    /* EM_ASM({
+        console.log('init water sdf');
+    }); */
     const int &gridPoints = DualContouring::gridPoints;
     auto &chunk2d = chunk->chunk2d;
     const vm::ivec3 &min = chunk->min;
@@ -610,6 +619,9 @@ std::vector<float> Chunk3D::initWaterSdf(DCInstance *inst, Chunk3D *chunk) {
     const float fSize = (float)gridPoints;
 
     std::vector<float> waterSdf(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
+    /* EM_ASM({
+        console.log('water sdf set size', $0, $1, $2, $3, $4);
+    }, chunk->min.x, chunk->min.y, chunk->min.z, chunk->lod, waterSdf.size()); */
     for (int z = 0; z < gridPoints; z++)
     {
         int az = min.z + z - 1;
@@ -657,6 +669,10 @@ void Chunk3D::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::iv
         std::cout << "got nan getCachedInterpolatedBiome3D: " << x << " " << y << " " << z << std::endl;
         abort();
     }
+
+    // XXX water field needs height field too, see below
+    // XXX we will crash before that though, on this call, which also requires the heighfield cache to be populated
+    // XXX we can get around this by not outputting the water biome
 
     chunk2d->getCachedInterpolatedBiome2D(vm::vec2(worldPosition.x, worldPosition.z), biome, biomeWeights);
 
@@ -784,6 +800,19 @@ float Chunk3D::getCachedInterpolatedSdf(const float x, const float y, const floa
 float Chunk3D::getCachedWaterInterpolatedSdf(const float x, const float y, const float z) const {
     const int &gridPoints = DualContouring::gridPoints;
     
+    if (cachedWaterSdf.value.size() == 0) {
+        EM_ASM({
+            console.log('water sdf size is 0', $0, $1, $2);
+        }, x, y, z);
+        abort();
+    }
+    if (isnan(cachedWaterSdf.value[0])) {
+        EM_ASM({
+            console.log('water sdf [0] is nan', $0);
+        }, cachedWaterSdf.value.size());
+        abort();
+    }
+
     const float localX = x - min.x + 1;
     const float localY = y - min.y + 1;
     const float localZ = z - min.z + 1;
