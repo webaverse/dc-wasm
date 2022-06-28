@@ -20,6 +20,7 @@ class DCInstance;
 namespace DualContouring {
     // globals
     extern int chunkSize;
+    extern int gridPoints;
     extern Noises *noises;
     // extern std::vector<emscripten_wasm_worker_t> threads;
     extern TaskQueue taskQueue;

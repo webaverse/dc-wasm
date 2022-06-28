@@ -4,6 +4,7 @@
 #include "vectorMath.h"
 #define _USE_MATH_DEFINES
 
+#include "main.h"
 #include "qef.h"
 #include "mesh.h"
 #include <iostream>
@@ -165,20 +166,20 @@ public:
     int size;
 
     // constructors
-    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
+    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
     {
         OctreeNode *rootNode = new OctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
-        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
+        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, DualContouring::chunkSize);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
-        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, DualContouring::chunkSize * 2);
     }
 
     // methods
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunk.min + chunk.size;
+        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize;
 
         for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
             for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
@@ -291,7 +292,7 @@ public:
     std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, Chunk3D &chunk, const int lodArray[])
     {
         const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
-        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunk.size);
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(DualContouring::chunkSize);
 
         std::vector<OctreeNode *> seamNodes;
 
@@ -339,9 +340,9 @@ public:
         std::vector<OctreeNode *> neighbourNodes;
         for (int i = 1; i < 8; i++)
         {
-            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunk.size;
+            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * DualContouring::chunkSize;
             const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], chunk.size);
+            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], DualContouring::chunkSize);
             neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
         }
 

@@ -1,5 +1,6 @@
 #include "instance.h"
 #include "main.h"
+#include "octree.h"
 #include "lock.h"
 #include "../vector.h"
 #include <emscripten.h>
@@ -44,7 +45,11 @@ Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
     if (iter == chunksCache3D.end()) {
         vm::ivec2 min2D(min.x, min.z);
         Chunk2D *chunk2d = &getChunkInternal(min2D, lod);
-        chunksCache3D.emplace(std::make_pair(minHash, Chunk3D(min, lod, chunk2d)));
+        chunksCache3D.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(minHash),
+            std::forward_as_tuple(min, lod, chunk2d)
+        );
     }
     Chunk3D &chunkNoise = chunksCache3D.find(minHash)->second;
     return chunkNoise;
@@ -88,7 +93,11 @@ Chunk2D &DCInstance::getChunkInternal(const vm::ivec2 &min, int lod) {
 
     const auto &iter = chunksCache2D.find(minHash);
     if (iter == chunksCache2D.end()) {
-        chunksCache2D.emplace(std::make_pair(minHash, Chunk2D(min, lod)));
+        chunksCache2D.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(minHash),
+            std::forward_as_tuple(min, lod)
+        );
     }
     Chunk2D &chunkNoise = chunksCache2D.find(minHash)->second;
     return chunkNoise;
@@ -177,7 +186,7 @@ void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lo
         int idx = (int)dx + 1;
         int idz = (int)dz + 1;
         int index2D = idx + idz * DualContouring::chunkSize;
-        float height = chunk.cachedHeightField[index2D];
+        float height = chunk.cachedHeightField.value.heightField[index2D];
 
         ps[countBinding * 3] = ax;
         ps[countBinding * 3 + 1] = height;
@@ -225,7 +234,7 @@ void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const i
             int idx = (int)dx + 1;
             int idz = (int)dz + 1;
             int index2D = idx + idz * DualContouring::chunkSize;
-            float height = chunk.cachedHeightField[index2D];
+            float height = chunk.cachedHeightField.value.heightField[index2D];
 
             ps[countBinding * 3] = ax;
             ps[countBinding * 3 + 1] = height;
@@ -272,7 +281,7 @@ void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod,
             int idx = (int)dx + 1;
             int idz = (int)dz + 1;
             int index2D = idx + idz * DualContouring::chunkSize;
-            float height = chunk.cachedHeightField[index2D];
+            float height = chunk.cachedHeightField.value.heightField[index2D];
 
             ps[countBinding * 3] = ax;
             ps[countBinding * 3 + 1] = height;
@@ -466,7 +475,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -517,7 +526,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -581,7 +590,7 @@ bool DCInstance::drawCubeDamage(
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -645,7 +654,7 @@ bool DCInstance::eraseCubeDamage(
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -663,12 +672,12 @@ bool DCInstance::eraseCubeDamage(
     return drew;
 }
 
-void DCInstance::injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
+/* void DCInstance::injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
 {
     const vm::ivec3 min = vm::ivec3(x, y, z);
     Chunk3D &chunk = getChunk(min, lod, GF_NONE);
     chunk.injectDamage(damageBuffer);
-}
+} */
 
 void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 {
@@ -733,10 +742,11 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 }
 uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
     uint32_t id = DualContouring::resultQueue.getNextId();
-    
-    std::vector<vm::ivec2> chunkPositions = getChunkRangeInclusive(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
+
+    // XXX needs neighbor biomes
+
     MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPositions(chunkPositions, lod);
+    multiChunkLock->pushPosition(worldPositionXZ, lod);
     Task *task = new Task(multiChunkLock, [
         this,
         worldPositionXZ,

@@ -20,8 +20,13 @@ constexpr uint32_t stackSize = 1024 * 1024;
 
 namespace DualContouring
 {
+    int getGridPoints(int chunkSize) {
+       return chunkSize + 3 + 1;
+    }
+
     // chunk settings
     int chunkSize = 16;
+    int gridPoints = getGridPoints(chunkSize);
     Noises *noises = nullptr;
     TaskQueue taskQueue;
     ResultQueue resultQueue;
@@ -64,6 +69,7 @@ namespace DualContouring
     void initialize(int newChunkSize, int seed)
     {
         chunkSize = newChunkSize;
+        gridPoints = getGridPoints(chunkSize);
         noises = new Noises(seed);
         parentThreadId = pthread_self();
     }

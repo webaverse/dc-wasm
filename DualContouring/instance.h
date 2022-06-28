@@ -9,7 +9,7 @@
 #include <string.h>
 #include <memory>
 #include "chunk.h"
-#include "octree.h"
+// #include "octree.h"
 #include "context.h"
 #include "task.h"
 // #include "result.h"
@@ -101,7 +101,7 @@ public:
 
     //
 
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
+    // void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
     
     //
 

@@ -116,9 +116,9 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
     );
 }
 
-EMSCRIPTEN_KEEPALIVE void injectDamage(DCInstance *inst, float x, float y, float z, float *damageBuffer) {
+/* EMSCRIPTEN_KEEPALIVE void injectDamage(DCInstance *inst, float x, float y, float z, float *damageBuffer) {
     inst->injectDamage(x, y, z, damageBuffer, 1);
-}
+} */
 
 //
 
