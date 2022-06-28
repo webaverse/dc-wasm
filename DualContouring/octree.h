@@ -159,23 +159,48 @@ class ChunkOctree
 {
 public:
     // members
-    OctreeNode *root;
-    OctreeNode *seamRoot;
+    std::vector<OctreeNode*> chunkNodes; // keeping track of all the heap allocated nodes in the chunk octree class
+    OctreeNode *root; // chunk nodes root (without the seams)
+    OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
     int minVoxelSize; // determined by level of detail
     int size;
 
     // constructors
-    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
+    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
     {
-        OctreeNode *rootNode = new OctreeNode(min, size, Node_Internal);
+        OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
-        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, DualContouring::chunkSize);
+        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
-        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, DualContouring::chunkSize * 2);
+        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+    }
+
+    // destructors
+    ~ChunkOctree(){
+        for (int i = 0; i < chunkNodes.size(); i++)
+        {
+            deleteOctreeNode(chunkNodes[i]);
+        }
     }
 
     // methods
+
+    // ! only create new octree nodes with this function
+    OctreeNode *newOctreeNode(const vm::ivec3 &min, const int &lod, const OctreeNodeType &type){
+        OctreeNode *node = new OctreeNode(min, lod, type);
+        chunkNodes.push_back(node); 
+        return node;
+    }
+
+    void deleteOctreeNode(OctreeNode *node){
+        if (node->vertexData)
+    	{
+    		delete node->vertexData;
+    	}
+    	delete node;
+    }
+
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
         std::vector<OctreeNode *> nodes;
@@ -186,7 +211,7 @@ public:
                 for (int z = chunk.min.z; z < chunkMax.z; z += chunk.lod)
                 {
                     const vm::ivec3 min = vm::ivec3(x, y, z);
-                    OctreeNode *node = new OctreeNode(min, chunk.lod, Node_Leaf);
+                    OctreeNode *node = newOctreeNode(min, chunk.lod, Node_Leaf);
                     OctreeNode *seamNode = constructLeaf(node, inst, chunk);
                     if (seamNode) {
                         nodes.push_back(seamNode);
@@ -279,7 +304,7 @@ public:
                     const vm::ivec3 max = min + vm::ivec3(lod);
                     if (filterFunc(min, max))
                     {
-                        OctreeNode *node = new OctreeNode(min, lod, Node_Leaf);
+                        OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
                         OctreeNode *seamNode = constructLeaf(node, inst, chunk);
                         if (seamNode) {
                             nodes.push_back(seamNode);
@@ -371,7 +396,7 @@ public:
                     auto iter = parentsHashmap.find(parentIndex);
                     if (iter == end(parentsHashmap))
                     {
-                        parentNode = new OctreeNode(parentPos,parentSize, Node_Internal);
+                        parentNode = newOctreeNode(parentPos,parentSize, Node_Internal);
                         parentsHashmap.insert(std::pair<uint64_t, OctreeNode *>(parentIndex, parentNode));
                     //  std::cout << parentNode->size << std::endl;
                     }
@@ -451,7 +476,7 @@ public:
     }
 };
 
-//
+// dual contouring
 
 template<bool isSeam>
 void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
