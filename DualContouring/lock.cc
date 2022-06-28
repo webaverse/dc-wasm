@@ -123,7 +123,7 @@ void MultiChunkLock::pushPosition(const vm::ivec2 &position, int lod) {
 void MultiChunkLock::pushPosition(const vm::ivec3 &position, int lod) {
   chunkPositions3D.push_back(std::make_pair(position, lod));
 }
-void MultiChunkLock::pushPositions(const std::vector<vm::ivec2> &positions, int lod) {
+/* void MultiChunkLock::pushPositions(const std::vector<vm::ivec2> &positions, int lod) {
   for (const vm::ivec2 &position : positions) {
     pushPosition(position, lod);
   }
@@ -132,7 +132,7 @@ void MultiChunkLock::pushPositions(const std::vector<vm::ivec3> &positions, int 
   for (const vm::ivec3 &position : positions) {
     pushPosition(position, lod);
   }
-}
+} */
 
 //
 
