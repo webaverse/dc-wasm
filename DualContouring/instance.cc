@@ -697,22 +697,45 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
 
     std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_HEIGHTFIELD);
 
-    // XXX need to generate up to the 2d heightfield here
-
-    MultiChunkLock *biomePromisesLock = new MultiChunkLock(this);
-    biomePromisesLock->pushPromises(promises2D);
-    biomePromisesLock->pushPosition(worldPosition, lod);
-    Task *terrainTask = new Task(biomePromisesLock, [
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
         this,
         id,
         worldPosition,
         lod,
         lodVector = std::move(lodVector)
     ]() -> void {
-        uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
-        DualContouring::resultQueue.pushResult(id, result);
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+        heightfieldLock->pushPosition(worldPosition2D, lod);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPosition,
+            worldPosition2D,
+            lod,
+            lodVector = std::move(lodVector)
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            MultiChunkLock *terrainLock = new MultiChunkLock(this);
+            terrainLock->pushPosition(worldPosition, lod);
+            Task *terrainTask = new Task(terrainLock, [
+                this,
+                id,
+                worldPosition,
+                lod,
+                lodVector = std::move(lodVector)
+            ]() -> void {
+                uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(terrainTask);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
     });
-    DualContouring::taskQueue.pushTask(terrainTask);
+    DualContouring::taskQueue.pushTask(biomesTask);
 
     return id;
 }
@@ -725,20 +748,44 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 
     std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_HEIGHTFIELD);
 
-    MultiChunkLock *biomePromisesLock = new MultiChunkLock(this);
-    biomePromisesLock->pushPromises(promises2D);
-    biomePromisesLock->pushPosition(worldPosition, lod);
-    Task *liquidTask = new Task(biomePromisesLock, [
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
         this,
         id,
         worldPosition,
         lod,
         lodVector = std::move(lodVector)
     ]() -> void {
-        uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
-        DualContouring::resultQueue.pushResult(id, result);
+        MultiChunkLock *waterfieldLock = new MultiChunkLock(this);
+        vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+        waterfieldLock->pushPosition(worldPosition2D, lod);
+        Task *waterfieldTask = new Task(waterfieldLock, [
+            this,
+            id,
+            worldPosition,
+            worldPosition2D,
+            lod,
+            lodVector = std::move(lodVector)
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_WATERFIELD);
+
+            MultiChunkLock *liquidLock = new MultiChunkLock(this);
+            liquidLock->pushPosition(worldPosition, lod);
+            Task *liquidTask = new Task(liquidLock, [
+                this,
+                id,
+                worldPosition,
+                lodVector = std::move(lodVector)
+            ]() -> void {
+                uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(liquidTask);
+        });
+        DualContouring::taskQueue.pushTask(waterfieldTask);
     });
-    DualContouring::taskQueue.pushTask(liquidTask);
+    DualContouring::taskQueue.pushTask(biomesTask);
 
     return id;
 }
