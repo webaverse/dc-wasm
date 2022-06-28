@@ -143,6 +143,11 @@ public:
     uint32_t createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
     uint32_t createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
     uint32_t createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+
+    //
+
+    void ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags);
+    void ensureChunk(const vm::ivec3 &position2D, int lod, GenerateFlags flags);
 };
 
 #endif // _INSTANCE_H_

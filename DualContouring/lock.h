@@ -2,6 +2,7 @@
 #define LOCK_H
 
 #include "vectorMath.h"
+#include "promise.h"
 #include <vector>
 #include <deque>
 
@@ -11,52 +12,41 @@ class DCInstance;
 
 //
 
-/* template<typename PositionType>
-class ChunkLock {
-public:
-    DCInstance *inst;
-    PositionType chunkPosition;
-    int lod;
-    std::function<bool()> tryLockFn;
-    std::function<void()> unlockFn;
-
-    ChunkLock(DCInstance *inst, const PositionType &chunkPosition, int lod) :
-        inst(inst),
-        chunkPosition(chunkPosition),
-        lod(lod)
-    {
-        tryLockFn = [&]() -> bool {
-            return inst->tryLock(chunkPosition, lod);
-        };
-        unlockFn = [&]() -> void {
-            inst->unlock(chunkPosition, lod);
-        };
-    }
-    ~ChunkLock() {}
-}; */
-
-// template<typename PositionType>
 class MultiChunkLock {
 public:
     DCInstance *inst;
-    // std::vector<PositionType> chunkPositions;
-    // int lod;
     std::vector<std::pair<vm::ivec2, int>> chunkPositions2D;
     std::vector<std::pair<vm::ivec3, int>> chunkPositions3D;
+    std::vector<Promise *> promises;
 
     MultiChunkLock() = delete;
     MultiChunkLock(DCInstance *inst);
-    MultiChunkLock(MultiChunkLock &&other);
     ~MultiChunkLock();
 
-    MultiChunkLock &operator=(const MultiChunkLock &other) = delete;
+    //
 
     bool tryLockFn();
     void unlockFn();
+
+    //
+
     void pushPosition(const vm::ivec2 &position, int lod);
     void pushPosition(const vm::ivec3 &position, int lod);
     void pushPositions(const std::vector<vm::ivec2> &positions, int lod);
     void pushPositions(const std::vector<vm::ivec3> &positions, int lod);
+    
+    void pushPromise(Promise *promise);
+    void pushPromises(const std::vector<Promise *> &promises);
+
+    //
+
+    bool lock2D();
+    bool lock3D();
+
+    bool unlock2D();
+    bool unlock3D();
+
+    bool lockPromises();
 };
 
 //

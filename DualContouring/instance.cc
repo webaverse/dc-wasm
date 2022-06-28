@@ -685,22 +685,44 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
+
     std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPositions(chunkPositions2D, lod);
-    multiChunkLock->pushPositions(chunkPositions3D, lod);
-    Task *task = new Task(multiChunkLock, [
+    std::vector<Promise *> biomePromises(chunkPositions2D.size());
+    for (int i = 0; i < chunkPositions2D.size(); i++) {
+        const vm::ivec2 &position2D = chunkPositions2D[i];
+
+        MultiChunkLock *biomeLock = new MultiChunkLock(this);
+        biomeLock->pushPosition(position2D, lod);
+
+        Promise *biomePromise = new Promise();
+        biomePromises[i] = biomePromise;
+
+        Task *biomeTask = new Task(biomeLock, [
+            this,
+            position2D,
+            lod,
+            biomePromise
+        ]() -> void {
+            ensureChunk(position2D, lod, GF_HEIGHTFIELD);
+            biomePromise->resolve();
+        });
+        DualContouring::taskQueue.pushTask(biomeTask);
+    }
+
+    MultiChunkLock *biomePromisesLock = new MultiChunkLock(this);
+    biomePromisesLock->pushPromises(biomePromises);
+    biomePromisesLock->pushPosition(worldPosition, lod);
+    Task *terrainTask = new Task(biomePromisesLock, [
         this,
+        id,
         worldPosition,
         lod,
-        lodVector = std::move(lodVector),
-        id
+        lodVector = std::move(lodVector)
     ]() -> void {
         uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
         DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue.pushTask(task);
+    DualContouring::taskQueue.pushTask(terrainTask);
 
     return id;
 }
@@ -864,4 +886,13 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
     DualContouring::taskQueue.pushTask(task);
 
     return id;
+}
+
+//
+
+void DCInstance::ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags) {
+    Chunk2D &chunk = getChunk(position2D, lod, flags);
+}
+void DCInstance::ensureChunk(const vm::ivec3 &position3D, int lod, GenerateFlags flags) {
+    Chunk3D &chunk = getChunk(position3D, lod, flags);
 }

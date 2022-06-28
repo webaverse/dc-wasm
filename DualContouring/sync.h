@@ -17,10 +17,13 @@ public:
   std::atomic_flag flag;
 
   Mutex();
+  Mutex(bool locked);
   ~Mutex();
   void lock();
   void unlock();
   bool try_lock();
+  bool test();
+  void wait();
 };
 
 // implements a semaphore using only c++ atomic value

@@ -5,9 +5,8 @@
 //
 
 Mutex::Mutex() : flag(false) {}
-Mutex::~Mutex() {
-  abort();
-}
+Mutex::Mutex(bool locked) : flag(locked) {}
+Mutex::~Mutex() {}
 void Mutex::lock() {
   for (;;) {
     bool oldValue = flag.test_and_set(std::memory_order_acquire);
@@ -25,6 +24,13 @@ void Mutex::unlock() {
 bool Mutex::try_lock() {
   bool oldValue = flag.test_and_set(std::memory_order_acquire);
   return !oldValue;
+}
+bool Mutex::test() {
+  return !flag.test();
+}
+void Mutex::wait() {
+  lock();
+  unlock();
 }
 
 //

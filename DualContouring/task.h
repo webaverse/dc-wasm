@@ -29,7 +29,6 @@ public:
     void lock();
     void unlock();
     void run();
-    // std::pair<bool, void *> tryLockRun();
     void ensurePop();
 };
 
@@ -40,7 +39,6 @@ public:
     DCInstance *inst;
     std::deque<Task *> tasks;
     std::deque<Task *> lockedTasks;
-    // std::atomic<size_t> numTasks;
     Mutex taskMutex;
     Semaphore taskSemaphore;
 
