@@ -5,19 +5,20 @@
 
 //
 
-Promise::Promise() : mutex(true), value(nullptr) {}
+Promise::Promise() : flag(0), value(nullptr) {}
 Promise::~Promise() {}
 
-void *Promise::get() {
+/* void *Promise::get() {
   return value;
-}
+} */
 void Promise::resolve(void *newValue) {
   value = newValue;
-  mutex.unlock();
+  flag.store(1);
+  flag.notify_all();
 }
 bool Promise::test() {
-  return mutex.test();
+  return flag.load() == 1;
 }
 void Promise::wait() {
-  mutex.wait();
+  flag.wait(0);
 }

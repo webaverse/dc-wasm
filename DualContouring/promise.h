@@ -13,13 +13,13 @@
 
 class Promise {
 public:
-    Mutex mutex;
+    std::atomic<int> flag;
     void *value;
 
     Promise();
     ~Promise();
 
-    void *get();
+    // void *get();
     void resolve(void *value = nullptr);
     bool test();
     void wait();
