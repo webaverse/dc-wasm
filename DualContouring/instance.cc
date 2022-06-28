@@ -711,22 +711,23 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
-    std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    std::vector<vm::ivec3> chunkPositions3D = getChunkRangeInclusive(worldPosition, -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPositions(chunkPositions2D, lod);
-    multiChunkLock->pushPositions(chunkPositions3D, lod);
-    Task *task = new Task(multiChunkLock, [
+
+    std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_HEIGHTFIELD);
+
+    MultiChunkLock *biomePromisesLock = new MultiChunkLock(this);
+    biomePromisesLock->pushPromises(promises2D);
+    biomePromisesLock->pushPosition(worldPosition, lod);
+    Task *liquidTask = new Task(biomePromisesLock, [
         this,
+        id,
         worldPosition,
         lod,
-        lodVector = std::move(lodVector),
-        id
+        lodVector = std::move(lodVector)
     ]() -> void {
         uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
         DualContouring::resultQueue.pushResult(id, result);
     });
-    DualContouring::taskQueue.pushTask(task);
+    DualContouring::taskQueue.pushTask(liquidTask);
 
     return id;
 }
