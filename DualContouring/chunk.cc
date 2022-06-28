@@ -355,6 +355,8 @@ unsigned char Chunk2D::getCachedBiome(const int lx, const int lz) const {
     return cachedBiomesField.value[index];
 }
 void Chunk2D::getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const {
+    const int &gridPoints = DualContouring::gridPoints;
+    
     const float &x = worldPosition.x;
     const float &z = worldPosition.y;
     int lx = int(x) - min.x + 1;
@@ -727,6 +729,7 @@ void Chunk3D::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::iv
 }
 void Chunk2D::getCachedHeightfield(float *heights) const {
     const int &size = DualContouring::chunkSize;
+    const int &gridPoints = DualContouring::gridPoints;
 
     for (int z = 0; z < size; z++)
     {

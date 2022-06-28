@@ -782,47 +782,62 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
         lod,
         lodVector = std::move(lodVector)
     ]() -> void {
-        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
-        vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
-        heightfieldLock->pushPosition(worldPosition2D, lod, GF_HEIGHTFIELD); // XXX these can be parallelized
-        Task *heightfieldTask = new Task(heightfieldLock, [
-            this,
-            id,
-            worldPosition,
-            worldPosition2D,
-            lod,
-            lodVector = std::move(lodVector)
-        ]() -> void {
-            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+        std::vector<Promise *> promises;
+        promises.reserve(2);
 
+        {
+            MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+            vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+            heightfieldLock->pushPosition(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            Promise *heightfieldPromise = new Promise();
+            promises.push_back(heightfieldPromise);
+
+            Task *heightfieldTask = new Task(heightfieldLock, [
+                this,
+                id,
+                worldPosition2D,
+                lod,
+                heightfieldPromise
+            ]() -> void {
+                Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+                heightfieldPromise->resolve();
+            });
+            DualContouring::taskQueue.pushTask(heightfieldTask);
+        }
+        {
             MultiChunkLock *waterfieldLock = new MultiChunkLock(this);
             waterfieldLock->pushPosition(worldPosition2D, lod, GF_WATERFIELD);
+
+            Promise *waterfieldPromise = new Promise();
+            promises.push_back(waterfieldPromise);
+
             Task *waterfieldTask = new Task(waterfieldLock, [
                 this,
                 id,
-                worldPosition,
                 worldPosition2D,
                 lod,
-                lodVector = std::move(lodVector)
+                waterfieldPromise
             ]() -> void {
                 Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_WATERFIELD);
-
-                MultiChunkLock *liquidLock = new MultiChunkLock(this);
-                liquidLock->pushPosition(worldPosition, lod);
-                Task *liquidTask = new Task(liquidLock, [
-                    this,
-                    id,
-                    worldPosition,
-                    lodVector = std::move(lodVector)
-                ]() -> void {
-                    uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
-                    DualContouring::resultQueue.pushResult(id, result);
-                });
-                DualContouring::taskQueue.pushTask(liquidTask);
+                waterfieldPromise->resolve();
             });
             DualContouring::taskQueue.pushTask(waterfieldTask);
+        }
+
+        MultiChunkLock *liquidLock = new MultiChunkLock(this);
+        liquidLock->pushPromises(promises);
+        liquidLock->pushPosition(worldPosition, lod);
+        Task *liquidTask = new Task(liquidLock, [
+            this,
+            id,
+            worldPosition,
+            lodVector = std::move(lodVector)
+        ]() -> void {
+            uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
+            DualContouring::resultQueue.pushResult(id, result);
         });
-        DualContouring::taskQueue.pushTask(heightfieldTask);
+        DualContouring::taskQueue.pushTask(liquidTask);
     });
     DualContouring::taskQueue.pushTask(biomesTask);
 
