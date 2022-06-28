@@ -668,7 +668,9 @@ void Chunk3D::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::iv
     const float &z = worldPosition.z;
     const float &y = worldPosition.y;
     if (std::isnan(x) || std::isnan(y) || std::isnan(z)) {
-        std::cout << "got nan getCachedInterpolatedBiome3D: " << x << " " << y << " " << z << std::endl;
+        EM_ASM({
+           console.log('got nan getCachedInterpolatedBiome3D', $0, $1, $2);
+        }, x, y, z);
         abort();
     }
 
