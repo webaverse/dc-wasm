@@ -880,21 +880,47 @@ uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, un
     vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
     std::vector<Promise *> promises2D = ensureChunks2D(worldPosition2D, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
 
-    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPromises(promises2D);
-    multiChunkLock->pushPosition(worldPosition, lod);
-    Task *task = new Task(multiChunkLock, [
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
         this,
+        id,
         worldPosition,
+        worldPosition2D,
         lod,
-        aos,
-        id
+        aos
     ]() -> void {
-        getChunkAo(worldPosition, lod, aos);
-        void *result = nullptr;
-        DualContouring::resultQueue.pushResult(id, result);
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPosition2D, lod);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPosition,
+            worldPosition2D,
+            lod,
+            aos
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            MultiChunkLock *aoLock = new MultiChunkLock(this);
+            aoLock->pushPosition(worldPosition, lod);
+            Task *aoTask = new Task(aoLock, [
+                this,
+                id,
+                worldPosition,
+                lod,
+                aos
+            ]() -> void {
+                getChunkAo(worldPosition, lod, aos);
+
+                void *result = nullptr;
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(aoTask);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
     });
-    DualContouring::taskQueue.pushTask(task);
+    DualContouring::taskQueue.pushTask(biomesTask);
 
     return id;
 }
