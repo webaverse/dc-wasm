@@ -109,7 +109,7 @@ public:
     vm::ivec2 min;
     // int size;
     int lod;
-    int gridPoints;
+    // int gridPoints;
 
     CachedValue<NoiseField, Chunk2D, initNoiseField> cachedNoiseField;
     CachedValue<std::vector<uint8_t>, Chunk2D, initBiomesField> cachedBiomesField;
