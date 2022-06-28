@@ -164,16 +164,17 @@ public:
     OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
     int minVoxelSize; // determined by level of detail
-    int size;
 
     // constructors
-    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
+    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
     {
+        const int &size = DualContouring::chunkSize;
+
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
-        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
+        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
-        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, size * 2);
     }
 
     // destructors
