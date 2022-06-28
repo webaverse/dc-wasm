@@ -697,6 +697,8 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
 
     std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_HEIGHTFIELD);
 
+    // XXX need to generate up to the 2d heightfield here
+
     MultiChunkLock *biomePromisesLock = new MultiChunkLock(this);
     biomePromisesLock->pushPromises(promises2D);
     biomePromisesLock->pushPosition(worldPosition, lod);
