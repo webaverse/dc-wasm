@@ -930,22 +930,44 @@ uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, con
 
     std::vector<Promise *> promises2D = ensureChunks2D(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
 
-    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPromises(promises2D);
-    multiChunkLock->pushPosition(worldPositionXZ, lod);
-    Task *task = new Task(multiChunkLock, [
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
         this,
+        id,
         worldPositionXZ,
         lod,
-        ps, qs, instances,
-        count,
-        id
+        ps, qs, instances, count
     ]() -> void {
-        createGrassSplat(worldPositionXZ, lod, ps, qs, instances, count);
-        void *result = nullptr;
-        DualContouring::resultQueue.pushResult(id, result);
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPositionXZ, lod);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPositionXZ,
+            lod,
+            ps, qs, instances, count
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
+
+            MultiChunkLock *grassSplatLock = new MultiChunkLock(this);
+            grassSplatLock->pushPosition(worldPositionXZ, lod);
+            Task *grassSplatTask = new Task(grassSplatLock, [
+                this,
+                id,
+                worldPositionXZ,
+                lod,
+                ps, qs, instances, count
+            ]() -> void {
+                createGrassSplat(worldPositionXZ, lod, ps, qs, instances, count);
+                void *result = nullptr;
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(grassSplatTask);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
     });
-    DualContouring::taskQueue.pushTask(task);
+    DualContouring::taskQueue.pushTask(biomesTask);
 
     return id;
 }
