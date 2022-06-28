@@ -176,6 +176,8 @@ void DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned ch
 // splats
 void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
+    const int &gridPoints = DualContouring::gridPoints;
+
     unsigned int &countBinding = *count;
     countBinding = 0;
 
@@ -197,7 +199,7 @@ void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lo
 
         int idx = (int)dx + 1;
         int idz = (int)dz + 1;
-        int index2D = idx + idz * DualContouring::chunkSize;
+        int index2D = idx + idz * gridPoints;
         float height = chunk.cachedHeightField.value.heightField[index2D];
 
         ps[countBinding * 3] = ax;
@@ -217,6 +219,8 @@ void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lo
 }
 void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
+    const int &gridPoints = DualContouring::gridPoints;
+
     unsigned int &countBinding = *count;
 
     countBinding = 0;
@@ -245,7 +249,7 @@ void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const i
 
             int idx = (int)dx + 1;
             int idz = (int)dz + 1;
-            int index2D = idx + idz * DualContouring::chunkSize;
+            int index2D = idx + idz * gridPoints;
             float height = chunk.cachedHeightField.value.heightField[index2D];
 
             ps[countBinding * 3] = ax;
@@ -266,6 +270,8 @@ void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const i
 }
 void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
+    const int &gridPoints = DualContouring::gridPoints;
+
     unsigned int &countBinding = *count;
     countBinding = 0;
 
@@ -292,7 +298,7 @@ void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod,
         {
             int idx = (int)dx + 1;
             int idz = (int)dz + 1;
-            int index2D = idx + idz * DualContouring::chunkSize;
+            int index2D = idx + idz * gridPoints;
             float height = chunk.cachedHeightField.value.heightField[index2D];
 
             ps[countBinding * 3] = ax;
