@@ -792,22 +792,34 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    // XXX needs neighbor biomes
-
-    MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-    multiChunkLock->pushPosition(worldPositionXZ, lod);
-    Task *task = new Task(multiChunkLock, [
+    std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+    
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
         this,
+        id,
         worldPositionXZ,
         lod,
-        heights,
-        id
+        heights
     ]() -> void {
-        getChunkHeightfield(worldPositionXZ, lod, heights);
-        void *result = nullptr;
-        DualContouring::resultQueue.pushResult(id, result);
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPositionXZ, lod);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPositionXZ,
+            lod,
+            heights,
+        ]() -> void {
+            getChunkHeightfield(worldPositionXZ, lod, heights);
+
+            void *result = nullptr;
+            DualContouring::resultQueue.pushResult(id, result);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
     });
-    DualContouring::taskQueue.pushTask(task);
+    DualContouring::taskQueue.pushTask(biomesTask);
 
     return id;
 }
