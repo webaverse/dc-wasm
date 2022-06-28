@@ -1,8 +1,11 @@
 #include "main.h"
 #include "octree.h"
 #include "instance.h"
-#include "../worley.h"
 #include "noises.h"
+// #include "result.h"
+#include "../worley.h"
+#include <pthread.h>
+#include <thread>
 
 // namespace ChunkMesh
 // {
@@ -12,11 +15,24 @@
 //     OctreeNode *seamRoot;
 // };
 
+constexpr int numThreads = NUM_THREADS;
+constexpr uint32_t stackSize = 1024 * 1024;
+
 namespace DualContouring
 {
+    int getGridPoints(int chunkSize) {
+       return chunkSize + 3 + 1;
+    }
+
     // chunk settings
     int chunkSize = 16;
+    int gridPoints = getGridPoints(chunkSize);
     Noises *noises = nullptr;
+    TaskQueue taskQueue;
+    ResultQueue resultQueue;
+
+    pthread_t parentThreadId;
+    // std::vector<emscripten_wasm_worker_t> threads;
 
     // storing the octrees that we would delete after mesh construction
     // std::vector<OctreeNode *> neighbourNodes;
@@ -24,11 +40,38 @@ namespace DualContouring
     // storing the octree roots here for search
     // std::unordered_map<uint64_t, OctreeNode *> chunksListHashMap;
 
+    void start() {
+        // threads.reserve(numThreads);
+        for (int i = 0; i < numThreads; i++) {
+            // std::cout << "create thread" << std::endl;
+            std::thread([]() -> void {
+                runLoop();
+            }).detach();
+            /* threads.push_back(emscripten_malloc_wasm_worker(stackSize));
+            if (!threads[i]) {
+            //   std::cout << "bad thread " << threads[i] << std::endl;
+              abort();
+            }
+            emscripten_wasm_worker_post_function_v(threads[i], runLoop2); */
+            /* std::thread thread([]() -> void {
+                taskQueue.runLoop();
+            });
+            threads.push_back(std::move(thread)); */
+        }
+    }
+
+    void runLoop() {
+        // std::cout << "run loop 1" << std::endl;
+        taskQueue.runLoop();
+        // std::cout << "run loop 2" << std::endl;
+    }
+
     void initialize(int newChunkSize, int seed)
     {
         chunkSize = newChunkSize;
-
+        gridPoints = getGridPoints(chunkSize);
         noises = new Noises(seed);
+        parentThreadId = pthread_self();
     }
 
     DCInstance *createInstance() {

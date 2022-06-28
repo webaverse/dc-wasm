@@ -83,26 +83,27 @@ const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
     return vm::ivec3(p.x & mask, p.y & mask, p.z & mask);
 }
 
-/* uint64_t hashOctreeMin(const vm::ivec3 &min)
-{
-    uint64_t result = uint16_t(min.x);
-    result = (result << 16) + uint16_t(min.y);
-    result = (result << 16) + uint16_t(min.z);
-    return result;
-} */
-uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod)
-{
-    uint64_t result = uint16_t(min.x);
-    result = (result << 16) + uint16_t(min.y);
-    result = (result << 16) + uint16_t(min.z);
-    result = (result << 16) + uint16_t(lod);
-    return result;
-}
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod)
 {
     uint64_t result = uint16_t(min.x);
-    result = (result << 16) + uint16_t(min.y);
-    result = (result << 16) + uint16_t(lod);
+    result = (result << 16) | uint16_t(min.y);
+    result = (result << 16) | uint16_t(lod);
+    return result;
+}
+uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod)
+{
+    uint64_t result = uint16_t(min.x);
+    result = (result << 16) | uint16_t(min.y);
+    result = (result << 16) | uint16_t(min.z);
+    result = (result << 16) | uint16_t(lod);
+    return result;
+}
+uint64_t hashOctreeMinLodLayer(const vm::ivec2 &min, int lod, int layer)
+{
+    uint64_t result = uint16_t(min.x);
+    result = (result << 16) | uint16_t(min.y);
+    result = (result << 16) | uint16_t(lod);
+    result = (result << 16) | uint16_t(layer);
     return result;
 }
 
@@ -112,12 +113,15 @@ VertexData::VertexData() : index(-1), corners(0) {}
 
 //
 
-OctreeNode::OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type) : min(min), size(size), vertexData(nullptr), type(type)
-{
-    children.resize(8);
-}
+OctreeNode::OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type) :
+  children(8),
+  min(min),
+  size(size),
+  vertexData(nullptr),
+  type(type)
+{}
 
-void clampPositionToMassPoint(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
+void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
 {
 
     const vm::vec3 min = vm::vec3(voxelNode->min.x, voxelNode->min.y, voxelNode->min.z);

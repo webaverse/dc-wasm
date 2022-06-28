@@ -4,32 +4,20 @@
 #include "vectorMath.h"
 #include <vector>
 #include <deque>
-#include <mutex>
-#include <semaphore>
-
-//
-
-class Result {
-public:
-    unsigned int id;
-    void *result;
-
-    Result(unsigned int id, void *result);
-    ~Result();
-};
+#include <unordered_map>
+#include <atomic>
 
 //
 
 class ResultQueue {
 public:
-    std::deque<Result *> results;
-    std::mutex resultLock;
+    std::atomic<uint32_t> ids;
 
     ResultQueue();
     ~ResultQueue();
     
-    void pushResult(Result *result);
-    Result *popResult();
+    uint32_t getNextId();
+    void pushResult(uint32_t id, void *result);
 };
 
 #endif // RESULT_H

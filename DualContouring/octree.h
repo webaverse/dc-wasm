@@ -4,6 +4,7 @@
 #include "vectorMath.h"
 #define _USE_MATH_DEFINES
 
+#include "main.h"
 #include "qef.h"
 #include "mesh.h"
 #include <iostream>
@@ -14,9 +15,10 @@
 #include <cstdlib>
 #include <map>
 #include <unordered_map>
-#include <unordered_set>
+// #include <unordered_set>
 #include <set>
 #include "density.h"
+#include <emscripten.h>
 
 #define M_PI 3.14159265358979323846
 
@@ -55,9 +57,9 @@ typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFun
 
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p);
 
-// uint64_t hashOctreeMin(const vm::ivec3 &min);
-uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod);
+uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
+uint64_t hashOctreeMinLodLayer(const vm::ivec2 &min, int lod, int flags);
 
 //
 
@@ -75,8 +77,8 @@ public:
     OctreeNode() = delete;
     OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type);
     
-    std::vector<std::shared_ptr<OctreeNode>> children; // only internal nodes have children
-    std::shared_ptr<VertexData> vertexData;            // only leaf nodes (our voxels) have vertex data
+    std::vector<OctreeNode *> children; // only internal nodes have children
+    VertexData *vertexData;            // only leaf nodes (our voxels) have vertex data
     vm::ivec3 min;
     int size;
     OctreeNodeType type;
@@ -119,10 +121,10 @@ vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst, Chunk3D &ch
     return vm::normalize(vm::vec3(dx, dy, dz));
 }
 
-void clampPositionToMassPoint(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
+void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
 
 template<typename DCContextType>
-int findEdgeIntersection(std::shared_ptr<OctreeNode> &voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst, Chunk3D &chunk)
+int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst, Chunk3D &chunk)
 {
     const int MAX_CROSSINGS = 6;
     int edgeCount = 0;
@@ -157,41 +159,68 @@ class ChunkOctree
 {
 public:
     // members
-    std::shared_ptr<OctreeNode> root;
-    std::shared_ptr<OctreeNode> seamRoot;
+    std::vector<OctreeNode*> chunkNodes; // keeping track of all the heap allocated nodes in the chunk octree class
+    OctreeNode *root; // chunk nodes root (without the seams)
+    OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
     int minVoxelSize; // determined by level of detail
-    int size;
 
     // constructors
-    ChunkOctree(DCInstance *inst, Chunk3D &chunk, int lodArray[8]) : min(chunk.min), size(chunk.size), minVoxelSize(chunk.lod)
+    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
     {
-        std::shared_ptr<OctreeNode> rootNode = std::make_shared<OctreeNode>(OctreeNode(min, size, Node_Internal));
-        std::vector<std::shared_ptr<OctreeNode>> voxelNodes = generateVoxelNodes(inst, chunk);
-        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, chunk.size);
-        std::vector<std::shared_ptr<OctreeNode>> seamNodes = generateSeamNodes(inst, chunk, lodArray);
-        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, chunk.size * 2);
+        const int &size = DualContouring::chunkSize;
+
+        OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
+        std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
+        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size);
+        std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
+        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, size * 2);
+    }
+
+    // destructors
+    ~ChunkOctree(){
+        for (int i = 0; i < chunkNodes.size(); i++)
+        {
+            deleteOctreeNode(chunkNodes[i]);
+        }
     }
 
     // methods
-    std::vector<std::shared_ptr<OctreeNode>> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
+
+    // ! only create new octree nodes with this function
+    OctreeNode *newOctreeNode(const vm::ivec3 &min, const int &lod, const OctreeNodeType &type){
+        OctreeNode *node = new OctreeNode(min, lod, type);
+        chunkNodes.push_back(node); 
+        return node;
+    }
+
+    void deleteOctreeNode(OctreeNode *node){
+        if (node->vertexData)
+    	{
+    		delete node->vertexData;
+    	}
+    	delete node;
+    }
+
+    std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
-        std::vector<std::shared_ptr<OctreeNode>> nodes;
-        const vm::ivec3 chunkMax = chunk.min + chunk.size;
+        std::vector<OctreeNode *> nodes;
+        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize;
 
         for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
             for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
                 for (int z = chunk.min.z; z < chunkMax.z; z += chunk.lod)
                 {
                     const vm::ivec3 min = vm::ivec3(x, y, z);
-                    std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, chunk.lod, Node_Leaf));
-                    std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, inst, chunk);
-                    if (seamNode)
+                    OctreeNode *node = newOctreeNode(min, chunk.lod, Node_Leaf);
+                    OctreeNode *seamNode = constructLeaf(node, inst, chunk);
+                    if (seamNode) {
                         nodes.push_back(seamNode);
+                    }
                 }
         return nodes;
     }
-    VertexData generateVoxelData(std::shared_ptr<OctreeNode> &voxelNode, int &corners, DCInstance *inst, Chunk3D &chunk)
+    VertexData *generateVoxelData(OctreeNode *voxelNode, int &corners, DCInstance *inst, Chunk3D &chunk)
     {
         svd::QefSolver qef;
         vm::vec3 averageNormal(0.f);
@@ -201,15 +230,15 @@ public:
         vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
         // if the generated position is outside of the voxel bounding box :
         clampPositionToMassPoint(voxelNode, qef, vertexPosition);
-        VertexData vertexData;
-        vertexData.position = vertexPosition;
-        vertexData.normal = vm::normalize(averageNormal / (float)edgeCount);
-        vertexData.corners = corners;
-        chunk.getCachedInterpolatedBiome3D(vertexData.position, vertexData.biomes, vertexData.biomesWeights);
+        VertexData *vertexData = new VertexData();
+        vertexData->position = vertexPosition;
+        vertexData->normal = vm::normalize(averageNormal / (float)edgeCount);
+        vertexData->corners = corners;
+        chunk.getCachedInterpolatedBiome3D(vertexData->position, vertexData->biomes, vertexData->biomesWeights);
         return vertexData;
     }
 
-    std::shared_ptr<OctreeNode> constructLeaf(std::shared_ptr<OctreeNode> &voxelNode, DCInstance *inst, Chunk3D &chunk)
+    OctreeNode *constructLeaf(OctreeNode *voxelNode, DCInstance *inst, Chunk3D &chunk)
     {
         int corners = 0;
         for (int i = 0; i < 8; i++)
@@ -221,17 +250,18 @@ public:
         }
         if (corners == 0 || corners == 255)
         {
-            voxelNode = 0;
+            // delete voxelNode;
+            voxelNode = nullptr;
         }
         else
         {
             // voxel is touching the surface
-            voxelNode->vertexData = std::make_shared<VertexData>(generateVoxelData(voxelNode, corners, inst, chunk));
+            voxelNode->vertexData = generateVoxelData(voxelNode, corners, inst, chunk);
         }
         return voxelNode;
     }
 
-    void findOctreeNodesRecursively(std::shared_ptr<OctreeNode> &node, FilterNodesFunc &func, std::vector<std::shared_ptr<OctreeNode>> &nodes)
+    void findOctreeNodesRecursively(OctreeNode *node, FilterNodesFunc &func, std::vector<OctreeNode *> &nodes)
     {
         if (!node)
         {
@@ -255,16 +285,16 @@ public:
         }
     }
 
-    std::vector<std::shared_ptr<OctreeNode>> findOctreeNodes(std::shared_ptr<OctreeNode> root, FilterNodesFunc filterFunc)
+    std::vector<OctreeNode *> findOctreeNodes(OctreeNode *root, FilterNodesFunc filterFunc)
     {
-        std::vector<std::shared_ptr<OctreeNode>> nodes;
+        std::vector<OctreeNode *> nodes;
         findOctreeNodesRecursively(root, filterFunc, nodes);
         return nodes;
     }
 
-    std::vector<std::shared_ptr<OctreeNode>> constructChunkSeamNodes(DCInstance *inst, Chunk3D &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
+    std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, Chunk3D &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
     {
-        std::vector<std::shared_ptr<OctreeNode>> nodes;
+        std::vector<OctreeNode *> nodes;
         const vm::ivec3 chunkMax = chunkMin + chunkSize;
 
         for (int x = chunkMin.x; x < chunkMax.x; x += lod)
@@ -275,21 +305,22 @@ public:
                     const vm::ivec3 max = min + vm::ivec3(lod);
                     if (filterFunc(min, max))
                     {
-                        std::shared_ptr<OctreeNode> node = std::make_shared<OctreeNode>(OctreeNode(min, lod, Node_Leaf));
-                        std::shared_ptr<OctreeNode> seamNode = constructLeaf(node, inst, chunk);
-                        if (seamNode)
+                        OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
+                        OctreeNode *seamNode = constructLeaf(node, inst, chunk);
+                        if (seamNode) {
                             nodes.push_back(seamNode);
+                        }
                     }
                 }
         return nodes;
     }
 
-    std::vector<std::shared_ptr<OctreeNode>> generateSeamNodes(DCInstance *inst, Chunk3D &chunk, const int lodArray[])
+    std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, Chunk3D &chunk, const int lodArray[])
     {
         const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
-        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunk.size);
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(DualContouring::chunkSize);
 
-        std::vector<std::shared_ptr<OctreeNode>> seamNodes;
+        std::vector<OctreeNode *> seamNodes;
 
         FilterNodesFunc selectionFuncs[8] =
             {[&](const vm::ivec3 &min, const vm::ivec3 &max)
@@ -325,19 +356,19 @@ public:
                     return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
                 }};
 
-        std::vector<std::shared_ptr<OctreeNode>> rootChunkSeamNodes = findOctreeNodes(root, selectionFuncs[0]);
+        std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(root, selectionFuncs[0]);
 
         // adding root chunk seam nodes
         seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
 
         // creating the seam nodes of the neighbouring chunks
         // NEIGHBOUR_CHUNKS_OFFSETS[i]
-        std::vector<std::shared_ptr<OctreeNode>> neighbourNodes;
+        std::vector<OctreeNode *> neighbourNodes;
         for (int i = 1; i < 8; i++)
         {
-            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunk.size;
+            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * DualContouring::chunkSize;
             const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-            std::vector<std::shared_ptr<OctreeNode>> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], chunk.size);
+            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], DualContouring::chunkSize);
             neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
         }
 
@@ -346,28 +377,28 @@ public:
         return seamNodes;
     }
 
-    std::vector<std::shared_ptr<OctreeNode>> constructParents(
-        std::shared_ptr<OctreeNode> &octree,
-        const std::vector<std::shared_ptr<OctreeNode>> &nodes,
+    std::vector<OctreeNode *> constructParents(
+        OctreeNode *octree,
+        const std::vector<OctreeNode *> &nodes,
         const int &parentSize,
         const vm::ivec3 &rootMin)
     {
-        std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> parentsHashmap;
+        std::unordered_map<uint64_t, OctreeNode *> parentsHashmap;
 
-        for_each(begin(nodes), end(nodes), [&](std::shared_ptr<OctreeNode> node)
+        for_each(begin(nodes), end(nodes), [&](OctreeNode *node)
                     {
                     // because the octree is regular we can calculate the parent min
                     const vm::ivec3 localPos = (node->min - rootMin);
                     const vm::ivec3 parentPos = node->min - (localPos % parentSize);
 
                     const uint64_t parentIndex = hashOctreeMinLod(parentPos - rootMin, minVoxelSize);
-                    std::shared_ptr<OctreeNode> parentNode;
+                    OctreeNode *parentNode;
 
                     auto iter = parentsHashmap.find(parentIndex);
                     if (iter == end(parentsHashmap))
                     {
-                        parentNode = std::make_shared<OctreeNode>(OctreeNode(parentPos,parentSize, Node_Internal));
-                        parentsHashmap.insert(std::pair<uint64_t, std::shared_ptr<OctreeNode>>(parentIndex, parentNode));
+                        parentNode = newOctreeNode(parentPos,parentSize, Node_Internal);
+                        parentsHashmap.insert(std::pair<uint64_t, OctreeNode *>(parentIndex, parentNode));
                     //  std::cout << parentNode->size << std::endl;
                     }
                     else
@@ -387,16 +418,16 @@ public:
                         }
                     } });
 
-        std::vector<std::shared_ptr<OctreeNode>> parents;
-        for_each(begin(parentsHashmap), end(parentsHashmap), [&](std::pair<uint64_t, std::shared_ptr<OctreeNode>> pair)
+        std::vector<OctreeNode *> parents;
+        for_each(begin(parentsHashmap), end(parentsHashmap), [&](std::pair<uint64_t, OctreeNode *> pair)
                     { parents.push_back(pair.second); });
 
         return parents;
     }
 
-    std::shared_ptr<OctreeNode> constructOctreeUpwards(
-        std::shared_ptr<OctreeNode> &octree,
-        const std::vector<std::shared_ptr<OctreeNode>> &inputNodes,
+    OctreeNode *constructOctreeUpwards(
+        OctreeNode *octree,
+        const std::vector<OctreeNode *> &inputNodes,
         const vm::ivec3 &rootMin,
         const int rootNodeSize)
     {
@@ -405,9 +436,9 @@ public:
             return nullptr;
         }
 
-        std::vector<std::shared_ptr<OctreeNode>> nodes(begin(inputNodes), end(inputNodes));
+        std::vector<OctreeNode *> nodes(begin(inputNodes), end(inputNodes));
         std::sort(std::begin(nodes), std::end(nodes),
-                    [](std::shared_ptr<OctreeNode> &lhs, std::shared_ptr<OctreeNode> &rhs)
+                    [](OctreeNode *lhs, OctreeNode *rhs)
                     {
                         return lhs->size < rhs->size;
                     });
@@ -426,7 +457,7 @@ public:
             } while ((*iter)->size == size);
 
             // construct the new parent nodes for this run
-            std::vector<std::shared_ptr<OctreeNode>> newNodes(std::begin(nodes), iter);
+            std::vector<OctreeNode *> newNodes(std::begin(nodes), iter);
             newNodes = constructParents(octree, newNodes, size * 2, rootMin);
 
             // set up for the next iteration: the parents produced plus any remaining input nodes
@@ -440,16 +471,16 @@ public:
             nodes = constructParents(octree, nodes, parentSize, rootMin);
             parentSize *= 2;
         }
-        std::shared_ptr<OctreeNode> root = nodes.front();
+        OctreeNode *root = nodes.front();
 
         return root;
     }
 };
 
-//
+// dual contouring
 
 template<bool isSeam>
-void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer)
+void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 {
     int minSize = 2147483647; // arbitrary big number
     int minIndex = 0;
@@ -505,7 +536,7 @@ void contourProcessEdge(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBu
     }
 }
 template<bool isSeam>
-void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffer &indexBuffer)
+void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 {
     if (!node[0] || !node[1] || !node[2] || !node[3])
     {
@@ -536,7 +567,7 @@ void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffe
     {
         for (int i = 0; i < 2; i++)
         {
-            std::shared_ptr<OctreeNode> edgeNodes[4];
+            OctreeNode *edgeNodes[4];
             const int c[4] =
                 {
                     edgeProcEdgeMask[dir][i][0],
@@ -562,7 +593,7 @@ void contourEdgeProc(std::shared_ptr<OctreeNode> (&node)[4], int dir, IndexBuffe
     }
 }
 template<bool isSeam>
-void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffer &indexBuffer)
+void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer)
 {
     if (!node[0] || !node[1])
     {
@@ -584,7 +615,7 @@ void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffe
         }
         for (int i = 0; i < 4; i++)
         {
-            std::shared_ptr<OctreeNode> faceNodes[2];
+            OctreeNode *faceNodes[2];
             const int c[2] =
                 {
                     faceProcFaceMask[dir][i][0],
@@ -613,7 +644,7 @@ void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffe
             };
         for (int i = 0; i < 4; i++)
         {
-            std::shared_ptr<OctreeNode> edgeNodes[4];
+            OctreeNode *edgeNodes[4];
             const int c[4] =
                 {
                     faceProcEdgeMask[dir][i][1],
@@ -640,7 +671,7 @@ void contourFaceProc(std::shared_ptr<OctreeNode> (&node)[2], int dir, IndexBuffe
     }
 }
 template<bool isSeam>
-void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer)
+void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer)
 {
     if (!node || node->type == Node_Leaf)
     {
@@ -654,7 +685,7 @@ void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer
 
     for (int i = 0; i < 12; i++)
     {
-        std::shared_ptr<OctreeNode> faceNodes[2];
+        OctreeNode *faceNodes[2];
         const int c[2] = {cellProcFaceMask[i][0], cellProcFaceMask[i][1]};
 
         faceNodes[0] = node->children[c[0]];
@@ -665,7 +696,7 @@ void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer
 
     for (int i = 0; i < 6; i++)
     {
-        std::shared_ptr<OctreeNode> edgeNodes[4];
+        OctreeNode *edgeNodes[4];
         const int c[4] =
             {
                 cellProcEdgeMask[i][0],
@@ -686,13 +717,13 @@ void contourCellProc(std::shared_ptr<OctreeNode> &node, IndexBuffer &indexBuffer
 //
 
 template <typename DCContextType, bool isSeam>
-void generateMeshFromOctree(std::shared_ptr<OctreeNode> &node, DCContextType &dcContext)
+void generateMeshFromOctree(OctreeNode *node, DCContextType &dcContext)
 {
     generateVertexIndices(node, dcContext);
     contourCellProc<isSeam>(node, dcContext.vertexBuffer.indices);
 }
 template <typename DCContextType>
-void generateVertexIndices(std::shared_ptr<OctreeNode> &node, DCContextType &dcContext)
+void generateVertexIndices(OctreeNode *node, DCContextType &dcContext)
 {
     auto &vertexBuffer = dcContext.vertexBuffer;
     if (!node)
@@ -701,9 +732,10 @@ void generateVertexIndices(std::shared_ptr<OctreeNode> &node, DCContextType &dcC
     }
     if (node->type == Node_Leaf)
     {
-        if (!node->vertexData)
-        {
-            printf("Error! The provided voxel has no vertex data!\n");
+        if (!node->vertexData) {
+            EM_ASM({
+                printf("Error! The provided voxel has no vertex data!\n");
+            });
             abort();
         }
         node->vertexData->index = vertexBuffer.positions.size();
@@ -711,6 +743,12 @@ void generateVertexIndices(std::shared_ptr<OctreeNode> &node, DCContextType &dcC
     }
     else
     {
+        if (node->children.size() != 8) {
+            EM_ASM(
+                console.log("Error! The provided voxel has no children!\n");
+            );
+            abort();
+        }
         for (int i = 0; i < 8; i++)
         {
             generateVertexIndices(node->children[i], dcContext);

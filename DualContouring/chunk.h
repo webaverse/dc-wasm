@@ -3,6 +3,7 @@
 
 #include "vectorMath.h"
 #include "biomes.h"
+#include "sync.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -10,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 #include <deque>
+#include <emscripten.h>
 
 class DCInstance;
 
@@ -29,7 +31,11 @@ enum GenerateFlags : int {
     GF_LIQUIDS = 1 << 6,
 };
 
+//
+
 int resolveGenerateFlags(int flags);
+
+//
 
 class NoiseField {
 public:
@@ -39,16 +45,53 @@ public:
     std::vector<float> ocean;
     std::vector<float> river;
 
+    // NoiseField &operator=(const NoiseField &&other);
+
     // NoiseField() = delete;
-    NoiseField();
+    /* NoiseField();
     NoiseField(int size);
     NoiseField(int size, std::vector<float> &&temperature, std::vector<float> &&humidity, std::vector<float> &&ocean, std::vector<float> &&river);
     // NoiseField(const NoiseField &other) = delete;
     NoiseField(const NoiseField &&other);
     NoiseField &operator=(const NoiseField &other) = delete;
-    NoiseField &operator=(const NoiseField &&other);
+    NoiseField &operator=(const NoiseField &&other); */
 
-    size_t size() const;
+    // size_t size() const;
+};
+
+class Heightfield {
+public:
+    std::vector<float> heightField;
+    std::vector<unsigned char> biomesVectorField;
+    std::vector<float> biomesWeightsVectorField;
+
+    // Heightfield &operator=(const Heightfield &&other);
+};
+
+//
+
+template <typename T, typename ChunkType, T(fn)(DCInstance *, ChunkType *)>
+class CachedValue {
+public:
+    T value;
+    Mutex mutex;
+    std::atomic<bool> flag;
+
+    CachedValue() : flag(false) {}
+    ~CachedValue() {}
+
+    void ensure(DCInstance *inst, ChunkType *chunk) {
+        /* EM_ASM({
+            console.log('cached value check', $0);
+        }, (int)flag.load()); */
+        if (!flag.load()) {
+            std::unique_lock<Mutex> lock(mutex);
+            if (!flag.load()) {
+                value = fn(inst, chunk);
+                flag.store(true);
+            }
+        }
+    }
 };
 
 //
@@ -56,36 +99,37 @@ public:
 class Chunk2D
 {
 public:
+    static NoiseField initNoiseField(DCInstance *inst, Chunk2D *chunk);
+    static std::vector<uint8_t> initBiomesField(DCInstance *inst, Chunk2D *chunk);
+    static Heightfield initHeightField(DCInstance *inst, Chunk2D *chunk);
+    static std::vector<float> initWaterField(DCInstance *inst, Chunk2D *chunk);
+
+    //
+
     vm::ivec2 min;
-    int size;
+    // int size;
     int lod;
-    int gridPoints;
+    // int gridPoints;
 
-    NoiseField cachedNoiseField;
-    std::vector<uint8_t> cachedBiomesField;
-    std::vector<unsigned char> cachedBiomesVectorField;
-    std::vector<float> cachedBiomesWeightsVectorField;
-    std::vector<float> cachedHeightField;
-    std::vector<float> cachedWaterField;
+    CachedValue<NoiseField, Chunk2D, initNoiseField> cachedNoiseField;
+    CachedValue<std::vector<uint8_t>, Chunk2D, initBiomesField> cachedBiomesField;
+    CachedValue<Heightfield, Chunk2D, initHeightField> cachedHeightField;
+    CachedValue<std::vector<float>, Chunk2D, initWaterField> cachedWaterField;
 
-    Chunk2D() = delete;
-    Chunk2D(Chunk2D &&other);
-    Chunk2D(const Chunk2D &other) = delete;
+    // Chunk2D() = delete;
+    // Chunk2D(Chunk2D &&other);
+    // Chunk2D(const Chunk2D &other) = delete;
     Chunk2D(const vm::ivec2 chunkMin, const int lod);
-    Chunk2D &operator=(const Chunk2D &other) = delete;
-    Chunk2D &operator=(const Chunk2D &&other);
+    // Chunk2D &operator=(const Chunk2D &other) = delete;
+    // Chunk2D &operator=(const Chunk2D &&other);
 
     // generation
     void generate(DCInstance *inst, int flags);
-    void initNoiseField();
-    void initBiomesField();
-    void initHeightField(DCInstance *inst);
-    void initWaterField(DCInstance *inst);
 
     // noises
     float getTemperatureLocal(const int lx, const int lz) const;
     float getHumidityLocal(const int lx, const int lz) const;
-    float getWaterFieldLocal(const int lx, const int lz) const;
+    // float getWaterFieldLocal(const int lx, const int lz) const;
 
     // biomes
     unsigned char getCachedBiome(const int lx, const int lz) const;
@@ -95,34 +139,43 @@ public:
     void getCachedHeightfield(float *heights) const;
 };
 
-class Chunk3D
-{
+//
+
+class Chunk3D {
 public:
+    static std::vector<uint8_t> initSkylightField(DCInstance *inst, Chunk3D *chunk);
+    static std::vector<uint8_t> initAoField(DCInstance *inst, Chunk3D *chunk);
+    static std::vector<float> initSdf(DCInstance *inst, Chunk3D *chunk);
+    static std::vector<float> initWaterSdf(DCInstance *inst, Chunk3D *chunk);
+    static std::vector<float> initDamageSdf(DCInstance *inst, Chunk3D *chunk);
+
+    //
+
     vm::ivec3 min;
-    int size;
+    // int size;
     int lod;
-    int gridPoints;
+    // int gridPoints;
     Chunk2D *chunk2d;
-    std::vector<uint8_t> cachedSkylightField;
-    std::vector<uint8_t> cachedAoField;
-    std::vector<float> cachedSdf;
-    std::vector<float> cachedWaterSdf;
-    std::vector<float> cachedDamageSdf;
+    // std::vector<uint8_t> cachedSkylightField;
+    // std::vector<uint8_t> cachedAoField;
+    // std::vector<float> cachedSdf;
+    // std::vector<float> cachedWaterSdf;
+    // std::vector<float> cachedDamageSdf;
+    CachedValue<std::vector<uint8_t>, Chunk3D, initSkylightField> cachedSkylightField;
+    CachedValue<std::vector<uint8_t>, Chunk3D, initAoField> cachedAoField;
+    CachedValue<std::vector<float>, Chunk3D, initSdf> cachedSdf;
+    CachedValue<std::vector<float>, Chunk3D, initWaterSdf> cachedWaterSdf;
+    CachedValue<std::vector<float>, Chunk3D, initDamageSdf> cachedDamageSdf;
     
-    Chunk3D() = delete;
-    Chunk3D(Chunk3D &&other);
-    Chunk3D(const Chunk3D &other) = delete;
+    // Chunk3D() = delete;
+    // Chunk3D(Chunk3D &&other);
+    // Chunk3D(const Chunk3D &other) = delete;
     Chunk3D(const vm::ivec3 chunkMin, const int lod, Chunk2D *chunk2d);
-    Chunk3D &operator=(const Chunk3D &other) = delete;
-    Chunk3D &operator=(const Chunk3D &&other);
+    // Chunk3D &operator=(const Chunk3D &other) = delete;
+    // Chunk3D &operator=(const Chunk3D &&other);
 
     // generation
     void generate(DCInstance *inst, int flags);
-    void initSkylightField();
-    void initAoField();
-    void initSdf();
-    void initWaterSdf(DCInstance *inst);
-    void initDamageSdf();
 
     // biomes
     void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) const;
@@ -167,7 +220,7 @@ public:
         const float &sx, const float &sy, const float &sz
     );
 
-    void injectDamage(float *damageBuffer);
+    // void injectDamage(float *damageBuffer);
 };
 
 #endif // _CHUNK_H_

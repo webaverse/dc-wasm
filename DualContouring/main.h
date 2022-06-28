@@ -7,8 +7,11 @@
 #include <ctime>
 #include <string.h>
 #include <memory>
+#include <pthread.h>
+// #include <emscripten/wasm_worker.h>
 #include "instance.h"
 #include "noises.h"
+#include "result.h"
 #include "vectorMath.h"
 
 class Noises;
@@ -17,7 +20,14 @@ class DCInstance;
 namespace DualContouring {
     // globals
     extern int chunkSize;
+    extern int gridPoints;
     extern Noises *noises;
+    // extern std::vector<emscripten_wasm_worker_t> threads;
+    extern TaskQueue taskQueue;
+    extern ResultQueue resultQueue;
+
+    extern pthread_t parentThreadId;
+    // extern std::vector<emscripten_wasm_worker_t> threads;
 
     // initialization
     void initialize(int newChunkSize, int seed);
@@ -25,6 +35,10 @@ namespace DualContouring {
     // instances
     DCInstance *createInstance();
     void destroyInstance(DCInstance *instance);
+
+    // threads
+    void start();
+    void runLoop();
 
     // biomes
     float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);

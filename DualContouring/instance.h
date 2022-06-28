@@ -9,17 +9,19 @@
 #include <string.h>
 #include <memory>
 #include "chunk.h"
-#include "octree.h"
+// #include "octree.h"
 #include "context.h"
 #include "task.h"
-#include "result.h"
+// #include "result.h"
 #include "../vector.h"
 
 class DCInstance {
 public:
-    TaskQueue taskQueue;
-    ResultQueue resultQueue;
-    std::unordered_map<uint64_t, std::mutex> chunkLocks;
+    Mutex locksMutex;
+    std::unordered_map<uint64_t, Mutex> chunkLocks2D;
+    std::unordered_map<uint64_t, Mutex> chunkLocks3D;
+    Mutex cachesMutex;
+    // Mutex generateMutex;
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
     std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
@@ -32,20 +34,23 @@ public:
     //
 
     Chunk3D &getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags);
+    Chunk3D &getChunkInternal(const vm::ivec3 &min, int lod);
     Chunk3D &getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags);
 
     Chunk2D &getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags);
+    Chunk2D &getChunkInternal(const vm::ivec2 &min, int lod);
     Chunk2D &getChunkAt(const float x, const float z, const int lod, GenerateFlags flags);
     
     //
 
-    std::mutex &getChunkLock(const vm::ivec3 &worldPos, const int lod);
+    Mutex *getChunkLock(const vm::ivec2 &worldPos, const int lod, const int flags);
+    Mutex *getChunkLock(const vm::ivec3 &worldPos, const int lod);
 
     //
 
-    void getChunkHeightfield(int x, int z, int lod, float *heights);
-    void getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights);
-    void getChunkAo(int x, int y, int z, int lod, unsigned char *ao);
+    void getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod, float *heights);
+    void getChunkSkylight(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights);
+    void getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned char *ao);
     
     //
     
@@ -55,15 +60,18 @@ public:
     
     //
 
-    void createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    void createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    void createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    void createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
     
     //
     
     // void clearChunkRoot(float x, float y, float z);
-    uint8_t *createTerrainChunkMesh(float x, float y, float z, int lodArray[8]);
-    uint8_t *createLiquidChunkMesh(float x, float y, float z, int lodArray[8]);
+    uint8_t *createTerrainChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8]);
+    uint8_t *createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8]);
+
+    //
+
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                           const int &lod);
@@ -93,7 +101,7 @@ public:
 
     //
 
-    void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
+    // void injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod);
     
     //
 
@@ -108,14 +116,39 @@ public:
 
     float getTemperature(const vm::vec2 &worldPosition, const int &lod);
     float getHumidity(const vm::vec2 &worldPosition, const int &lod);
-    float getWater(const vm::vec2 &worldPosition, const int &lod);
+    // float getWater(const vm::vec2 &worldPosition, const int &lod);
+
+    //
+    
+    template<typename PositionType>
+    bool tryLock(const PositionType &chunkPosition, int lod, GenerateFlags flags) {
+        Mutex *chunkLock = getChunkLock(chunkPosition, lod, flags);
+        return chunkLock->try_lock();
+    }
+    template<typename PositionType>
+    void unlock(const PositionType &chunkPosition, int lod) {
+        Mutex *chunkLock = getChunkLock(chunkPosition, lod);
+        chunkLock->unlock();
+    }
 
     //
 
-    bool tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod);
-    void unlock(const std::vector<vm::ivec3> &chunkPositions, int lod);
-    bool tryLock(const vm::ivec3 &chunkPosition, int lod);
-    void unlock(const vm::ivec3 &chunkPosition, int lod);
+    uint32_t createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8]);
+    uint32_t createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8]);
+
+    uint32_t getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights);
+    uint32_t getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights);
+    uint32_t getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos);
+
+    uint32_t createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    uint32_t createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    uint32_t createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+
+    //
+
+    std::vector<Promise *> ensureChunks2D(const vm::ivec2 &position2D, int minChunkDelta, int maxChunkDelta, int lod, GenerateFlags flags);
+    void ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags);
+    void ensureChunk(const vm::ivec3 &position2D, int lod, GenerateFlags flags);
 };
 
 #endif // _INSTANCE_H_

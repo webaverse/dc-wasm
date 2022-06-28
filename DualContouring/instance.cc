@@ -1,33 +1,67 @@
 #include "instance.h"
 #include "main.h"
+#include "octree.h"
+#include "lock.h"
 #include "../vector.h"
+#include <emscripten.h>
+
+constexpr int CHUNK_RANGE = 1;
 
 // constructor/destructor
-DCInstance::DCInstance() :
-  taskQueue(this)
-  {}
+DCInstance::DCInstance() {}
 DCInstance::~DCInstance() {}
 
 // chunks
 // 3d
-Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags)
-{
+Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags) {
+    /* if (lod != 1) {
+        EM_ASM({
+          console.log('getChunk 3d bad lod', $0);
+        }, lod);
+        abort();
+    } */
+    uint64_t minHash = hashOctreeMinLod(min, lod);
+
+    /* if (tryLock(min, lod)) {
+        EM_ASM({
+            console.log('chunk was not locked 3d', $0, $1, $2, $3);
+        }, min.x, min.y, min.z, lod);
+        abort();
+    } */
+
+    Chunk3D *chunkNoise;
+    {
+        std::unique_lock<Mutex> lock(cachesMutex);
+        chunkNoise = &getChunkInternal(min, lod);
+    }
+    // chunkNoise->chunk2d->generate(this, flags);
+    chunkNoise->generate(this, flags);
+    return *chunkNoise;
+}
+Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     const auto &iter = chunksCache3D.find(minHash);
-    if (iter == chunksCache3D.end())
-    {
-        vm::ivec2 min2D(min.x, min.z);
-        Chunk2D *chunk2d = &getChunk(min2D, lod, flags);
-        chunksCache3D.emplace(std::make_pair(minHash, Chunk3D(min, lod, chunk2d)));
-    }
+    if (iter == chunksCache3D.end()) {
+        /* if (tryLock(min, lod)) {
+            EM_ASM({
+                console.log('chunk was not locked 3d', $0, $1, $2, $3);
+            }, min.x, min.y, min.z, lod);
+            abort();
+        } */
 
+        vm::ivec2 min2D(min.x, min.z);
+        Chunk2D *chunk2d = &getChunkInternal(min2D, lod);
+        chunksCache3D.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(minHash),
+            std::forward_as_tuple(min, lod, chunk2d)
+        );
+    }
     Chunk3D &chunkNoise = chunksCache3D.find(minHash)->second;
-    chunkNoise.generate(this, flags);
     return chunkNoise;
 }
-Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags)
-{
+Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags) {
     vm::ivec3 min = vm::ivec3(
                         (int)std::floor(x / (float)DualContouring::chunkSize),
                         (int)std::floor(y / (float)DualContouring::chunkSize),
@@ -38,16 +72,48 @@ Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, con
 
 // 2d
 Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags) {
+    /* if (lod != 1) {
+        EM_ASM({
+          console.log('getChunk 2d bad lod', $0);
+        }, lod);
+        abort();
+    } */
+    uint64_t minHash = hashOctreeMinLod(min, lod);
+
+    /* if (tryLock(min, lod)) {
+        EM_ASM({
+            console.log('chunk was not locked 2d', $0, $1, $2);
+        }, min.x, min.y, lod);
+        abort();
+    } */
+
+    Chunk2D *chunkNoise;
+    {
+        std::unique_lock<Mutex> lock(cachesMutex);
+        chunkNoise = &getChunkInternal(min, lod);
+    }
+    chunkNoise->generate(this, flags);
+    return *chunkNoise;
+}
+Chunk2D &DCInstance::getChunkInternal(const vm::ivec2 &min, int lod) {
     uint64_t minHash = hashOctreeMinLod(min, lod);
 
     const auto &iter = chunksCache2D.find(minHash);
-    if (iter == chunksCache2D.end())
-    {
-        chunksCache2D.emplace(std::make_pair(minHash, Chunk2D(min, lod)));
-    }
+    if (iter == chunksCache2D.end()) {
+        /* if (tryLock(min, lod)) {
+            EM_ASM({
+                console.log('chunk was not locked 2d', $0, $1, $2);
+            }, min.x, min.y, lod);
+            abort();
+        } */
 
+        chunksCache2D.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(minHash),
+            std::forward_as_tuple(min, lod)
+        );
+    }
     Chunk2D &chunkNoise = chunksCache2D.find(minHash)->second;
-    chunkNoise.generate(this, flags);
     return chunkNoise;
 }
 Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, GenerateFlags flags)
@@ -60,37 +126,60 @@ Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, Gen
 }
 
 // locks
-std::mutex &DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
-    vm::ivec3 min(worldPos.x, 0, worldPos.z);
-    uint64_t minLodHash = hashOctreeMinLod(min, lod);
-    std::mutex &chunkLock = chunkLocks[minLodHash];
+Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod, const int flags) {
+    /* if (lod != 1) {
+        EM_ASM({
+          console.log('getChunkLock 2d bad lod', $0);
+        }, lod);
+        abort();
+    } */
+    
+    Mutex *chunkLock;
+    uint64_t minLodHash = hashOctreeMinLodLayer(worldPos, lod, flags);
+    {
+        std::unique_lock<Mutex> lock(locksMutex);
+        chunkLock = &chunkLocks2D[minLodHash];
+    }
+    return chunkLock;
+}
+Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
+    /* if (lod != 1) {
+        EM_ASM({
+          console.log('getChunkLock 3d bad lod', $0);
+        }, lod);
+        abort();
+    } */
+
+    Mutex *chunkLock;
+    uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
+    {
+        std::unique_lock<Mutex> lock(locksMutex);
+        chunkLock = &chunkLocks3D[minLodHash];
+    }
     return chunkLock;
 }
 
 // fields
-void DCInstance::getChunkHeightfield(int x, int z, int lod, float *heights) {
-    const vm::ivec2 octreeMin = vm::ivec2(x, z);
-    Chunk2D &chunkNoise = getChunk(octreeMin, lod, GF_HEIGHTFIELD);
+void DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
+    Chunk2D &chunkNoise = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
     chunkNoise.getCachedHeightfield(heights);
 }
-void DCInstance::getChunkSkylight(int x, int y, int z, int lod, unsigned char *skylights)
-{
-    const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-    Chunk3D &chunkNoise = getChunk(octreeMin, lod, GF_AOFIELD);
+void DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
+    Chunk3D &chunkNoise = getChunk(worldPosition, lod, GF_AOFIELD);
     chunkNoise.getCachedSkylight(skylights);
 }
-void DCInstance::getChunkAo(int x, int y, int z, int lod, unsigned char *aos)
-{
-    const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-    Chunk3D &chunkNoise = getChunk(octreeMin, lod, GF_AOFIELD);
+void DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
+    Chunk3D &chunkNoise = getChunk(worldPosition, lod, GF_AOFIELD);
     chunkNoise.getCachedAo(aos);
 }
-void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
+
+// splats
+void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
     countBinding = 0;
 
-    Chunk2D &chunk = getChunkAt(x, z, lod, GF_HEIGHTFIELD);
+    Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
 
     float seed = DualContouring::noises->grassNoise.in2D(chunk.min.x, chunk.min.y);
     unsigned int seedInt;
@@ -109,7 +198,7 @@ void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *q
         int idx = (int)dx + 1;
         int idz = (int)dz + 1;
         int index2D = idx + idz * DualContouring::chunkSize;
-        float height = chunk.cachedHeightField[index2D];
+        float height = chunk.cachedHeightField.value.heightField[index2D];
 
         ps[countBinding * 3] = ax;
         ps[countBinding * 3 + 1] = height;
@@ -126,12 +215,12 @@ void DCInstance::createGrassSplat(float x, float z, int lod, float *ps, float *q
         countBinding++;
     }
 }
-void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
+void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
 
     countBinding = 0;
-    Chunk2D &chunk = getChunkAt(x, z, lod, GF_HEIGHTFIELD);
+    Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
 
     float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.y);
     unsigned int seedInt;
@@ -157,7 +246,7 @@ void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, flo
             int idx = (int)dx + 1;
             int idz = (int)dz + 1;
             int index2D = idx + idz * DualContouring::chunkSize;
-            float height = chunk.cachedHeightField[index2D];
+            float height = chunk.cachedHeightField.value.heightField[index2D];
 
             ps[countBinding * 3] = ax;
             ps[countBinding * 3 + 1] = height;
@@ -175,12 +264,12 @@ void DCInstance::createVegetationSplat(float x, float z, int lod, float *ps, flo
         }
     }
 }
-void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs, float *instances, unsigned int *count)
+void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
 {
     unsigned int &countBinding = *count;
     countBinding = 0;
 
-    Chunk2D &chunk = getChunkAt(x, z, lod, GF_HEIGHTFIELD);
+    Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
 
     float seed = DualContouring::noises->mobNoise.in2D(chunk.min.x, chunk.min.y);
     unsigned int seedInt;
@@ -204,7 +293,7 @@ void DCInstance::createMobSplat(float x, float z, int lod, float *ps, float *qs,
             int idx = (int)dx + 1;
             int idz = (int)dz + 1;
             int index2D = idx + idz * DualContouring::chunkSize;
-            float height = chunk.cachedHeightField[index2D];
+            float height = chunk.cachedHeightField.value.heightField[index2D];
 
             ps[countBinding * 3] = ax;
             ps[countBinding * 3 + 1] = height;
@@ -253,47 +342,107 @@ float DCInstance::getHumidity(const vm::vec2 &worldPosition, const int &lod) {
     return chunkNoise.getHumidityLocal(lx, lz);
 }
 
-float DCInstance::getWater(const vm::vec2 &worldPosition, const int &lod) {
+/* float DCInstance::getWater(const vm::vec2 &worldPosition, const int &lod) {
     Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_WATERFIELD);
     int lx = (int)worldPosition.x - chunkNoise.min.x;
     int lz = (int)worldPosition.y - chunkNoise.min.y;
     return chunkNoise.getWaterFieldLocal(lx, lz);
+} */
+
+//
+
+std::vector<vm::ivec3> getChunkRangeInclusive(const vm::ivec3 &worldPosition, int minChunkDelta, int maxChunkDelta, int chunkSize) {
+    std::vector<vm::ivec3> result;
+    for (int dy = minChunkDelta; dy <= maxChunkDelta; dy++)
+    {
+        for (int dz = minChunkDelta; dz <= maxChunkDelta; dz++)
+        {
+            for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
+            {
+                result.push_back(vm::ivec3(
+                    worldPosition.x + dx * chunkSize,
+                    worldPosition.y + dy * chunkSize,
+                    worldPosition.z + dz * chunkSize
+                ));
+            }
+        }
+    }
+    /* EM_ASM({
+      console.log('range 3d', $0);
+    }, result.size()); */
+    return result;
+}
+std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, int minChunkDelta, int maxChunkDelta, int chunkSize) {
+    std::vector<vm::ivec2> result;
+    for (int dz = minChunkDelta; dz <= maxChunkDelta; dz++)
+    {
+        for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
+        {
+            result.push_back(vm::ivec2(
+                worldPosition.x + dx * chunkSize,
+                worldPosition.y + dz * chunkSize
+            ));
+        }
+    }
+    /* EM_ASM({
+      console.log('range 2d', $0);
+    }, result.size()); */
+    return result;
 }
 
 //
 
-uint8_t *DCInstance::createTerrainChunkMesh(float x, float y, float z, int lodArray[8])
+uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
-    const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
-
-    Chunk3D &chunk = getChunk(octreeMin, lod, GF_SDF);
-    ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
-    if (!chunkOctree.root)
+    Chunk3D &chunk = getChunk(worldPosition, lod, GF_SDF);
     {
-        // printf("Chunk Has No Data\n");
-        return nullptr;
-    }
-    TerrainDCContext vertexContext;
-    generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
-    generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
+        /* if (generateMutex.try_lock())
+        {
+            generateMutex.unlock();
+        } else {
+            EM_ASM(
+                console.log('generateMutex failed to lock');
+            );
+            abort();
+        }
+        std::unique_lock<Mutex> lock(generateMutex); */
 
-    auto &vertexBuffer = vertexContext.vertexBuffer;
-    if (vertexBuffer.indices.size() == 0)
-    {
-        // printf("Generated Mesh Is Not Valid\n");
-        return nullptr;
-    }
+        ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
+        if (!chunkOctree.root)
+        {
+            // printf("Chunk Has No Data\n");
+            return nullptr;
+        }
+        TerrainDCContext vertexContext;
+        generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
+        generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
 
-    return vertexBuffer.getBuffer();
+        auto &vertexBuffer = vertexContext.vertexBuffer;
+        if (vertexBuffer.indices.size() == 0)
+        {
+            // printf("Generated Mesh Is Not Valid\n");
+            return nullptr;
+        }
+
+        return vertexBuffer.getBuffer();
+    }
 }
-
-uint8_t *DCInstance::createLiquidChunkMesh(float x, float y, float z, int lodArray[8])
+uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
-    const vm::ivec3 octreeMin = vm::ivec3(x, y, z);
+    /* EM_ASM({
+        console.log('createLiquidChunkMesh', $0, $1, $2, $3);
+    }, worldPosition.x, worldPosition.y, worldPosition.z, lod); */
+    Chunk3D &chunk = getChunk(worldPosition, lod, GF_LIQUIDS);
 
-    Chunk3D &chunk = getChunk(octreeMin, lod, GF_LIQUIDS);
+    /* if (chunk.cachedWaterSdf.value.size() == 0){
+        EM_ASM({
+            console.log('createLiquidChunkMesh did not have sdf', $0, $1, $2, $3);
+        }, worldPosition.x, worldPosition.y, worldPosition.z, lod);
+        abort();
+    } */
+
     ChunkOctree<LiquidDCContext> chunkOctree(this, chunk, lodArray);
     if (!chunkOctree.root)
     {
@@ -349,7 +498,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -400,7 +549,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -464,7 +613,7 @@ bool DCInstance::drawCubeDamage(
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -528,7 +677,7 @@ bool DCInstance::eraseCubeDamage(
                         {
                             int gridSize = DualContouring::chunkSize + 3 + lod;
                             int damageBufferSize = gridSize * gridSize * gridSize;
-                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.data(), sizeof(float) * damageBufferSize);
+                            memcpy(outDamages + (*outPositionsCount) * damageBufferSize, chunkNoise.cachedSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
@@ -546,12 +695,12 @@ bool DCInstance::eraseCubeDamage(
     return drew;
 }
 
-void DCInstance::injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
+/* void DCInstance::injectDamage(const float &x, const float &y, const float &z, float *damageBuffer, const int &lod)
 {
     const vm::ivec3 min = vm::ivec3(x, y, z);
     Chunk3D &chunk = getChunk(min, lod, GF_NONE);
     chunk.injectDamage(damageBuffer);
-}
+} */
 
 void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 {
@@ -562,38 +711,408 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 
 //
 
-bool DCInstance::tryLock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
-    bool lockedAll = true;
-    for (int i = 0; i < chunkPositions.size(); i++) {
-        const vm::ivec3 &chunkPosition = chunkPositions[i];
-        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-        if (chunkLock.try_lock()) {
-            // nothing
-        } else {
-            // bail out; unlock all locks
-            for (int j = 0; j < i; j++) {
-                const vm::ivec3 &chunkPosition = chunkPositions[j];
-                std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-                chunkLock.unlock();
-            }
-            lockedAll = false;
-            break;
+uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
+{
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    int lod = lodArray[0];
+    std::vector<int> lodVector(lodArray, lodArray + 8);
+
+    std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPosition,
+        lod,
+        lodVector = std::move(lodVector)
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+        heightfieldLock->pushPosition(worldPosition2D, lod, GF_HEIGHTFIELD);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPosition,
+            worldPosition2D,
+            lod,
+            lodVector = std::move(lodVector)
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            MultiChunkLock *terrainLock = new MultiChunkLock(this);
+            terrainLock->pushPosition(worldPosition, lod);
+            Task *terrainTask = new Task(terrainLock, [
+                this,
+                id,
+                worldPosition,
+                lod,
+                lodVector = std::move(lodVector)
+            ]() -> void {
+                uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(terrainTask);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
+{
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    int lod = lodArray[0];
+    std::vector<int> lodVector(lodArray, lodArray + 8);
+
+    vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPosition2D, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPosition,
+        worldPosition2D,
+        lod,
+        lodVector = std::move(lodVector)
+    ]() -> void {
+        std::vector<Promise *> promises;
+        promises.reserve(2);
+
+        {
+            MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+            vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+            heightfieldLock->pushPosition(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            Promise *heightfieldPromise = new Promise();
+            promises.push_back(heightfieldPromise);
+
+            Task *heightfieldTask = new Task(heightfieldLock, [
+                this,
+                id,
+                worldPosition2D,
+                lod,
+                heightfieldPromise
+            ]() -> void {
+                Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+                heightfieldPromise->resolve();
+            });
+            DualContouring::taskQueue.pushTask(heightfieldTask);
         }
+        {
+            MultiChunkLock *waterfieldLock = new MultiChunkLock(this);
+            waterfieldLock->pushPosition(worldPosition2D, lod, GF_WATERFIELD);
+
+            Promise *waterfieldPromise = new Promise();
+            promises.push_back(waterfieldPromise);
+
+            Task *waterfieldTask = new Task(waterfieldLock, [
+                this,
+                id,
+                worldPosition2D,
+                lod,
+                waterfieldPromise
+            ]() -> void {
+                Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_WATERFIELD);
+                waterfieldPromise->resolve();
+            });
+            DualContouring::taskQueue.pushTask(waterfieldTask);
+        }
+
+        MultiChunkLock *liquidLock = new MultiChunkLock(this);
+        liquidLock->pushPromises(promises);
+        liquidLock->pushPosition(worldPosition, lod);
+        Task *liquidTask = new Task(liquidLock, [
+            this,
+            id,
+            worldPosition,
+            lodVector = std::move(lodVector)
+        ]() -> void {
+            uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
+            DualContouring::resultQueue.pushResult(id, result);
+        });
+        DualContouring::taskQueue.pushTask(liquidTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+    
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPositionXZ,
+        lod,
+        heights
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPositionXZ, lod, GF_HEIGHTFIELD);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPositionXZ,
+            lod,
+            heights
+        ]() -> void {
+            getChunkHeightfield(worldPositionXZ, lod, heights);
+
+            void *result = nullptr;
+            DualContouring::resultQueue.pushResult(id, result);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPosition2D, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPosition,
+        worldPosition2D,
+        lod,
+        skylights
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPosition2D, lod, GF_HEIGHTFIELD);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPosition,
+            worldPosition2D,
+            lod,
+            skylights
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            MultiChunkLock *skylightLock = new MultiChunkLock(this);
+            skylightLock->pushPosition(worldPosition, lod);
+            Task *skylightTask = new Task(skylightLock, [
+                this,
+                id,
+                worldPosition,
+                lod,
+                skylights
+            ]() -> void {
+                getChunkSkylight(worldPosition, lod, skylights);
+
+                void *result = nullptr;
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(skylightTask);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
+    uint32_t id = DualContouring::resultQueue.getNextId();
+    
+    vm::ivec2 worldPosition2D(worldPosition.x, worldPosition.z);
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPosition2D, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPosition,
+        worldPosition2D,
+        lod,
+        aos
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPosition2D, lod, GF_HEIGHTFIELD);
+        Task *heightfieldTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPosition,
+            worldPosition2D,
+            lod,
+            aos
+        ]() -> void {
+            Chunk2D &chunk = getChunk(worldPosition2D, lod, GF_HEIGHTFIELD);
+
+            MultiChunkLock *aoLock = new MultiChunkLock(this);
+            aoLock->pushPosition(worldPosition, lod);
+            Task *aoTask = new Task(aoLock, [
+                this,
+                id,
+                worldPosition,
+                lod,
+                aos
+            ]() -> void {
+                getChunkAo(worldPosition, lod, aos);
+
+                void *result = nullptr;
+                DualContouring::resultQueue.pushResult(id, result);
+            });
+            DualContouring::taskQueue.pushTask(aoTask);
+        });
+        DualContouring::taskQueue.pushTask(heightfieldTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPositionXZ,
+        lod,
+        ps, qs, instances, count
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPositionXZ, lod, GF_HEIGHTFIELD);
+        Task *grassSplatTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPositionXZ,
+            lod,
+            ps, qs, instances, count
+        ]() -> void {
+            createGrassSplat(worldPositionXZ, lod, ps, qs, instances, count);
+            void *result = nullptr;
+            DualContouring::resultQueue.pushResult(id, result);
+        });
+        DualContouring::taskQueue.pushTask(grassSplatTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+    
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPositionXZ,
+        lod,
+        ps, qs, instances, count
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPositionXZ, lod, GF_HEIGHTFIELD);
+        Task *vegetationSplatTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPositionXZ,
+            lod,
+            ps, qs, instances, count
+        ]() -> void {
+            createVegetationSplat(worldPositionXZ, lod, ps, qs, instances, count);
+
+            void *result = nullptr;
+            DualContouring::resultQueue.pushResult(id, result);
+        });
+        DualContouring::taskQueue.pushTask(vegetationSplatTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+{
+    uint32_t id = DualContouring::resultQueue.getNextId();
+
+    std::vector<Promise *> promises2D = ensureChunks2D(worldPositionXZ, -CHUNK_RANGE, CHUNK_RANGE, lod, GF_BIOMES);
+
+    MultiChunkLock *biomesLock = new MultiChunkLock(this);
+    biomesLock->pushPromises(promises2D);
+    Task *biomesTask = new Task(biomesLock, [
+        this,
+        id,
+        worldPositionXZ,
+        lod,
+        ps, qs, instances, count
+    ]() -> void {
+        MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
+        heightfieldLock->pushPosition(worldPositionXZ, lod, GF_HEIGHTFIELD);
+        Task *mobSplatTask = new Task(heightfieldLock, [
+            this,
+            id,
+            worldPositionXZ,
+            lod,
+            ps, qs, instances, count
+        ]() -> void {
+            createMobSplat(worldPositionXZ, lod, ps, qs, instances, count);
+
+            void *result = nullptr;
+            DualContouring::resultQueue.pushResult(id, result);
+        });
+        DualContouring::taskQueue.pushTask(mobSplatTask);
+    });
+    DualContouring::taskQueue.pushTask(biomesTask);
+
+    return id;
+}
+
+//
+
+std::vector<Promise *> DCInstance::ensureChunks2D(const vm::ivec2 &position2D, int minChunkDelta, int maxChunkDelta, int lod, GenerateFlags flags) {
+    std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(position2D, minChunkDelta, maxChunkDelta, DualContouring::chunkSize);
+    std::vector<Promise *> promises(chunkPositions2D.size());
+    for (int i = 0; i < chunkPositions2D.size(); i++) {
+        const vm::ivec2 &position2D = chunkPositions2D[i];
+
+        MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+        multiChunkLock->pushPosition(position2D, lod, flags);
+
+        Promise *promise = new Promise();
+        promises[i] = promise;
+
+        Task *task = new Task(multiChunkLock, [
+            this,
+            position2D,
+            lod,
+            flags,
+            promise
+        ]() -> void {
+            ensureChunk(position2D, lod, flags);
+            promise->resolve();
+        });
+        DualContouring::taskQueue.pushTask(task);
     }
-    return lockedAll;
+    return promises;
 }
-void DCInstance::unlock(const std::vector<vm::ivec3> &chunkPositions, int lod) {
-    for (int i = 0; i < chunkPositions.size(); i++) {
-        const vm::ivec3 &chunkPosition = chunkPositions[i];
-        std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-        chunkLock.unlock();
-    }
+void DCInstance::ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags) {
+    Chunk2D &chunk = getChunk(position2D, lod, flags);
 }
-bool DCInstance::tryLock(const vm::ivec3 &chunkPosition, int lod) {
-    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-    return chunkLock.try_lock();
-}
-void DCInstance::unlock(const vm::ivec3 &chunkPosition, int lod) {
-    std::mutex &chunkLock = getChunkLock(chunkPosition, lod);
-    chunkLock.unlock();
+void DCInstance::ensureChunk(const vm::ivec3 &position3D, int lod, GenerateFlags flags) {
+    Chunk3D &chunk = getChunk(position3D, lod, flags);
 }
