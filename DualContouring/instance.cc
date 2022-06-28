@@ -686,31 +686,10 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, DualContouring::chunkSize);
-    std::vector<Promise *> biomePromises(chunkPositions2D.size());
-    for (int i = 0; i < chunkPositions2D.size(); i++) {
-        const vm::ivec2 &position2D = chunkPositions2D[i];
-
-        MultiChunkLock *biomeLock = new MultiChunkLock(this);
-        biomeLock->pushPosition(position2D, lod);
-
-        Promise *biomePromise = new Promise();
-        biomePromises[i] = biomePromise;
-
-        Task *biomeTask = new Task(biomeLock, [
-            this,
-            position2D,
-            lod,
-            biomePromise
-        ]() -> void {
-            ensureChunk(position2D, lod, GF_HEIGHTFIELD);
-            biomePromise->resolve();
-        });
-        DualContouring::taskQueue.pushTask(biomeTask);
-    }
+    std::vector<Promise *> promises2D = ensureChunks2D(vm::ivec2(worldPosition.x, worldPosition.z), -CHUNK_RANGE, CHUNK_RANGE, lod, GF_HEIGHTFIELD);
 
     MultiChunkLock *biomePromisesLock = new MultiChunkLock(this);
-    biomePromisesLock->pushPromises(biomePromises);
+    biomePromisesLock->pushPromises(promises2D);
     biomePromisesLock->pushPosition(worldPosition, lod);
     Task *terrainTask = new Task(biomePromisesLock, [
         this,
@@ -890,6 +869,32 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
 
 //
 
+std::vector<Promise *> DCInstance::ensureChunks2D(const vm::ivec2 &position2D, int minChunkDelta, int maxChunkDelta, int lod, GenerateFlags flags) {
+    std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(position2D, minChunkDelta, maxChunkDelta, DualContouring::chunkSize);
+    std::vector<Promise *> promises(chunkPositions2D.size());
+    for (int i = 0; i < chunkPositions2D.size(); i++) {
+        const vm::ivec2 &position2D = chunkPositions2D[i];
+
+        MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
+        multiChunkLock->pushPosition(position2D, lod);
+
+        Promise *promise = new Promise();
+        promises[i] = promise;
+
+        Task *task = new Task(multiChunkLock, [
+            this,
+            position2D,
+            lod,
+            flags,
+            promise
+        ]() -> void {
+            ensureChunk(position2D, lod, flags);
+            promise->resolve();
+        });
+        DualContouring::taskQueue.pushTask(task);
+    }
+    return promises;
+}
 void DCInstance::ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags) {
     Chunk2D &chunk = getChunk(position2D, lod, flags);
 }
