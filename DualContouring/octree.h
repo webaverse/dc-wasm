@@ -172,7 +172,7 @@ public:
 
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
-        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size);
+        root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size * chunk.lod);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
         seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, size * 2);
     }
@@ -205,7 +205,7 @@ public:
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize;
+        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize * chunk.lod;
 
         for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
             for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
@@ -261,14 +261,14 @@ public:
         return voxelNode;
     }
 
-    void findOctreeNodesRecursively(OctreeNode *node, FilterNodesFunc &func, std::vector<OctreeNode *> &nodes)
+    void findOctreeNodesRecursively(OctreeNode *node, int &lod, FilterNodesFunc &func, std::vector<OctreeNode *> &nodes)
     {
         if (!node)
         {
             return;
         }
 
-        const vm::ivec3 max = node->min + vm::ivec3(node->size);
+        const vm::ivec3 max = node->min + vm::ivec3(node->size) * lod;
         if (!func(node->min, max))
         {
             return;
@@ -281,21 +281,21 @@ public:
         else
         {
             for (int i = 0; i < 8; i++)
-                findOctreeNodesRecursively(node->children[i], func, nodes);
+                findOctreeNodesRecursively(node->children[i], lod, func, nodes);
         }
     }
 
-    std::vector<OctreeNode *> findOctreeNodes(OctreeNode *root, FilterNodesFunc filterFunc)
+    std::vector<OctreeNode *> findOctreeNodes(OctreeNode *root, int &lod, FilterNodesFunc filterFunc)
     {
         std::vector<OctreeNode *> nodes;
-        findOctreeNodesRecursively(root, filterFunc, nodes);
+        findOctreeNodesRecursively(root, lod, filterFunc, nodes);
         return nodes;
     }
 
     std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, Chunk3D &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunkMin + chunkSize;
+        const vm::ivec3 chunkMax = chunkMin + chunkSize * lod;
 
         for (int x = chunkMin.x; x < chunkMax.x; x += lod)
             for (int y = chunkMin.y; y < chunkMax.y; y += lod)
@@ -356,7 +356,7 @@ public:
                     return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
                 }};
 
-        std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(root, selectionFuncs[0]);
+        std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(root, chunk.lod, selectionFuncs[0]);
 
         // adding root chunk seam nodes
         seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
