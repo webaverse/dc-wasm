@@ -83,6 +83,11 @@ const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
     return vm::ivec3(p.x & mask, p.y & mask, p.z & mask);
 }
 
+const vm::ivec3 getChunkMax(const vm::ivec3 &min, const int &size, const int &lod)
+{
+    return (min + size * lod);
+}
+
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod)
 {
     uint64_t result = uint16_t(min.x);

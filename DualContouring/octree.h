@@ -56,6 +56,7 @@ typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFun
 //
 
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p);
+const vm::ivec3 getChunkMax(const vm::ivec3 &min, const int &size, const int &lod);
 
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod);
 uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
@@ -174,7 +175,7 @@ public:
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
         root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size * chunk.lod);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
-        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, size * 2);
+        seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, size * chunk.lod * 2);
     }
 
     // destructors
@@ -205,7 +206,7 @@ public:
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize * chunk.lod;
+        const vm::ivec3 chunkMax = getChunkMax(chunk.min, DualContouring::chunkSize, chunk.lod);
 
         for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
             for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
@@ -295,7 +296,7 @@ public:
     std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, Chunk3D &chunk, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunkMin + chunkSize * lod;
+        const vm::ivec3 chunkMax = getChunkMax(chunkMin, chunkSize, lod);
 
         for (int x = chunkMin.x; x < chunkMax.x; x += lod)
             for (int y = chunkMin.y; y < chunkMax.y; y += lod)
