@@ -1461,10 +1461,6 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
         abort();
     } */
 
-    // XXX water field needs height field too, see below
-    // XXX we will crash before that though, on this call, which also requires the heighfield cache to be populated
-    // XXX we can get around this by not outputting the water biome
-
     getCachedInterpolatedBiome2D(vm::vec2(worldPosition.x, worldPosition.z), biome, biomeWeights);
 
     // int heightfieldIndex = lx + lz * gridPoints;
