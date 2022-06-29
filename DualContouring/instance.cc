@@ -1334,19 +1334,15 @@ float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
     {
         for (int x = 0; x < gridPoints; x++)
         { */
-            int index2D = x + z * gridPoints;
+            // int index2D = x + z * gridPoints;
             float height = inst->cachedHeightField.get(x, z).heightField;
 
             /* for (int y = 0; y < gridPoints; y++)
             { */
-                int index3D = x + z * gridPoints + y * gridPoints * gridPoints;
-
-                int ax = x;
-                int ay = y;
-                int az = z;
+                // int index3D = x + z * gridPoints + y * gridPoints * gridPoints;
 
                 // height
-                float heightValue = (float)ay - height;
+                float heightValue = (float)y - height;
                 heightValue = std::min(
                     std::max(
                         heightValue,
@@ -1354,7 +1350,7 @@ float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
                     (float)1);
 
                 // caves
-                float caveValue = DualContouring::getComputedCaveNoise(ax, ay, az) * 1.1f;
+                float caveValue = DualContouring::getComputedCaveNoise(x, y, z) * 1.1f;
                 float f = heightValue + caveValue;
                 /* f = std::min( // XXX does not fix
                     std::max(
