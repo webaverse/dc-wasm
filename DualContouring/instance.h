@@ -185,9 +185,9 @@ public:
 
     //
 
-    std::vector<Promise *> ensureChunks2D(const vm::ivec2 &position2D, int minChunkDelta, int maxChunkDelta, int lod, GenerateFlags flags);
-    void ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags);
-    void ensureChunk(const vm::ivec3 &position2D, int lod, GenerateFlags flags);
+    // std::vector<Promise *> ensureChunks2D(const vm::ivec2 &position2D, int minChunkDelta, int maxChunkDelta, int lod, GenerateFlags flags);
+    // void ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags);
+    // void ensureChunk(const vm::ivec3 &position2D, int lod, GenerateFlags flags);
 
     //
 
