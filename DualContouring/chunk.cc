@@ -148,8 +148,8 @@ NoiseField Chunk2D::initNoiseField(DCInstance *inst, Chunk2D *chunk) {
         for (int x = 0; x < size; x++)
         {
             int index = x + z * size;
-            int ax = x * lod + min.x;
-            int az = z * lod + min.y;
+            int ax = (x * lod) + min.x;
+            int az = (z * lod) + min.y;
 
             float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(ax, az);
             noiseField.temperature[index] = tNoise;
@@ -626,11 +626,8 @@ std::vector<float> Chunk3D::initWaterSdf(DCInstance *inst, Chunk3D *chunk) {
     }, chunk->min.x, chunk->min.y, chunk->min.z, chunk->lod, waterSdf.size()); */
     for (int z = 0; z < gridPoints; z++)
     {
-        int az = min.z + z - 1;
         for (int x = 0; x < gridPoints; x++)
         {
-            int ax = min.x + x - 1;
-
             // int lx = x + 1;
             // int lz = z + 1;
             int index2D = x + z * gridPoints;
@@ -639,7 +636,9 @@ std::vector<float> Chunk3D::initWaterSdf(DCInstance *inst, Chunk3D *chunk) {
             // waterValue *= -1.1f;
             for (int y = 0; y < gridPoints; y++)
             {
-                int ay = min.y + y - 1;
+                int ax = min.x + (x - 1) * lod;
+                int ay = min.y + (y - 1) * lod;
+                int az = min.z + (z - 1) * lod;
 
                 float heightValue = (float)ay - waterBaseHeight;
                 heightValue = std::min(
@@ -793,9 +792,9 @@ void Chunk3D::getCachedAo(unsigned char *aos) const {
 float Chunk3D::getCachedInterpolatedSdf(const float x, const float y, const float z) const {
     const int &gridPoints = DualContouring::gridPoints;
     
-    const float localX = x - min.x + 1;
-    const float localY = y - min.y + 1;
-    const float localZ = z - min.z + 1;
+    const float localX = (x - min.x) / lod + 1;
+    const float localY = (y - min.y) / lod + 1;
+    const float localZ = (z - min.z) / lod + 1;
     return trilinear<float>(
         vm::vec3(localX, localY, localZ),
         cachedSdf.value,
@@ -818,9 +817,9 @@ float Chunk3D::getCachedWaterInterpolatedSdf(const float x, const float y, const
         abort();
     }
 
-    const float localX = x - min.x + 1;
-    const float localY = y - min.y + 1;
-    const float localZ = z - min.z + 1;
+    const float localX = (x - min.x) / lod + 1;
+    const float localY = (y - min.y) / lod + 1;
+    const float localZ = (z - min.z) / lod + 1;
     return trilinear<float>(
         vm::vec3(localX, localY, localZ),
         cachedWaterSdf.value,
@@ -830,9 +829,9 @@ float Chunk3D::getCachedWaterInterpolatedSdf(const float x, const float y, const
 float Chunk3D::getCachedDamageInterpolatedSdf(const float x, const float y, const float z) const {
     const int &gridPoints = DualContouring::gridPoints;
 
-    const float localX = x - min.x + 1;
-    const float localY = y - min.y + 1;
-    const float localZ = z - min.z + 1;
+    const float localX = (x - min.x) / lod + 1;
+    const float localY = (y - min.y) / lod + 1;
+    const float localZ = (z - min.z) / lod + 1;
     return trilinear<float>(
         vm::vec3(localX, localY, localZ),
         cachedDamageSdf.value,

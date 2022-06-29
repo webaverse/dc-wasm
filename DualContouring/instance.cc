@@ -63,10 +63,10 @@ Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
 }
 Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags) {
     vm::ivec3 min = vm::ivec3(
-                        (int)std::floor(x / (float)DualContouring::chunkSize),
-                        (int)std::floor(y / (float)DualContouring::chunkSize),
-                        (int)std::floor(z / (float)DualContouring::chunkSize)) *
-                    DualContouring::chunkSize;
+                        (int)std::floor(x / (float)(DualContouring::chunkSize * lod)),
+                        (int)std::floor(y / (float)(DualContouring::chunkSize * lod)),
+                        (int)std::floor(z / (float)(DualContouring::chunkSize * lod))
+                    ) * DualContouring::chunkSize;
     return getChunk(min, lod, flags);
 }
 
@@ -119,9 +119,9 @@ Chunk2D &DCInstance::getChunkInternal(const vm::ivec2 &min, int lod) {
 Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, GenerateFlags flags)
 {
     vm::ivec2 min = vm::ivec2(
-                        (int)std::floor(x / (float)DualContouring::chunkSize),
-                        (int)std::floor(z / (float)DualContouring::chunkSize)) *
-                    DualContouring::chunkSize;
+                        (int)std::floor(x / (float)(DualContouring::chunkSize * lod)),
+                        (int)std::floor(z / (float)(DualContouring::chunkSize * lod))
+                    ) * DualContouring::chunkSize;
     return getChunk(min, lod, flags);
 }
 

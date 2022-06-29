@@ -124,7 +124,7 @@ vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst, Chunk3D &ch
 void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
 
 template<typename DCContextType>
-int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst, Chunk3D &chunk)
+int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &lod, DCInstance *inst, Chunk3D &chunk)
 {
     const int MAX_CROSSINGS = 6;
     int edgeCount = 0;
@@ -139,8 +139,8 @@ int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &a
         {
             continue;
         }
-        const vm::ivec3 ip1 = voxelNode->min + CHILD_MIN_OFFSETS[c1] * minVoxelSize;
-        const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * minVoxelSize;
+        const vm::ivec3 ip1 = voxelNode->min + CHILD_MIN_OFFSETS[c1] * lod;
+        const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * lod;
         const vm::vec3 p1 = vm::vec3(ip1.x, ip1.y, ip1.z);
         const vm::vec3 p2 = vm::vec3(ip2.x, ip2.y, ip2.z);
         const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, inst, chunk);
@@ -163,10 +163,10 @@ public:
     OctreeNode *root; // chunk nodes root (without the seams)
     OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
-    int minVoxelSize; // determined by level of detail
+    int lod;
 
     // constructors
-    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
+    ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), lod(chunk.lod)
     {
         const int &size = DualContouring::chunkSize;
 
@@ -205,7 +205,7 @@ public:
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize;
+        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize * chunk.lod;
 
         for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
             for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
@@ -224,7 +224,7 @@ public:
     {
         svd::QefSolver qef;
         vm::vec3 averageNormal(0.f);
-        int edgeCount = findEdgeIntersection<DCContextType>(voxelNode, qef, averageNormal, corners, minVoxelSize, inst, chunk);
+        int edgeCount = findEdgeIntersection<DCContextType>(voxelNode, qef, averageNormal, corners, lod, inst, chunk);
         svd::Vec3 qefPosition;
         qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
         vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
@@ -243,7 +243,7 @@ public:
         int corners = 0;
         for (int i = 0; i < 8; i++)
         {
-            const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
+            const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * lod;
             const float density = DCContextType::densityFn(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), inst, chunk);
             const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
             corners |= (material << i);
@@ -317,8 +317,8 @@ public:
 
     std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, Chunk3D &chunk, const int lodArray[])
     {
-        const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
-        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(DualContouring::chunkSize);
+        const &vm::ivec3 baseChunkMin = chunk.min;
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(DualContouring::chunkSize * chunk.lod);
 
         std::vector<OctreeNode *> seamNodes;
 
@@ -391,7 +391,7 @@ public:
                     const vm::ivec3 localPos = (node->min - rootMin);
                     const vm::ivec3 parentPos = node->min - (localPos % parentSize);
 
-                    const uint64_t parentIndex = hashOctreeMinLod(parentPos - rootMin, minVoxelSize);
+                    const uint64_t parentIndex = hashOctreeMinLod(parentPos - rootMin, lod);
                     OctreeNode *parentNode;
 
                     auto iter = parentsHashmap.find(parentIndex);
