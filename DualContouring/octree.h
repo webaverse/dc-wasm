@@ -317,7 +317,7 @@ public:
 
     std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, Chunk3D &chunk, const int lodArray[])
     {
-        const &vm::ivec3 baseChunkMin = chunk.min;
+        const vm::ivec3 &baseChunkMin = chunk.min;
         const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(DualContouring::chunkSize * chunk.lod);
 
         std::vector<OctreeNode *> seamNodes;

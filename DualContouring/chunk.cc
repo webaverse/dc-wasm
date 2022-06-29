@@ -636,9 +636,9 @@ std::vector<float> Chunk3D::initWaterSdf(DCInstance *inst, Chunk3D *chunk) {
             // waterValue *= -1.1f;
             for (int y = 0; y < gridPoints; y++)
             {
-                int ax = min.x + (x - 1) * lod;
-                int ay = min.y + (y - 1) * lod;
-                int az = min.z + (z - 1) * lod;
+                int ax = min.x + (x - 1) * chunk->lod;
+                int ay = min.y + (y - 1) * chunk->lod;
+                int az = min.z + (z - 1) * chunk->lod;
 
                 float heightValue = (float)ay - waterBaseHeight;
                 heightValue = std::min(
