@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <mutex>
 #include "sync.h"
+#include <emscripten.h>
 
 //
 
@@ -38,6 +39,8 @@ class ChunkCacheValue {
 public:
     T value;
     Mutex mutex;
+
+    ChunkCacheValue() : mutex(true) {}
 };
 
 //
@@ -58,7 +61,7 @@ public:
     std::unordered_map<uint64_t, ChunkCacheValue<T>> values;
     Mutex mutex;
 
-    ChunkCache2D(DCInstance *inst) : inst(inst) {
+    ChunkCache2D(DCInstance *inst) : inst(inst), mutex(false) {
         values.reserve(RESERVE_SIZE);
     }
     ~ChunkCache2D() {}
@@ -76,9 +79,9 @@ public:
         }
         return cacheValue->value;
     }
-    void set(DCInstance *inst, ChunkType *chunk, int x, int y, int z, const T &value) {
+    void set(DCInstance *inst, ChunkType *chunk, int x, int z, const T &value) {
         ChunkCacheValue<T> *cacheValue;
-        uint64_t index = getIndex(x, y, z);
+        uint64_t index = getIndex(x, z);
         {
           std::unique_lock<Mutex> lock(mutex);
           cacheValue = &values[index];
@@ -98,7 +101,13 @@ public:
     std::unordered_map<uint64_t, ChunkCacheValue<T>> values;
     Mutex mutex;
 
-    ChunkCache3D(DCInstance *inst) : inst(inst) {
+    ChunkCache3D(DCInstance *inst) : inst(inst), mutex(false) {
+        /* if (!mutex.test()) {
+          EM_ASM({
+            console.log('mutex test failed');
+          });
+          abort();
+        } */
         values.reserve(RESERVE_SIZE);
     }
     ~ChunkCache3D() {}
