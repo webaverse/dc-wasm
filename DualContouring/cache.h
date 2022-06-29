@@ -73,7 +73,7 @@ public:
           std::unique_lock<Mutex> lock(mutex);
           cacheValue = &values[index];
         }
-        if (cacheValue->mutex.test()) {
+        if (!cacheValue->mutex.test()) {
             cacheValue->value = fn(inst, x, y);
             cacheValue->mutex.unlock();
         }
@@ -119,7 +119,7 @@ public:
           std::unique_lock<Mutex> lock(mutex);
           cacheValue = &values[index];
         }
-        if (cacheValue->mutex.test()) {
+        if (!cacheValue->mutex.test()) {
             cacheValue->value = fn(inst, x, y, z);
             cacheValue->mutex.unlock();
         }
