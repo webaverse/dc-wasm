@@ -4,8 +4,12 @@
 
 //
 
-Mutex::Mutex() : flag(false) {}
-Mutex::Mutex(bool locked) : flag(locked) {}
+Mutex::Mutex() {}
+Mutex::Mutex(bool locked) {
+  if (locked) {
+    flag.test_and_set(std::memory_order_acquire);
+  }
+}
 Mutex::~Mutex() {}
 void Mutex::lock() {
   for (;;) {

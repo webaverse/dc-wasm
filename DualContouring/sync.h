@@ -29,7 +29,6 @@ public:
 // implements a semaphore using only c++ atomic value
 class Semaphore {
 public:
-  // Mutex mutex;
   std::atomic<int> value;
 
   Semaphore(int value);
