@@ -1198,8 +1198,8 @@ void DCInstance::ensureChunk(const vm::ivec3 &position3D, int lod, GenerateFlags
 
 // 2d caches
 
-NoiseField DCInstance::initNoiseField(DCInstance *inst, int x, int y) {
-    const int &size = DualContouring::chunkSize;
+NoiseField DCInstance::initNoiseField(DCInstance *inst, int x, int z) {
+    // const int &size = DualContouring::chunkSize;
     // const vm::ivec2 &min = chunk->min;
     // const int &lod = chunk->lod;
     
@@ -1213,19 +1213,19 @@ NoiseField DCInstance::initNoiseField(DCInstance *inst, int x, int y) {
         for (int x = 0; x < size; x++)
         { */
             // int index = x + z * size;
-            int ax = x;
-            int az = y;
+            // int ax = x;
+            // int az = y;
 
-            float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(ax, az);
+            float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(x, z);
             // noiseField.temperature[index] = tNoise;
 
-            float hNoise = (float)DualContouring::noises->humidityNoise.in2D(ax, az);
+            float hNoise = (float)DualContouring::noises->humidityNoise.in2D(x, z);
             // noiseField.humidity[index] = hNoise;
 
-            float oNoise = (float)DualContouring::noises->oceanNoise.in2D(ax, az);
+            float oNoise = (float)DualContouring::noises->oceanNoise.in2D(x, z);
             // noiseField.ocean[index] = oNoise;
 
-            float rNoise = (float)DualContouring::noises->riverNoise.in2D(ax, az);
+            float rNoise = (float)DualContouring::noises->riverNoise.in2D(x, z);
             // noiseField.river[index] = rNoise;
 
             return NoiseField{
@@ -1240,7 +1240,7 @@ NoiseField DCInstance::initNoiseField(DCInstance *inst, int x, int y) {
     return noiseField; */
 }
 uint8_t DCInstance::initBiomesField(DCInstance *inst, int x, int z) {
-    const int &size = DualContouring::chunkSize;
+    // const int &size = DualContouring::chunkSize;
     // const auto &cachedNoiseField = chunk->cachedNoiseField;
     
     // std::vector<uint8_t> biomesField(size * size);
@@ -1248,7 +1248,7 @@ uint8_t DCInstance::initBiomesField(DCInstance *inst, int x, int z) {
     {
         for (int x = 0; x < size; x++)
         { */
-            int index = x + z * size;
+            // int index = x + z * size;
             // unsigned char biome = cachedBiomesField.get(x, z);
             unsigned char biome = 0xFF;
 
@@ -1297,7 +1297,7 @@ uint8_t DCInstance::initBiomesField(DCInstance *inst, int x, int z) {
 }
 Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
     const int &size = DualContouring::chunkSize;
-    const int &gridPoints = DualContouring::gridPoints;
+    // const int &gridPoints = DualContouring::gridPoints;
     // const int &lod = chunk->lod;
     // const vm::ivec2 &min = chunk->min;
     
@@ -1309,9 +1309,9 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
     {
         for (int x = 0; x < gridPoints; x++)
         { */
-            int index2D = x + z * gridPoints;
-            int ax = x;
-            int az = z;
+            // int index2D = x + z * gridPoints;
+            // int ax = x;
+            // int az = z;
             
             // int lx = x - 1;
             // int lz = z - 1;
@@ -1325,7 +1325,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
                 for (int dx = -size/2; dx < size/2; dx++)
                 {
                     // vm::vec2 worldPosition(ax + dx, az + dz);
-                    unsigned char b = inst->cachedBiomesField.get(ax + dx, az + dz);
+                    unsigned char b = inst->cachedBiomesField.get(x + dx, z + dz);
 
                     biomeCounts[b]++;
                     numSamples++;
@@ -1358,7 +1358,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
             }
 
             float elevationSum = 0.f;
-            vm::vec2 fWorldPosition(ax, az);
+            vm::vec2 fWorldPosition(x, z);
             for (auto const &iter : biomeCounts)
             {
                 elevationSum += iter.second * DualContouring::getComputedBiomeHeight(iter.first, fWorldPosition);
@@ -1372,7 +1372,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
 }
 float DCInstance::initWaterField(DCInstance *inst, int x, int z) {
     const int &size = DualContouring::chunkSize;
-    const int &gridPoints = DualContouring::gridPoints;
+    // const int &gridPoints = DualContouring::gridPoints;
     // const vm::ivec2 &min = chunk->min;
     // const int &lod = chunk->lod;
 
@@ -1381,10 +1381,10 @@ float DCInstance::initWaterField(DCInstance *inst, int x, int z) {
     {
         for (int x = 0; x < gridPoints; x++)
         { */
-            int ax = x;
-            int az = z;
+            // int ax = x;
+            // int az = z;
 
-            int index2D = x + z * gridPoints;
+            // int index2D = x + z * gridPoints;
             
             float value = 0;
             // std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
@@ -1393,7 +1393,7 @@ float DCInstance::initWaterField(DCInstance *inst, int x, int z) {
             {
                 for (int dx = -size/2; dx < size/2; dx++)
                 {
-                    unsigned char b = inst->cachedBiomesField.get(ax + dx, az + dz);
+                    unsigned char b = inst->cachedBiomesField.get(x + dx, z + dz);
 
                     if (isWaterBiome(b)) {
                         // waterField[index2D]++;
@@ -1602,7 +1602,7 @@ float DCInstance::initWaterSdf(DCInstance *inst, int x, int y, int z) {
 
             // int lx = x + 1;
             // int lz = z + 1;
-            int index2D = x + z * gridPoints;
+            // int index2D = x + z * gridPoints;
             float waterValue = -inst->cachedWaterField.get(x, z) / fSize;
             // float waterValue = -inst->getWater(vm::vec2(ax, az), lod) / fSize;
             // waterValue *= -1.1f;
