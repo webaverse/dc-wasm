@@ -1,6 +1,8 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
+#include "./DualContouring/cache.h"
+#include "./DualContouring/instance.h"
 #include <functional>
 
 float lerp(const float &a, const float &b, const float &f);
