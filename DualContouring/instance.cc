@@ -1311,7 +1311,7 @@ uint8_t DCInstance::initAoField(DCInstance *inst, int x, int y, int z) {
                         for (int dx = -1; dx <= 1; dx++)
                         {
                             // int sdfIndex = (lx + dx) + (lz + dz) * gridPoints + (ly + dy) * gridPoints * gridPoints;
-                            numOpens += (unsigned char)(inst->cachedSdf.get(x, y, z) >= 0.f);
+                            numOpens += (unsigned char)(inst->cachedSdf.get(x + dx, y + dy, z + dz) >= 0.f);
                         }
                     }
                 }
