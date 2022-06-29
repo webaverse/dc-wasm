@@ -102,8 +102,8 @@ inline float clampPointToRange(float minDistance, const vm::vec3 &position, cons
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
 float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk)
 {
-	const float terrain = chunk.getCachedInterpolatedSdf(position.x, position.y, position.z);
-	const float damage = chunk.getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
+	const float terrain = inst->getCachedInterpolatedSdf(position.x, position.y, position.z);
+	const float damage = inst->getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
 
 	float minDistance = std::max(terrain, -damage);
 	if (inst->clipRange) { // range clipper enabled
@@ -122,7 +122,7 @@ float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chun
 
 float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk)
 {
-	const float water = chunk.getCachedWaterInterpolatedSdf(position.x, position.y, position.z);
+	const float water = inst->getCachedWaterInterpolatedSdf(position.x, position.y, position.z);
 
 	float minDistance = water;
 	if (inst->clipRange) { // range clipper enabled

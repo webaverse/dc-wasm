@@ -41,7 +41,7 @@ namespace DualContouring {
     void runLoop();
 
     // biomes
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod);
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
     
     // caves
     float getComputedCaveNoise(int ax, int ay, int az);

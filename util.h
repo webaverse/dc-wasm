@@ -18,11 +18,10 @@ T bilinear(
   T b = c01 * (1.f - tx) + c11 * tx; 
   return a * (1.f - ty) + b * ty; 
 }
-template<typename T>
-T trilinear(
+template<typename T, typename R>
+R trilinear(
   const vm::vec3 &location,
-  const std::vector<T> &data,
-  int gridPoints
+  T &data
 )
 {
   float rx = std::round(location.x);
@@ -42,30 +41,30 @@ T trilinear(
   vm::ivec3 p011 = vm::ivec3(ix, iy + 1, iz + 1);
   vm::ivec3 p111 = vm::ivec3(ix + 1, iy + 1, iz + 1);
 
-  int i000 = p000.x + p000.z * gridPoints + p000.y * gridPoints * gridPoints;
+  /* int i000 = p000.x + p000.z * gridPoints + p000.y * gridPoints * gridPoints;
   int i100 = p100.x + p100.z * gridPoints + p100.y * gridPoints * gridPoints;
   int i010 = p010.x + p010.z * gridPoints + p010.y * gridPoints * gridPoints;
   int i110 = p110.x + p110.z * gridPoints + p110.y * gridPoints * gridPoints;
   int i001 = p001.x + p001.z * gridPoints + p001.y * gridPoints * gridPoints;
   int i101 = p101.x + p101.z * gridPoints + p101.y * gridPoints * gridPoints;
   int i011 = p011.x + p011.z * gridPoints + p011.y * gridPoints * gridPoints;
-  int i111 = p111.x + p111.z * gridPoints + p111.y * gridPoints * gridPoints;
+  int i111 = p111.x + p111.z * gridPoints + p111.y * gridPoints * gridPoints; */
 
-  const T &v000 = data[i000];
-  const T &v100 = data[i100];
-  const T &v010 = data[i010];
-  const T &v110 = data[i110];
-  const T &v001 = data[i001];
-  const T &v101 = data[i101];
-  const T &v011 = data[i011];
-  const T &v111 = data[i111];
+  const R &v000 = data.get(p000.x, p000.y, p000.z);
+  const R &v100 = data.get(p100.x, p100.y, p100.z);
+  const R &v010 = data.get(p010.x, p010.y, p010.z);
+  const R &v110 = data.get(p110.x, p110.y, p110.z);
+  const R &v001 = data.get(p001.x, p001.y, p001.z);
+  const R &v101 = data.get(p101.x, p101.y, p101.z);
+  const R &v011 = data.get(p011.x, p011.y, p011.z);
+  const R &v111 = data.get(p111.x, p111.y, p111.z);
 
   float tx = location.x - p000.x;
   float ty = location.y - p000.y;
   float tz = location.z - p000.z;
 
-  const T &e = bilinear<T>(tx, ty, v000, v100, v010, v110); 
-  const T &f = bilinear<T>(tx, ty, v001, v101, v011, v111); 
+  const R &e = bilinear<R>(tx, ty, v000, v100, v010, v110); 
+  const R &f = bilinear<R>(tx, ty, v001, v101, v011, v111); 
   return e * (1 - tz) + f * tz; 
 }
 

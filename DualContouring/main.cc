@@ -83,7 +83,7 @@ namespace DualContouring
     }
 
     // biomes
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition, const int &lod) {
+    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition) {
         const Biome &biome = BIOMES[b];
         float ax = worldPosition.x;
         float az = worldPosition.y;

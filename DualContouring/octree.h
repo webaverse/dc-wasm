@@ -234,7 +234,7 @@ public:
         vertexData->position = vertexPosition;
         vertexData->normal = vm::normalize(averageNormal / (float)edgeCount);
         vertexData->corners = corners;
-        chunk.getCachedInterpolatedBiome3D(vertexData->position, vertexData->biomes, vertexData->biomesWeights);
+        inst->getCachedInterpolatedBiome3D(vertexData->position, vertexData->biomes, vertexData->biomesWeights);
         return vertexData;
     }
 
