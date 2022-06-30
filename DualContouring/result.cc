@@ -14,14 +14,18 @@ uint32_t ResultQueue::getNextId() {
   return ++ids;
 }
 
-extern "C" {
-
-void result_em_func_vii(int id, int result) {
-  uint32_t id_ = (uint32_t)id;
-  void *result_ = (void *)result;
-  EM_ASM({
+void ResultQueue::pushResult(uint32_t id, void *result) {
+  /* EM_ASM({
+    console.log('post result');
+  }); */
+  /* double lol = EM_ASM_DOUBLE({
+    return performance.now() - globalThis.requestStartTime;
+  }); */
+  MAIN_THREAD_ASYNC_EM_ASM({
     const id = $0;
     const result = $1;
+    // const time = $2;
+    // console.log('result', time);
     // console.log('dc threader got result', {id, result, lol: globalThis.lol});
     // alert('hello world!');
     // throw 'all done';
@@ -33,19 +37,12 @@ void result_em_func_vii(int id, int result) {
         },
       });
     }
-    globalThis.resultEvent.data.id = id;;
+    globalThis.resultEvent.data.id = id;
     globalThis.resultEvent.data.result = result;
     globalThis.dispatchEvent(globalThis.resultEvent);
-  }, id_, result_);
-}
-
-}
-
-void ResultQueue::pushResult(uint32_t id, void *result) {
-  /* EM_ASM({
-    console.log('post result');
-  }); */
-  emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, (int)result);
+    // console.timeEnd('result');
+  }, id, result);
+  // emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, (int)result);
   // emscripten_wasm_worker_post_function_vii(DualContouring::parentThreadId, result_em_func_vii, (int)id, (int)result);
   // emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, result);
 }
