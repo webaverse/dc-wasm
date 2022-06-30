@@ -2,8 +2,8 @@
 
 //
 
-int getCacheIndexWorld(int x, int y) {
-    int result = uint8_t(x / cacheWidth);
+int16_t getCacheIndexWorld(int x, int y) {
+    int16_t result = uint8_t(x / cacheWidth);
     result = (result << 8) | uint8_t(y / cacheWidth);
     return result;
 }

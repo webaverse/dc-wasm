@@ -49,7 +49,7 @@ public:
 
 //
 
-int getCacheIndexWorld(int x, int y);
+int16_t getCacheIndexWorld(int x, int y);
 int getCacheIndexWorld(int x, int y, int z);
 
 //
@@ -69,7 +69,7 @@ public:
     DCInstance *inst;
     // std::unordered_map<uint64_t, ChunkCacheValue<T>> values;
     // std::vector<std::atomic<int>> valueSources;
-    std::array<int, cacheWidth * cacheWidth> valueSources;
+    std::array<int16_t, cacheWidth * cacheWidth> valueSources;
     std::array<T, cacheWidth * cacheWidth> values;
     Mutex mutex;
 
@@ -77,14 +77,14 @@ public:
         // values.resize(cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth);
         for (size_t i = 0; i < valueSources.size(); i++) {
-            valueSources[i] = INT_MAX/2;
+            valueSources[i] = 128;
         }
     }
     ~ChunkCache2D() {}
 
     T get(int x, int y) {
         uint32_t localIndex = getCacheIndexLocal(x, y);
-        int worldIndex = getCacheIndexWorld(x, y);
+        int16_t worldIndex = getCacheIndexWorld(x, y);
 
         // found in cache; fast case
         {
@@ -104,7 +104,7 @@ public:
     }
     void set(DCInstance *inst, ChunkType *chunk, int x, int z, const T &value) {
         uint32_t localIndex = getCacheIndexLocal(x, z);
-        int worldIndex = getCacheIndexWorld(x, z);
+        int16_t worldIndex = getCacheIndexWorld(x, z);
         {
           // std::unique_lock<Mutex> lock(mutex);
           values[localIndex] = value;
@@ -135,7 +135,7 @@ public:
         // values.resize(cacheWidth * cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth * cacheWidth);
         for (size_t i = 0; i < valueSources.size(); i++) {
-            valueSources[i] = INT_MAX/2;
+            valueSources[i] = 128;
         }
     }
     ~ChunkCache3D() {}
