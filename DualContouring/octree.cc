@@ -112,15 +112,6 @@ uint64_t hashOctreeMinLodLayer(const vm::ivec2 &min, int lod, int layer)
 VertexData::VertexData() : index(-1), corners(0) {}
 
 //
-
-OctreeNode::OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type) :
-  children(8),
-  min(min),
-  size(size),
-  vertexData(nullptr),
-  type(type)
-{}
-
 void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
 {
 

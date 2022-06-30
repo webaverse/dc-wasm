@@ -74,10 +74,7 @@ enum OctreeNodeType
 class OctreeNode
 {
 public:
-    OctreeNode() = delete;
-    OctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type);
-    
-    std::vector<OctreeNode *> children; // only internal nodes have children
+    OctreeNode *children[8]; // only internal nodes have children
     VertexData *vertexData;            // only leaf nodes (our voxels) have vertex data
     vm::ivec3 min;
     int size;
@@ -159,7 +156,8 @@ class ChunkOctree
 {
 public:
     // members
-    std::vector<OctreeNode*> chunkNodes; // keeping track of all the heap allocated nodes in the chunk octree class
+    std::vector<OctreeNode> chunkNodes; // keeping track of all the heap allocated nodes in the chunk octree class
+    int nextNodeIndex = 0;
     OctreeNode *root; // chunk nodes root (without the seams)
     OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
@@ -168,8 +166,9 @@ public:
     // constructors
     ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
     {
+        const int maxNodeCount = 42130;
+        chunkNodes.resize(maxNodeCount);
         const int &size = chunkSize;
-
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
         root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size);
@@ -179,28 +178,28 @@ public:
 
     // destructors
     ~ChunkOctree(){
-        for (int i = 0; i < chunkNodes.size(); i++)
-        {
-            deleteOctreeNode(chunkNodes[i]);
-        }
+        // for (int i = 0; i < chunkNodes.size(); i++)
+        // {
+        //     deleteOctreeNode(chunkNodes[i]);
+        // }
     }
 
     // methods
 
     // ! only create new octree nodes with this function
-    OctreeNode *newOctreeNode(const vm::ivec3 &min, const int &lod, const OctreeNodeType &type){
-        OctreeNode *node = new OctreeNode(min, lod, type);
-        chunkNodes.push_back(node); 
-        return node;
+    OctreeNode *newOctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type){
+        OctreeNode *newNode = &chunkNodes[nextNodeIndex];
+        newNode->min = min;
+        newNode->size = size;
+        newNode->type = type;
+        nextNodeIndex++;
+        return newNode;
     }
 
-    void deleteOctreeNode(OctreeNode *node){
-        if (node->vertexData)
-    	{
-    		delete node->vertexData;
-    	}
-    	delete node;
-    }
+    // void deleteOctreeNode(OctreeNode *node){
+    // 	delete node->vertexData;
+    // 	delete node;
+    // }
 
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
@@ -743,12 +742,6 @@ void generateVertexIndices(OctreeNode *node, DCContextType &dcContext)
     }
     else
     {
-        if (node->children.size() != 8) {
-            EM_ASM(
-                console.log("Error! The provided voxel has no children!\n");
-            );
-            abort();
-        }
         for (int i = 0; i < 8; i++)
         {
             generateVertexIndices(node->children[i], dcContext);
