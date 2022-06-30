@@ -168,7 +168,7 @@ public:
     // constructors
     ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
     {
-        const int &size = DualContouring::chunkSize;
+        const int &size = chunkSize;
 
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, chunk);
@@ -205,7 +205,7 @@ public:
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunk.min + DualContouring::chunkSize;
+        const vm::ivec3 chunkMax = chunk.min + chunkSize;
 
         for (int x = chunk.min.x; x < chunkMax.x; x += chunk.lod)
             for (int y = chunk.min.y; y < chunkMax.y; y += chunk.lod)
@@ -318,7 +318,7 @@ public:
     std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, Chunk3D &chunk, const int lodArray[])
     {
         const vm::ivec3 baseChunkMin = vm::ivec3(chunk.min);
-        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(DualContouring::chunkSize);
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunkSize);
 
         std::vector<OctreeNode *> seamNodes;
 
@@ -366,9 +366,9 @@ public:
         std::vector<OctreeNode *> neighbourNodes;
         for (int i = 1; i < 8; i++)
         {
-            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * DualContouring::chunkSize;
+            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkSize;
             const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], DualContouring::chunkSize);
+            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, chunk, lodArray[i], chunkMin, selectionFuncs[i], chunkSize);
             neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
         }
 
