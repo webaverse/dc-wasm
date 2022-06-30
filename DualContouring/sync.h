@@ -30,11 +30,11 @@ public:
 
 class Semaphore {
 public:
-    std::mutex mutex_;
-    std::condition_variable condition_;
-    unsigned long count_; // Initialized as locked.
+    std::mutex mtx;
+    std::condition_variable cv;
+    int count;
 
-    Semaphore(unsigned long count = 0);
+    Semaphore(int count = 0);
 
     void signal();
     void wait();

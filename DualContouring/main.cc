@@ -42,9 +42,15 @@ namespace DualContouring
 
     void start() {
         // threads.reserve(numThreads);
+        /* EM_ASM({
+            console.log('main thread', $0, $1);
+        }, pthread_self(), numThreads); */
         for (int i = 0; i < numThreads; i++) {
             // std::cout << "create thread" << std::endl;
             std::thread([]() -> void {
+                /* EM_ASM({
+                    console.log('worker thread', $0);
+                }, pthread_self()); */
                 runLoop();
             }).detach();
             /* threads.push_back(emscripten_malloc_wasm_worker(stackSize));

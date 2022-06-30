@@ -25,6 +25,16 @@ TaskQueue::~TaskQueue() {
 }
 
 void TaskQueue::pushTask(Task *task) {
+  /* EM_ASM({
+      // console.time('push task ' + $0);
+
+      const now = performance.now();
+      if (globalThis.lastPushTime) {
+        const timeDiff = now - globalThis.lastPushTime;
+        console.log('time since push', timeDiff);
+      }
+      globalThis.lastPushTime = now;
+  }, pthread_self()); */
   {
     std::unique_lock<Mutex> lock(taskMutex);
     /* EM_ASM({
@@ -32,9 +42,9 @@ void TaskQueue::pushTask(Task *task) {
     }, tasks.size(), (void *)this); */
     tasks.push_back(task);
 
-    EM_ASM({
+    /* EM_ASM({
       console.log('push task', $0);
-    }, tasks.size());
+    }, tasks.size()); */
 
     // numTasks++;
     /* EM_ASM({
@@ -43,21 +53,50 @@ void TaskQueue::pushTask(Task *task) {
   }
   taskSemaphore.signal();
   // flushTasks();
+
+  /* EM_ASM({
+      console.timeEnd('push task ' + $0);
+      console.log('num ready tasks', $1);
+  }, pthread_self(), tasks.size()); */
 }
-std::atomic<int> numActiveThreads(8);
+// std::atomic<int> numActiveThreads(NUM_THREADS);
 Task *TaskQueue::popLockTask() {
   /* EM_ASM(
     console.log('pop lock task 1');
   ); */
-  int currentNumActiveThreads = numActiveThreads.fetch_sub(1) - 1;
+  // int currentNumActiveThreads = numActiveThreads.fetch_sub(1) - 1;
+
+  /* EM_ASM({
+    console.log('try to pop task', $0);
+  }, currentNumActiveThreads); */
+  
+  /* EM_ASM({
+    globalThis.lockStartTime = performance.now();
+  }); */
+  
+  /* if (currentNumActiveThreads < 2) {
+    std::cout << "pop task 1 " << currentNumActiveThreads << std::endl;
+  } */
+  taskSemaphore.wait();
+  
+  /* double time = EM_ASM_DOUBLE({
+    const lockEndTime = performance.now();
+    return lockEndTime - globalThis.lockStartTime;
+  });
+  int currentNumActiveThreads2 = numActiveThreads.fetch_add(1) + 1;
+  if (currentNumActiveThreads2 < 2) {
+    std::cout << "pop task 2 " << currentNumActiveThreads2 << " " << time << std::endl;
+  } */
 
   EM_ASM({
-    console.log('try to pop task', $0);
-  }, currentNumActiveThreads);
-  
-  taskSemaphore.wait();
+    // console.time('pop task ' + $0);
+    globalThis.requestStartTime = performance.now();
+  });
 
-  currentNumActiveThreads = numActiveThreads.fetch_add(1) + 1;
+  /* EM_ASM({
+    console.timeEnd('pop task ' + $0);
+    console.log('num active threads', $1, $2, $3);
+  }, pthread_self(), currentNumActiveThreads, currentNumActiveThreads2, tasks.size()); */
 
   /* EM_ASM(
     console.log('pop lock sema waited');
@@ -72,16 +111,14 @@ Task *TaskQueue::popLockTask() {
       abort();
     } */
 
-    // XXX lock here; perhaps have a queue of only requirement fulfilled tasks
-
     task = tasks.front();
     tasks.pop_front();
 
-    if (currentNumActiveThreads < 8) {
+    /* if (currentNumActiveThreads < 8) {
       EM_ASM({
         console.log('fewer than 8 threads', $0, $1);
       }, currentNumActiveThreads, tasks.size());
-    }
+    } */
 
     // task->ensurePop();
   }
@@ -97,20 +134,23 @@ void TaskQueue::runLoop() {
   /* EM_ASM(
     console.log('run loop');
   ); */
-  {
-    Task *task;
-    while ((task = popLockTask())) {
+  // {
+    for (;;) {
+      Task *task = popLockTask();
+      if (!task) {
+        abort();
+      }
       task->run();
       // task->unlock();
-      EM_ASM({
+      /* EM_ASM({
         console.log('done running task');
-      });
+      }); */
       delete task;
       // task = nullptr;
 
       // flushTasks();
     }
-  }
+  // }
   /* EM_ASM(
     console.log('thread exited due to no task!');
   ); */

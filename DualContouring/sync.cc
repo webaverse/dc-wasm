@@ -30,17 +30,18 @@ void Mutex::wait() {
 
 //
 
-Semaphore::Semaphore(unsigned long count) : count_(count) {}
+Semaphore::Semaphore(int count) : count(count) {}
 void Semaphore::signal() {
-    std::unique_lock<decltype(mutex_)> lock(mutex_);
-    ++count_;
-    condition_.notify_one();
+    std::unique_lock<std::mutex> lock(mtx);
+    count++;
+    cv.notify_one();
 }
 void Semaphore::wait() {
-    std::unique_lock<decltype(mutex_)> lock(mutex_);
-    while(!count_) // Handle spurious wake-ups.
-        condition_.wait(lock);
-    --count_;
+    std::unique_lock<std::mutex> lock(mtx);
+    while(count == 0){
+        cv.wait(lock);
+    }
+    count--;
 }
 /* bool Semaphore::try_wait() {
     std::lock_guard<decltype(mutex_)> lock(mutex_);
