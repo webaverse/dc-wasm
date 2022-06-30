@@ -13,14 +13,20 @@
 #include "noises.h"
 #include "result.h"
 #include "vectorMath.h"
+#include "constants.h"
+
+//
 
 class Noises;
 class DCInstance;
 
+//
+
 namespace DualContouring {
     // globals
-    extern int chunkSize;
-    extern int gridPoints;
+    // extern int chunkSize;
+    // extern int gridPoints;
+    // extern int cacheWidth;
     extern Noises *noises;
     // extern std::vector<emscripten_wasm_worker_t> threads;
     extern TaskQueue taskQueue;

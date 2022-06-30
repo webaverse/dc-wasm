@@ -15,24 +15,24 @@
 //     OctreeNode *seamRoot;
 // };
 
-constexpr int numThreads = NUM_THREADS;
-constexpr uint32_t stackSize = 1024 * 1024;
-
 namespace DualContouring
 {
-    int getGridPoints(int chunkSize) {
+    /* int getGridPoints(int chunkSize) {
        return chunkSize + 3 + 1;
-    }
+    } */
 
     // chunk settings
-    int chunkSize = 16;
-    int gridPoints = getGridPoints(chunkSize);
+    // int chunkSize = 16;
+    // int gridPoints = getGridPoints(chunkSize);
+    // int cacheWidth = chunkSize * CHUNK_CACHE_RANGE;
+
     Noises *noises = nullptr;
     TaskQueue taskQueue;
     ResultQueue resultQueue;
 
     pthread_t parentThreadId;
     // std::vector<emscripten_wasm_worker_t> threads;
+    // bool first = true;
 
     // storing the octrees that we would delete after mesh construction
     // std::vector<OctreeNode *> neighbourNodes;
@@ -61,15 +61,21 @@ namespace DualContouring
     }
 
     void runLoop() {
-        // std::cout << "run loop 1" << std::endl;
+        /* if (first) {
+            first = false;
+            EM_ASM({
+                debugger;
+            });
+        } */
         taskQueue.runLoop();
         // std::cout << "run loop 2" << std::endl;
     }
 
     void initialize(int newChunkSize, int seed)
     {
-        chunkSize = newChunkSize;
-        gridPoints = getGridPoints(chunkSize);
+        // chunkSize = newChunkSize;
+        // gridPoints = getGridPoints(chunkSize);
+        // cacheWidth = chunkSize * CHUNK_CACHE_RANGE;
         noises = new Noises(seed);
         parentThreadId = pthread_self();
     }
