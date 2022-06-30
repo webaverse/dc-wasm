@@ -16,6 +16,7 @@ DCInstance::DCInstance() :
     cachedWaterField(this),
     cachedSkylightField(this),
     cachedAoField(this),
+    cachedCaveField(this),
     cachedSdf(this),
     cachedWaterSdf(this),
     cachedDamageSdf(this)
@@ -1321,6 +1322,9 @@ uint8_t DCInstance::initAoField(DCInstance *inst, int x, int y, int z) {
     } */
     return numOpens;
 }
+float DCInstance::initCaveField(DCInstance *inst, int x, int y, int z) {
+    return DualContouring::getComputedCaveNoise(x, y, z);;
+}
 float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
     // const int &gridPoints = DualContouring::gridPoints;
     /* auto &chunk2d = chunk->chunk2d;
@@ -1347,9 +1351,8 @@ float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
                         (float)-1),
                     (float)1);
 
-                // caves
-                float caveValue = DualContouring::getComputedCaveNoise(x, y, z) * 1.1f;
-                float f = heightValue + caveValue;
+                float caveValue = inst->cachedCaveField.get(x, y, z);
+                float f = heightValue + caveValue * 1.1f;
                 /* f = std::min( // XXX does not fix
                     std::max(
                         f,

@@ -42,12 +42,14 @@ public:
 
     static uint8_t initSkylightField(DCInstance *inst, int x, int y, int z);
     static uint8_t initAoField(DCInstance *inst, int x, int y, int z);
+    static float initCaveField(DCInstance *inst, int x, int y, int z);
     static float initSdf(DCInstance *inst, int x, int y, int z);
     static float initWaterSdf(DCInstance *inst, int x, int y, int z);
     static float initDamageSdf(DCInstance *inst, int x, int y, int z);
 
     ChunkCache3D<uint8_t, Chunk3D, initSkylightField> cachedSkylightField;
     ChunkCache3D<uint8_t, Chunk3D, initAoField> cachedAoField;
+    ChunkCache3D<float, Chunk3D, initCaveField> cachedCaveField;
     ChunkCache3D<float, Chunk3D, initSdf> cachedSdf;
     ChunkCache3D<float, Chunk3D, initWaterSdf> cachedWaterSdf;
     ChunkCache3D<float, Chunk3D, initDamageSdf> cachedDamageSdf;
