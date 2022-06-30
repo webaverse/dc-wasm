@@ -43,15 +43,6 @@ R trilinear(
   vm::ivec3 p011 = vm::ivec3(ix, iy + 1, iz + 1);
   vm::ivec3 p111 = vm::ivec3(ix + 1, iy + 1, iz + 1);
 
-  /* int i000 = p000.x + p000.z * gridPoints + p000.y * gridPoints * gridPoints;
-  int i100 = p100.x + p100.z * gridPoints + p100.y * gridPoints * gridPoints;
-  int i010 = p010.x + p010.z * gridPoints + p010.y * gridPoints * gridPoints;
-  int i110 = p110.x + p110.z * gridPoints + p110.y * gridPoints * gridPoints;
-  int i001 = p001.x + p001.z * gridPoints + p001.y * gridPoints * gridPoints;
-  int i101 = p101.x + p101.z * gridPoints + p101.y * gridPoints * gridPoints;
-  int i011 = p011.x + p011.z * gridPoints + p011.y * gridPoints * gridPoints;
-  int i111 = p111.x + p111.z * gridPoints + p111.y * gridPoints * gridPoints; */
-
   const R &v000 = data.get(p000.x, p000.y, p000.z);
   const R &v100 = data.get(p100.x, p100.y, p100.z);
   const R &v010 = data.get(p010.x, p010.y, p010.z);
