@@ -2,26 +2,28 @@
 
 //
 
-uint64_t getIndex(int x, int y) {
-    uint64_t result = uint16_t(x);
-    result = (result << 16) | uint16_t(0);
-    result = (result << 16) | uint16_t(y);
-    result = (result << 16) | uint16_t(0);
+int getCacheIndexWorld(int x, int y) {
+    int result = uint8_t(x / cacheWidth);
+    result = (result << 8) | uint8_t(y / cacheWidth);
     return result;
 }
-uint64_t getIndex(int x, int y, int z) {
-    uint64_t result = uint16_t(x);
-    result = (result << 16) | uint16_t(y);
-    result = (result << 16) | uint16_t(z);
-    result = (result << 16) | uint16_t(1);
+int getCacheIndexWorld(int x, int y, int z) {
+    int result = uint8_t(x / cacheWidth);
+    result = (result << 8) | uint8_t(y / cacheWidth);
+    result = (result << 8) | uint8_t(z / cacheWidth);
     return result;
 }
 
 //
 
-uint64_t getCacheIndex(int x, int y) {
+uint32_t getCacheIndexLocal(int x, int y) {
+    x = modulo(x, cacheWidth);
+    y = modulo(y, cacheWidth);
     return x + y * cacheWidth; 
 }
-uint64_t getCacheIndex(int x, int y, int z) {
+uint32_t getCacheIndexLocal(int x, int y, int z) {
+    x = modulo(x, cacheWidth);
+    y = modulo(y, cacheWidth);
+    z = modulo(z, cacheWidth); 
     return x + z * cacheWidth + y * cacheWidth * cacheWidth; 
 }

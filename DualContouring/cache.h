@@ -49,13 +49,13 @@ public:
 
 //
 
-uint64_t getIndex(int x, int y);
-uint64_t getIndex(int x, int y, int z);
+int getCacheIndexWorld(int x, int y);
+int getCacheIndexWorld(int x, int y, int z);
 
 //
 
-uint64_t getCacheIndex(int x, int y);
-uint64_t getCacheIndex(int x, int y, int z);
+uint32_t getCacheIndexLocal(int x, int y);
+uint32_t getCacheIndexLocal(int x, int y, int z);
 
 //
 
@@ -77,14 +77,14 @@ public:
         // values.resize(cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth);
         for (size_t i = 0; i < valueSources.size(); i++) {
-            valueSources[i] = INT_MAX;
+            valueSources[i] = INT_MAX/2;
         }
     }
     ~ChunkCache2D() {}
 
     T get(int x, int y) {
-        uint64_t localIndex = getCacheIndex(modulo(x, cacheWidth), modulo(y, cacheWidth));
-        uint64_t worldIndex = getCacheIndex(x, y);
+        uint32_t localIndex = getCacheIndexLocal(x, y);
+        int worldIndex = getCacheIndexWorld(x, y);
 
         // found in cache; fast case
         {
@@ -103,8 +103,8 @@ public:
         return value;
     }
     void set(DCInstance *inst, ChunkType *chunk, int x, int z, const T &value) {
-        uint64_t localIndex = getCacheIndex(modulo(x, cacheWidth), modulo(z, cacheWidth));
-        uint64_t worldIndex = getCacheIndex(x, z);
+        uint32_t localIndex = getCacheIndexLocal(x, z);
+        int worldIndex = getCacheIndexWorld(x, z);
         {
           // std::unique_lock<Mutex> lock(mutex);
           values[localIndex] = value;
@@ -135,14 +135,24 @@ public:
         // values.resize(cacheWidth * cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth * cacheWidth);
         for (size_t i = 0; i < valueSources.size(); i++) {
-            valueSources[i] = INT_MAX;
+            valueSources[i] = INT_MAX/2;
         }
     }
     ~ChunkCache3D() {}
 
     T get(int x, int y, int z) {
-        uint64_t localIndex = getCacheIndex(modulo(x, cacheWidth), modulo(y, cacheWidth), modulo(z, cacheWidth));
-        uint64_t worldIndex = getCacheIndex(x, y, z);
+
+        /* uint64_t getCacheIndex(int x, int y) {
+            return x + y * cacheWidth; 
+        }
+        uint64_t getCacheIndex(int x, int y, int z) {
+            return x + z * cacheWidth + y * cacheWidth * cacheWidth; 
+        } */
+
+        uint32_t localIndex = getCacheIndexLocal(x, y, z);
+        int worldIndex = getCacheIndexWorld(x, y, z);
+
+        // std::cout << "index " << x << " " << y << " " << z << " : " << localIndex << " " << worldIndex << std::endl;
 
         // found in cache; fast case
         {
@@ -161,8 +171,8 @@ public:
         return value;
     }
     void set(int x, int y, int z, const T &value) {
-        uint64_t localIndex = getCacheIndex(modulo(x, cacheWidth), modulo(y, cacheWidth), modulo(z, cacheWidth));
-        uint64_t worldIndex = getCacheIndex(x, y, z);
+        uint32_t localIndex = getCacheIndexLocal(x, y, z);
+        int worldIndex = getCacheIndexWorld(x, y, z);
         {
           // std::unique_lock<Mutex> lock(mutex);
           values[localIndex] = value;
