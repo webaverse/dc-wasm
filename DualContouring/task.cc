@@ -26,19 +26,14 @@ void Task::unlock() {
 void Task::run() {
   fn();
 }
-void Task::ensurePop() {
+/* void Task::ensurePop() {
   if (popped.test_and_set(std::memory_order_acquire)) {
     EM_ASM(
       console.log('double task pop!');
     );
     abort();
-  } /* else {
-    EM_ASM(
-      console.log('ok task pop.');
-    );
-  } */
-}
-
+  }
+} */
 
 //
 
@@ -80,23 +75,23 @@ Task *TaskQueue::popLockTask() {
     std::unique_lock<Mutex> lock(taskMutex);
     // lock.lock();
 
-    if (lockedTasks.size() == 0) {
+    /* if (lockedTasks.size() == 0) {
       abort();
-    }
+    } */
 
     // XXX lock here; perhaps have a queue of only requirement fulfilled tasks
 
     task = lockedTasks.front();
     lockedTasks.pop_front();
 
-    task->ensurePop();
+    // task->ensurePop();
   }
-  if (task == nullptr) {
-    /* EM_ASM(
+  /* if (task == nullptr) {
+    EM_ASM(
       console.log('failed to pop task!');
-    ); */
+    );
     abort();
-  }
+  } */
   return task;
 }
 void TaskQueue::runLoop() {
