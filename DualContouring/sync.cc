@@ -7,58 +7,46 @@
 Mutex::Mutex() {}
 Mutex::Mutex(bool locked) {
   if (locked) {
-    flag.test_and_set(std::memory_order_acquire);
+    mutex.try_lock();
   }
 }
 Mutex::~Mutex() {}
 void Mutex::lock() {
-  for (;;) {
-    bool oldValue = flag.test_and_set(std::memory_order_acquire);
-    if (!oldValue) {
-      break;
-    } else {
-      flag.wait(oldValue);
-    }
-  }
+  mutex.lock();
 }
 void Mutex::unlock() {
-  flag.clear(std::memory_order_release);
-  flag.notify_one();
+  mutex.unlock();
 }
 bool Mutex::try_lock() {
-  bool oldValue = flag.test_and_set(std::memory_order_acquire);
-  return !oldValue;
+  return mutex.try_lock();
 }
-bool Mutex::test() {
+/* bool Mutex::test() {
   return !flag.test();
 }
 void Mutex::wait() {
   lock();
   unlock();
-}
+} */
 
 //
 
-Semaphore::Semaphore(int value) : value(value) {}
-Semaphore::Semaphore() : value(0) {}
-Semaphore::~Semaphore() {}
-void Semaphore::wait() {
-  for (;;) {
-    int oldValue;
-    {
-      oldValue = value.fetch_sub(1, std::memory_order_acquire);
-      if (oldValue > 0) {
-        break;
-      } else {
-        value.fetch_add(1, std::memory_order_release);
-      }
-    }
-    value.wait(oldValue);
-  }
-}
+Semaphore::Semaphore(unsigned long count) : count_(count) {}
 void Semaphore::signal() {
-  {
-    value.fetch_add(1, std::memory_order_release);
-    value.notify_one();
-  }
+    std::unique_lock<decltype(mutex_)> lock(mutex_);
+    ++count_;
+    condition_.notify_one();
 }
+void Semaphore::wait() {
+    std::unique_lock<decltype(mutex_)> lock(mutex_);
+    while(!count_) // Handle spurious wake-ups.
+        condition_.wait(lock);
+    --count_;
+}
+/* bool Semaphore::try_wait() {
+    std::lock_guard<decltype(mutex_)> lock(mutex_);
+    if(count_) {
+        --count_;
+        return true;
+    }
+    return false;
+} */

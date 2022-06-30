@@ -797,8 +797,7 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    MultiChunkLock *terrainLock = new MultiChunkLock(this);
-    Task *terrainTask = new Task(terrainLock, [
+    Task *terrainTask = new Task([
         this,
         id,
         worldPosition,
@@ -819,8 +818,7 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    MultiChunkLock *liquidLock = new MultiChunkLock(this);
-    Task *liquidTask = new Task(liquidLock, [
+    Task *liquidTask = new Task([
         this,
         id,
         worldPosition,
@@ -836,8 +834,7 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
-    Task *heightfieldTask = new Task(heightfieldLock, [
+    Task *heightfieldTask = new Task([
         this,
         id,
         worldPositionXZ,
@@ -856,8 +853,7 @@ uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, 
 uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    MultiChunkLock *skylightLock = new MultiChunkLock(this);
-    Task *skylightTask = new Task(skylightLock, [
+    Task *skylightTask = new Task([
         this,
         id,
         worldPosition,
@@ -876,8 +872,7 @@ uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int l
 uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
     uint32_t id = DualContouring::resultQueue.getNextId();
     
-    MultiChunkLock *aoLock = new MultiChunkLock(this);
-    Task *aoTask = new Task(aoLock, [
+    Task *aoTask = new Task([
         this,
         id,
         worldPosition,
@@ -897,8 +892,7 @@ uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, con
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
-    Task *grassSplatTask = new Task(heightfieldLock, [
+    Task *grassSplatTask = new Task([
         this,
         id,
         worldPositionXZ,
@@ -917,8 +911,7 @@ uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
-    Task *vegetationSplatTask = new Task(heightfieldLock, [
+    Task *vegetationSplatTask = new Task([
         this,
         id,
         worldPositionXZ,
@@ -938,8 +931,7 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    MultiChunkLock *heightfieldLock = new MultiChunkLock(this);
-    Task *mobSplatTask = new Task(heightfieldLock, [
+    Task *mobSplatTask = new Task([
         this,
         id,
         worldPositionXZ,

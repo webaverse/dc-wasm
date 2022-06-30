@@ -5,35 +5,14 @@
 
 //
 
-Task::Task(MultiChunkLock *multiChunkLock, std::function<void()> fn) :
-  multiChunkLock(multiChunkLock),
-  fn(fn),
-  popped(false)
-  {}
-Task::~Task() {
-  delete multiChunkLock;
-}
+Task::Task(std::function<void()> fn) :
+  fn(fn)
+{}
+Task::~Task() {}
 
-bool Task::tryLock() {
-  /* EM_ASM({
-    console.log('task try lock');
-  }); */
-  return multiChunkLock->tryLockFn();
-}
-void Task::unlock() {
-  multiChunkLock->unlockFn();
-}
 void Task::run() {
   fn();
 }
-/* void Task::ensurePop() {
-  if (popped.test_and_set(std::memory_order_acquire)) {
-    EM_ASM(
-      console.log('double task pop!');
-    );
-    abort();
-  }
-} */
 
 //
 
@@ -52,29 +31,33 @@ void TaskQueue::pushTask(Task *task) {
       console.log('push task start', SharedArrayBuffer, $0, $1);
     }, tasks.size(), (void *)this); */
     tasks.push_back(task);
+
+    EM_ASM({
+      console.log('push task', $0);
+    }, tasks.size());
+
     // numTasks++;
     /* EM_ASM({
       console.log('push task end', $0);
     }, tasks.size()); */
   }
-  // taskSemaphore.signal();
-  flushTasks();
+  taskSemaphore.signal();
+  // flushTasks();
 }
 std::atomic<int> numActiveThreads(8);
 Task *TaskQueue::popLockTask() {
   /* EM_ASM(
     console.log('pop lock task 1');
   ); */
-  --numActiveThreads;
+  int currentNumActiveThreads = numActiveThreads.fetch_sub(1) - 1;
+
+  EM_ASM({
+    console.log('try to pop task', $0);
+  }, currentNumActiveThreads);
   
   taskSemaphore.wait();
 
-  int currentNumActiveThreads = ++numActiveThreads;
-  if (currentNumActiveThreads < 8) {
-    EM_ASM({
-      console.log('fewer than 8 threads', $0);
-    }, currentNumActiveThreads);
-  }
+  currentNumActiveThreads = numActiveThreads.fetch_add(1) + 1;
 
   /* EM_ASM(
     console.log('pop lock sema waited');
@@ -91,8 +74,14 @@ Task *TaskQueue::popLockTask() {
 
     // XXX lock here; perhaps have a queue of only requirement fulfilled tasks
 
-    task = lockedTasks.front();
-    lockedTasks.pop_front();
+    task = tasks.front();
+    tasks.pop_front();
+
+    if (currentNumActiveThreads < 8) {
+      EM_ASM({
+        console.log('fewer than 8 threads', $0, $1);
+      }, currentNumActiveThreads, tasks.size());
+    }
 
     // task->ensurePop();
   }
@@ -109,14 +98,17 @@ void TaskQueue::runLoop() {
     console.log('run loop');
   ); */
   {
-    Task *task = nullptr;
+    Task *task;
     while ((task = popLockTask())) {
       task->run();
-      task->unlock();
+      // task->unlock();
+      EM_ASM({
+        console.log('done running task');
+      });
       delete task;
-      task = nullptr;
+      // task = nullptr;
 
-      flushTasks();
+      // flushTasks();
     }
   }
   /* EM_ASM(
@@ -124,7 +116,7 @@ void TaskQueue::runLoop() {
   ); */
   abort();
 }
-void TaskQueue::flushTasks() {
+/* void TaskQueue::flushTasks() {
   int numSignals = 0;
   {
     std::unique_lock<Mutex> lock(taskMutex);
@@ -150,4 +142,4 @@ void TaskQueue::flushTasks() {
   for (int i = 0; i < numSignals; i++) {
     taskSemaphore.signal();
   }
-}
+} */

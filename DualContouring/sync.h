@@ -5,6 +5,8 @@
 #include <vector>
 #include <deque>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 //
 
@@ -14,7 +16,7 @@ class DCInstance;
 
 class Mutex {
 public:
-  std::atomic_flag flag;
+  std::mutex mutex;
 
   Mutex();
   Mutex(bool locked);
@@ -22,20 +24,21 @@ public:
   void lock();
   void unlock();
   bool try_lock();
-  bool test();
-  void wait();
+  // bool test();
+  // void wait();
 };
 
-// implements a semaphore using only c++ atomic value
 class Semaphore {
 public:
-  std::atomic<int> value;
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    unsigned long count_; // Initialized as locked.
 
-  Semaphore(int value);
-  Semaphore();
-  ~Semaphore();
-  void wait();
-  void signal();
+    Semaphore(unsigned long count = 0);
+
+    void signal();
+    void wait();
+    /* bool try_wait(); */
 };
 
 #endif // SYNC_H
