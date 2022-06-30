@@ -1160,37 +1160,23 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
 }
 float DCInstance::initWaterField(DCInstance *inst, int x, int z) {
     const int &size = chunkSize;
-    // const int &gridPoints = DualContouring::gridPoints;
-    // const vm::ivec2 &min = chunk->min;
-    // const int &lod = chunk->lod;
 
-    /* std::vector<float> waterField(gridPoints * gridPoints, 0);
-    for (int z = 0; z < gridPoints; z++)
+    float value = 0;
+    // std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
+    // int numSamples = 0;
+    for (int dz = -size/2; dz < size/2; dz++)
     {
-        for (int x = 0; x < gridPoints; x++)
-        { */
-            // int ax = x;
-            // int az = z;
+        for (int dx = -size/2; dx < size/2; dx++)
+        {
+            unsigned char b = inst->cachedBiomesField.get(x + dx, z + dz);
 
-            // int index2D = x + z * gridPoints;
-            
-            float value = 0;
-            // std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-            // int numSamples = 0;
-            for (int dz = -size/2; dz < size/2; dz++)
-            {
-                for (int dx = -size/2; dx < size/2; dx++)
-                {
-                    unsigned char b = inst->cachedBiomesField.get(x + dx, z + dz);
-
-                    if (isWaterBiome(b)) {
-                        // waterField[index2D]++;
-                        value++;
-                    }
-                }
+            if (isWaterBiome(b)) {
+                // waterField[index2D]++;
+                value++;
             }
-        /* }
-    } */
+        }
+    }
+
     return value;
 }
 

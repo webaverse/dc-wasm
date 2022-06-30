@@ -84,24 +84,9 @@ int resolveGenerateFlags(int flags) {
 
 //
 
-/* Chunk2D::Chunk2D(Chunk2D &&other) :
-                              min(other.min),
-                              size(other.size),
-                              lod(other.lod),
-                              gridPoints(other.gridPoints),
-                              cachedNoiseField(std::move(other.cachedNoiseField)),
-                              cachedBiomesField(std::move(other.cachedBiomesField)),
-                            //   cachedBiomesVectorField(std::move(other.cachedBiomesVectorField)),
-                            //   cachedBiomesWeightsVectorField(std::move(other.cachedBiomesWeightsVectorField)),
-                              cachedWaterField(std::move(other.cachedWaterField)),
-                              cachedHeightField(std::move(other.cachedHeightField))
-{
-} */
 Chunk2D::Chunk2D(const vm::ivec2 chunkMin, const int lod) :
     min(chunkMin),
-    //  size(DualContouring::chunkSize),
     lod(lod)
-    //  gridPoints(size + 3 + lod)
 {}
 /* Chunk2D &Chunk2D::operator=(const Chunk2D &&other)
 {
@@ -153,24 +138,9 @@ float Chunk2D::getHumidityLocal(const int lx, const int lz) const {
 
 //
 
-/* Chunk3D::Chunk3D(Chunk3D &&other) :
-                              min(other.min),
-                              size(other.size),
-                              lod(other.lod),
-                              gridPoints(other.gridPoints),
-                              cachedSkylightField(std::move(other.cachedSkylightField)),
-                              cachedAoField(std::move(other.cachedAoField)),
-                              cachedSdf(std::move(other.cachedSdf)),
-                              cachedWaterSdf(std::move(other.cachedWaterSdf)),
-                              cachedDamageSdf(std::move(other.cachedDamageSdf)),
-                              chunk2d(other.chunk2d)
-{
-} */
 Chunk3D::Chunk3D(const vm::ivec3 chunkMin, const int lod, Chunk2D *chunk2d) :
                                                          min(chunkMin),
-                                                        //  size(DualContouring::chunkSize),
                                                          lod(lod),
-                                                        //  gridPoints(size + 3 + lod),
                                                          chunk2d(chunk2d)
                                                          {}
 /* Chunk3D &Chunk3D::operator=(const Chunk3D &&other)
@@ -205,24 +175,4 @@ Chunk3D::Chunk3D(const vm::ivec3 chunkMin, const int lod, Chunk2D *chunk2d) :
         cachedSkylightField.ensure(inst, this);
         cachedAoField.ensure(inst, this);
     }
-} */
-
-// skylight
-/* unsigned char Chunk3D::getSkylightLocal(const int lx, const int ly, const int lz) const
-{
-    int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-    return cachedSkylightField[index];
-}
-
-// ao
-unsigned char Chunk3D::getAoLocal(const int lx, const int ly, const int lz) const
-{
-    int index = lx + lz * size + ly * size * size;
-    return cachedAoField[index];
-} */
-
-/* void Chunk3D::injectDamage(float *damageBuffer)
-{
-    cachedDamageSdf.resize(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
-    memcpy(cachedDamageSdf.data(), damageBuffer, cachedDamageSdf.size() * sizeof(float));
 } */
