@@ -60,11 +60,21 @@ void TaskQueue::pushTask(Task *task) {
   // taskSemaphore.signal();
   flushTasks();
 }
+std::atomic<int> numActiveThreads(8);
 Task *TaskQueue::popLockTask() {
   /* EM_ASM(
     console.log('pop lock task 1');
   ); */
+  --numActiveThreads;
+  
   taskSemaphore.wait();
+
+  int currentNumActiveThreads = ++numActiveThreads;
+  if (currentNumActiveThreads < 8) {
+    EM_ASM({
+      console.log('fewer than 8 threads', $0);
+    }, currentNumActiveThreads);
+  }
 
   /* EM_ASM(
     console.log('pop lock sema waited');
