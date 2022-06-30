@@ -166,7 +166,7 @@ public:
     // constructors
     ChunkOctree(DCInstance *inst, Chunk3D &chunk, const int lodArray[8]) : min(chunk.min), minVoxelSize(chunk.lod)
     {
-        const int maxNodeCount = 42130;
+        const int maxNodeCount = 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
         chunkNodes.resize(maxNodeCount);
         const int &size = chunkSize;
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
@@ -174,14 +174,6 @@ public:
         root = constructOctreeUpwards(rootNode, voxelNodes, chunk.min, size);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, chunk, lodArray);
         seamRoot = constructOctreeUpwards(seamRoot, seamNodes, chunk.min, size * 2);
-    }
-
-    // destructors
-    ~ChunkOctree(){
-        // for (int i = 0; i < chunkNodes.size(); i++)
-        // {
-        //     deleteOctreeNode(chunkNodes[i]);
-        // }
     }
 
     // methods
@@ -195,11 +187,6 @@ public:
         nextNodeIndex++;
         return newNode;
     }
-
-    // void deleteOctreeNode(OctreeNode *node){
-    // 	delete node->vertexData;
-    // 	delete node;
-    // }
 
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, Chunk3D &chunk)
     {
