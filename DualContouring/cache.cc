@@ -1,5 +1,7 @@
 #include "cache.h"
 
+//
+
 uint64_t getIndex(int x, int y) {
     uint64_t result = uint16_t(x);
     result = (result << 16) | uint16_t(0);
@@ -13,4 +15,13 @@ uint64_t getIndex(int x, int y, int z) {
     result = (result << 16) | uint16_t(z);
     result = (result << 16) | uint16_t(1);
     return result;
+}
+
+//
+
+uint64_t getCacheIndex(int x, int y) {
+    return x + y * cacheWidth; 
+}
+uint64_t getCacheIndex(int x, int y, int z) {
+    return x + z * cacheWidth + y * cacheWidth * cacheWidth; 
 }
