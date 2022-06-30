@@ -342,7 +342,7 @@ function updateGlobalBufferAndViews(buf) {
  Module["HEAPF64"] = HEAPF64 = new Float64Array(buf);
 }
 
-var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 1073741824;
+var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 2147483648;
 
 if (ENVIRONMENT_IS_PTHREAD) {
  wasmMemory = Module["wasmMemory"];
@@ -623,34 +623,28 @@ var tempDouble;
 var tempI64;
 
 var ASM_CONSTS = {
- 32252: () => {
+ 32276: () => {
   console.log("NaN detected in location");
  },
- 32297: () => {
+ 32321: () => {
   console.log("NaN detected in data");
  },
- 32338: ($0, $1, $2, $3, $4, $5, $6) => {
+ 32362: ($0, $1, $2, $3, $4, $5, $6) => {
   console.log("liquid density nan", "water=", $0, "chunk=", $1, $2, $3, ", worldPosition=", $4, $5, $6);
  },
- 32445: () => {
+ 32469: () => {
   printf("Error! The provided voxel has no vertex data!\n");
  },
- 32508: () => {
-  console.log("Error! The provided voxel has no children!\n");
- },
- 32569: () => {
+ 32532: () => {
   printf("Error! The provided voxel has no vertex data!\n");
  },
- 32632: () => {
-  console.log("Error! The provided voxel has no children!\n");
- },
- 32693: () => {
+ 32595: () => {
   console.log("task queue destructor");
  },
- 32735: $0 => {
-  console.log("fewer than 8 threads", $0);
+ 32637: () => {
+  globalThis.requestStartTime = performance.now();
  },
- 32780: ($0, $1) => {
+ 32690: ($0, $1) => {
   const id = $0;
   const result = $1;
   if (!globalThis.resultEvent) {
@@ -1066,12 +1060,6 @@ function __emscripten_default_pthread_stack_size() {
  return 2097152;
 }
 
-var nowIsMonotonic = true;
-
-function __emscripten_get_now_is_monotonic() {
- return nowIsMonotonic;
-}
-
 function executeNotifiedProxyingQueue(queue) {
  Atomics.store(HEAP32, queue >> 2, 1);
  if (_pthread_self()) {
@@ -1125,6 +1113,18 @@ function readAsmConstArgs(sigPtr, buf) {
   ++buf;
  }
  return readAsmConstArgsArray;
+}
+
+function mainThreadEM_ASM(code, sigPtr, argbuf, sync) {
+ var args = readAsmConstArgs(sigPtr, argbuf);
+ if (ENVIRONMENT_IS_PTHREAD) {
+  return _emscripten_proxy_to_main_thread_js.apply(null, [ -1 - code, sync ].concat(args));
+ }
+ return ASM_CONSTS[code].apply(null, args);
+}
+
+function _emscripten_asm_const_async_on_main_thread(code, sigPtr, argbuf) {
+ return mainThreadEM_ASM(code, sigPtr, argbuf, 0);
 }
 
 function _emscripten_asm_const_int(code, sigPtr, argbuf) {
@@ -3922,10 +3922,10 @@ var asmLibraryArg = {
  "i": ___emscripten_thread_cleanup,
  "y": ___pthread_create_js,
  "t": __emscripten_default_pthread_stack_size,
- "s": __emscripten_get_now_is_monotonic,
- "r": __emscripten_notify_task_queue,
- "q": __emscripten_set_offscreencanvas_size,
+ "s": __emscripten_notify_task_queue,
+ "r": __emscripten_set_offscreencanvas_size,
  "b": _abort,
+ "q": _emscripten_asm_const_async_on_main_thread,
  "d": _emscripten_asm_const_int,
  "g": _emscripten_check_blocking_allowed,
  "c": _emscripten_get_now,
