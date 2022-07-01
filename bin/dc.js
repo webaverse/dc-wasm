@@ -342,7 +342,7 @@ function updateGlobalBufferAndViews(buf) {
  Module["HEAPF64"] = HEAPF64 = new Float64Array(buf);
 }
 
-var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 1073741824;
+var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 536870912;
 
 if (ENVIRONMENT_IS_PTHREAD) {
  wasmMemory = Module["wasmMemory"];
