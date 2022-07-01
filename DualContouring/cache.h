@@ -278,11 +278,10 @@ template <
 class ChunkCache3D {
 public:
     DCInstance *inst;
-    std::array<int, cacheWidth * cacheWidth * cacheWidth> valueSources;
     std::array<ChunkCacheValue<T>, cacheWidth * cacheWidth * cacheWidth> values;
     Mutex mutex;
 
-    ChunkCache3D(DCInstance *inst) : inst(inst), mutex(false) {
+    ChunkCache3D(DCInstance *inst) : inst(inst) {
         /* if (!mutex.test()) {
           EM_ASM({
             console.log('mutex test failed');
@@ -292,9 +291,9 @@ public:
         // values.reserve(RESERVE_SIZE);
         // values.resize(cacheWidth * cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth * cacheWidth);
-        for (size_t i = 0; i < valueSources.size(); i++) {
+        /* for (size_t i = 0; i < valueSources.size(); i++) {
             valueSources[i] = 128;
-        }
+        } */
     }
     ~ChunkCache3D() {}
 
