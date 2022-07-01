@@ -99,7 +99,7 @@ self.onmessage = (e) => {
       Module['ENVIRONMENT_IS_PTHREAD'] = true;
 
       if (typeof e.data.urlOrBlob == 'string') {
-        e.data.urlOrBlob="/dc.js";e.data.urlOrBlob="/dc.js";importScripts(e.data.urlOrBlob);
+        e.data.urlOrBlob="/dc.js";importScripts(e.data.urlOrBlob);
       } else {
         var objectUrl = URL.createObjectURL(e.data.urlOrBlob);
         importScripts(objectUrl);
