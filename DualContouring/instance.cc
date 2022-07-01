@@ -1192,8 +1192,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
                 }
             }
 
-            std::vector<unsigned char> biomes;
-            biomes.resize(biomeCounts.size());
+            std::array<unsigned char, numBiomes> biomes;
             int index = 0;
             for (auto kv : biomeCounts)
             {
@@ -1208,7 +1207,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
                 if (i < biomes.size())
                 {
                     heightfield.biomesVectorField[i] = biomes[i];
-                    heightfield.biomesWeightsVectorField[i] = (float)biomeCounts[biomes[i]] / (float)numSamples;
+                    heightfield.biomesWeightsVectorField[i] = (float)biomeCounts[biomes[i]] / (float)numSamples * 255.0f;
                 }
                 else
                 {

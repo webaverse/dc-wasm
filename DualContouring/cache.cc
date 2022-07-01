@@ -1,17 +1,17 @@
 #include "cache.h"
+#include "xxhash.h"
 
 //
 
-int16_t getCacheIndexWorld(int x, int y) {
-    int16_t result = uint8_t(x / cacheWidth);
-    result = (result << 8) | uint8_t(y / cacheWidth);
-    return result;
+constexpr int hashSeed = 0;
+
+uint32_t getCacheIndexWorld(int x, int y) {
+    std::array<int, 2> coords = {x, y};
+    return XXH32(coords.data(), coords.size(), hashSeed);
 }
-int getCacheIndexWorld(int x, int y, int z) {
-    int result = uint8_t(x / cacheWidth);
-    result = (result << 8) | uint8_t(y / cacheWidth);
-    result = (result << 8) | uint8_t(z / cacheWidth);
-    return result;
+uint32_t getCacheIndexWorld(int x, int y, int z) {
+    std::array<int, 3> coords = {x, y, z};
+    return XXH32(coords.data(), coords.size(), hashSeed);
 }
 
 //
