@@ -100,7 +100,7 @@ inline float clampPointToRange(float minDistance, const vm::vec3 &position, cons
 
 // negative density means inside the chunk, positive density means outside the chunk
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
-float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk)
+float terrainDensityFn(const vm::vec3 &position, DCInstance *inst)
 {
 	const float terrain = inst->getCachedInterpolatedSdf(position.x, position.y, position.z);
 	const float damage = inst->getCachedDamageInterpolatedSdf(position.x, position.y, position.z);
@@ -120,7 +120,7 @@ float terrainDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chun
 	return minDistance;
 }
 
-float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk)
+float liquidDensityFn(const vm::vec3 &position, DCInstance *inst)
 {
 	const float water = inst->getCachedWaterInterpolatedSdf(position.x, position.y, position.z);
 
@@ -128,11 +128,11 @@ float liquidDensityFn(const vm::vec3 &position, DCInstance *inst, Chunk3D &chunk
 	if (inst->clipRange) { // range clipper enabled
     minDistance = clampPointToRange(minDistance, position, *inst->clipRange);
 	}
-	if (isnan(minDistance)) {
+	/* if (isnan(minDistance)) {
 		EM_ASM({
 			console.log('liquid density nan', 'water=', $0, 'chunk=', $1, $2, $3, ', worldPosition=', $4, $5, $6);
 		}, water, chunk.min.x, chunk.min.y, chunk.min.z, position.x, position.y, position.z);
 		abort();
-	}
+	} */
 	return minDistance;
 }

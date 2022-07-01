@@ -26,6 +26,7 @@ DCInstance::~DCInstance() {}
 // chunks
 // 3d
 Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags) {
+    abort();
     /* if (lod != 1) {
         EM_ASM({
           console.log('getChunk 3d bad lod', $0);
@@ -84,6 +85,7 @@ Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, con
 
 // 2d
 Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags flags) {
+    abort();
     /* if (lod != 1) {
         EM_ASM({
           console.log('getChunk 2d bad lod', $0);
@@ -564,7 +566,6 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
 uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
-    Chunk3D &chunk = getChunk(worldPosition, lod, GF_SDF);
     {
         /* if (generateMutex.try_lock())
         {
@@ -577,7 +578,7 @@ uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, cons
         }
         std::unique_lock<Mutex> lock(generateMutex); */
 
-        ChunkOctree<TerrainDCContext> chunkOctree(this, chunk, lodArray);
+        ChunkOctree<TerrainDCContext> chunkOctree(this, worldPosition, lodArray);
         if (!chunkOctree.root)
         {
             // printf("Chunk Has No Data\n");
@@ -603,7 +604,6 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
     /* EM_ASM({
         console.log('createLiquidChunkMesh', $0, $1, $2, $3);
     }, worldPosition.x, worldPosition.y, worldPosition.z, lod); */
-    Chunk3D &chunk = getChunk(worldPosition, lod, GF_LIQUIDS);
 
     /* if (chunk.cachedWaterSdf.value.size() == 0){
         EM_ASM({
@@ -612,7 +612,7 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
         abort();
     } */
 
-    ChunkOctree<LiquidDCContext> chunkOctree(this, chunk, lodArray);
+    ChunkOctree<LiquidDCContext> chunkOctree(this, worldPosition, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");
@@ -711,7 +711,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
+                    // Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (removeSphereDamage(x, y, z, radius))
                     {
                         if (*outPositionsCount < maxPositionsCount)
@@ -772,7 +772,7 @@ bool DCInstance::drawCubeDamage(
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
+                    // Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (addCubeDamage(
                             x, y, z,
                             qx, qy, qz, qw,
@@ -836,7 +836,7 @@ bool DCInstance::eraseCubeDamage(
                 {
                     seenHashes.insert(minHash);
 
-                    Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
+                    // Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
                     if (removeCubeDamage(
                             x, y, z,
                             qx, qy, qz, qw,
