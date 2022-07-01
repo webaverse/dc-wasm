@@ -63,7 +63,7 @@ Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
             abort();
         } */
 
-        vm::ivec2 min2D(min.x, min.z);
+        vm::ivec2 min2D{min.x, min.z};
         Chunk2D *chunk2d = &getChunkInternal(min2D, lod);
         chunksCache3D.emplace(
             std::piecewise_construct,
@@ -75,10 +75,10 @@ Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
     return chunkNoise;
 }
 Chunk3D &DCInstance::getChunkAt(const float x, const float y, const float z, const int lod, GenerateFlags flags) {
-    vm::ivec3 min = vm::ivec3(
+    vm::ivec3 min = vm::ivec3{
                         (int)std::floor(x / (float)chunkSize),
                         (int)std::floor(y / (float)chunkSize),
-                        (int)std::floor(z / (float)chunkSize)) *
+                        (int)std::floor(z / (float)chunkSize)} *
                     chunkSize;
     return getChunk(min, lod, flags);
 }
@@ -132,9 +132,9 @@ Chunk2D &DCInstance::getChunkInternal(const vm::ivec2 &min, int lod) {
 }
 Chunk2D &DCInstance::getChunkAt(const float x, const float z, const int lod, GenerateFlags flags)
 {
-    vm::ivec2 min = vm::ivec2(
+    vm::ivec2 min = vm::ivec2{
                         (int)std::floor(x / (float)chunkSize),
-                        (int)std::floor(z / (float)chunkSize)) *
+                        (int)std::floor(z / (float)chunkSize)} *
                     chunkSize;
     return getChunk(min, lod, flags);
 }
@@ -530,11 +530,11 @@ std::vector<vm::ivec3> getChunkRangeInclusive(const vm::ivec3 &worldPosition, in
         {
             for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
             {
-                result.push_back(vm::ivec3(
+                result.push_back(vm::ivec3{
                     worldPosition.x + dx * chunkSize,
                     worldPosition.y + dy * chunkSize,
                     worldPosition.z + dz * chunkSize
-                ));
+                });
             }
         }
     }
@@ -549,10 +549,10 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
     {
         for (int dx = minChunkDelta; dx <= maxChunkDelta; dx++)
         {
-            result.push_back(vm::ivec2(
+            result.push_back(vm::ivec2{
                 worldPosition.x + dx * chunkSize,
                 worldPosition.y + dz * chunkSize
-            ));
+            });
         }
     }
     /* EM_ASM({
@@ -645,7 +645,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
     std::set<uint64_t> seenHashes;
 
     // chunk min of the hit point
-    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3(x, y, z));
+    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{(int)x, (int)y, (int)z});
 
     for (float dx = -1; dx <= 1; dx += 1)
     {
@@ -653,7 +653,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
         {
             for (float dy = -1; dy <= 1; dy += 1)
             {
-                vm::ivec3 min = chunkMin + vm::ivec3(dx,dy,dz) * chunkSize;
+                vm::ivec3 min = chunkMin + vm::ivec3{(int)dx, (int)dy, (int)dz} * chunkSize;
                 
                 uint64_t minHash = hashOctreeMinLod(min, lod);
                 if (seenHashes.find(minHash) == seenHashes.end())
@@ -696,7 +696,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
     std::set<uint64_t> seenHashes;
 
     // chunk min of the hit point
-    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3(x, y, z));
+    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{(int)x, (int)y, (int)z});
 
     for (float dx = -1; dx <= 1; dx += 1)
     {
@@ -704,7 +704,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
         {
             for (float dy = -1; dy <= 1; dy += 1)
             {
-               vm::ivec3 min = chunkMin + vm::ivec3(dx,dy,dz) * chunkSize;
+               vm::ivec3 min = chunkMin + vm::ivec3{(int)dx, (int)dy, (int)dz} * chunkSize;
 
                 uint64_t minHash = hashOctreeMinLod(min, lod);
                 if (seenHashes.find(minHash) == seenHashes.end())
@@ -762,10 +762,10 @@ bool DCInstance::drawCubeDamage(
                 float ax = p.x;
                 float ay = p.y;
                 float az = p.z;
-                vm::ivec3 min = vm::ivec3(
-                                    std::floor(ax / (float)chunkSize),
-                                    std::floor(ay / (float)chunkSize),
-                                    std::floor(az / (float)chunkSize)) *
+                vm::ivec3 min = vm::ivec3{
+                                    (int)std::floor(ax / (float)chunkSize),
+                                    (int)std::floor(ay / (float)chunkSize),
+                                    (int)std::floor(az / (float)chunkSize)} *
                                 chunkSize;
                 uint64_t minHash = hashOctreeMinLod(min, lod);
                 if (seenHashes.find(minHash) == seenHashes.end())
@@ -826,10 +826,10 @@ bool DCInstance::eraseCubeDamage(
                 float ax = p.x;
                 float ay = p.y;
                 float az = p.z;
-                vm::ivec3 min = vm::ivec3(
-                                    std::floor(ax / (float)chunkSize),
-                                    std::floor(ay / (float)chunkSize),
-                                    std::floor(az / (float)chunkSize)) *
+                vm::ivec3 min = vm::ivec3{
+                                    (int)std::floor(ax / (float)chunkSize),
+                                    (int)std::floor(ay / (float)chunkSize),
+                                    (int)std::floor(az / (float)chunkSize)} *
                                 chunkSize;
                 uint64_t minHash = hashOctreeMinLod(min, lod);
                 if (seenHashes.find(minHash) == seenHashes.end())
@@ -873,9 +873,9 @@ bool DCInstance::eraseCubeDamage(
 
 void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 {
-    clipRange.reset(new vm::box3(
-        vm::vec3(min.x, min.y, min.z),
-        vm::vec3(max.x, max.y, max.z)));
+    clipRange.reset(new vm::box3{
+        vm::vec3{min.x, min.y, min.z},
+        vm::vec3{max.x, max.y, max.z}});
 }
 
 //
@@ -1218,7 +1218,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
             }
 
             float elevationSum = 0.f;
-            vm::vec2 fWorldPosition(x, z);
+            vm::vec2 fWorldPosition{(float)x, (float)z};
             for (auto const &iter : biomeCounts)
             {
                 elevationSum += iter.second * DualContouring::getComputedBiomeHeight(iter.first, fWorldPosition);
@@ -1520,7 +1520,7 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
         abort();
     } */
 
-    getCachedInterpolatedBiome2D(vm::vec2(worldPosition.x, worldPosition.z), biome, biomeWeights);
+    getCachedInterpolatedBiome2D(vm::vec2{worldPosition.x, worldPosition.z}, biome, biomeWeights);
 
     // int heightfieldIndex = lx + lz * gridPoints;
     float heightValue = cachedHeightField.get(x, z).heightField;
@@ -1574,7 +1574,7 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
 // sdf
 float DCInstance::getCachedInterpolatedSdf(const float x, const float y, const float z) {
     return trilinear<decltype(cachedSdf), float>(
-        vm::vec3(x, y, z),
+        vm::vec3{x, y, z},
         cachedSdf
     );
 }
@@ -1585,7 +1585,7 @@ float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, co
     // const float localY = y + 1;
     // const float localZ = z + 1;
     return trilinear<decltype(cachedWaterSdf), float>(
-        vm::vec3(x, y, z),
+        vm::vec3{x, y, z},
         cachedWaterSdf
     );
 }
@@ -1596,7 +1596,7 @@ float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, c
     // const float localY = y + 1;
     // const float localZ = z + 1;
     return trilinear<decltype(cachedDamageSdf), float>(
-        vm::vec3(x, y, z),
+        vm::vec3{x, y, z},
         cachedDamageSdf
     );
 }

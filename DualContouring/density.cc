@@ -91,8 +91,8 @@ inline float clampPointToRange(float minDistance, const vm::vec3 &position, cons
 
 	const float cube = cuboid(
 		position,
-		(vm::vec3(rangeMin.x, rangeMin.y, rangeMin.z) + vm::vec3(rangeMax.x, rangeMax.y, rangeMax.z)) / 2.f,
-		vm::vec3(w, h, d) / 2.f
+		(vm::vec3{rangeMin.x, rangeMin.y, rangeMin.z} + vm::vec3{rangeMax.x, rangeMax.y, rangeMax.z}) / 2.f,
+		vm::vec3{w, h, d} / 2.f
 	);
 	minDistance = std::max(minDistance, cube);
 	return minDistance;

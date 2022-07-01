@@ -22,13 +22,13 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
     return inst->getHeightfieldRange(x, z, w, h, lod, heights);
 } */
 EMSCRIPTEN_KEEPALIVE uint32_t getChunkHeightfieldAsync(DCInstance *inst, int x, int z, int lod) {
-    return inst->getChunkHeightfieldAsync(vm::ivec2(x, z), lod);
+    return inst->getChunkHeightfieldAsync(vm::ivec2{x, z}, lod);
 }
 EMSCRIPTEN_KEEPALIVE uint32_t getChunkSkylightAsync(DCInstance *inst, int x, int y, int z, int lod) {
-    return inst->getChunkSkylightAsync(vm::ivec3(x, y, z), lod);
+    return inst->getChunkSkylightAsync(vm::ivec3{x, y, z}, lod);
 }
 EMSCRIPTEN_KEEPALIVE uint32_t getChunkAoAsync(DCInstance *inst, int x, int y, int z, int lod) {
-    return inst->getChunkAoAsync(vm::ivec3(x, y, z), lod);
+    return inst->getChunkAoAsync(vm::ivec3{x, y, z}, lod);
 }
 /* EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
     return inst->getSkylightFieldRange(x, y, z, w, h, d, lod, skylights);
@@ -43,13 +43,13 @@ EMSCRIPTEN_KEEPALIVE void getAoFieldRange(DCInstance *inst, int x, int y, int z,
 // 
 
 EMSCRIPTEN_KEEPALIVE uint32_t createGrassSplatAsync(DCInstance *inst, int x, int z, int lod) {
-    return inst->createGrassSplatAsync(vm::ivec2(x, z), lod);
+    return inst->createGrassSplatAsync(vm::ivec2{x, z}, lod);
 }
 EMSCRIPTEN_KEEPALIVE uint32_t createVegetationSplatAsync(DCInstance *inst, int x, int z, int lod) {
-    return inst->createVegetationSplatAsync(vm::ivec2(x, z), lod);
+    return inst->createVegetationSplatAsync(vm::ivec2{x, z}, lod);
 }
 EMSCRIPTEN_KEEPALIVE uint32_t createMobSplatAsync(DCInstance *inst, int x, int z, int lod) {
-    return inst->createMobSplatAsync(vm::ivec2(x, z), lod);
+    return inst->createMobSplatAsync(vm::ivec2{x, z}, lod);
 }
 
 /* EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
@@ -59,11 +59,11 @@ EMSCRIPTEN_KEEPALIVE uint32_t createMobSplatAsync(DCInstance *inst, int x, int z
 //
 
 EMSCRIPTEN_KEEPALIVE uint32_t createTerrainChunkMeshAsync(DCInstance *inst, int x, int y, int z, int *lodArray) {
-    return inst->createTerrainChunkMeshAsync(vm::ivec3(x, y, z), lodArray);
+    return inst->createTerrainChunkMeshAsync(vm::ivec3{x, y, z}, lodArray);
 }
 
 EMSCRIPTEN_KEEPALIVE uint32_t createLiquidChunkMeshAsync(DCInstance *inst, int x, int y, int z, int *lodArray) {
-    return inst->createLiquidChunkMeshAsync(vm::ivec3(x, y, z), lodArray);
+    return inst->createLiquidChunkMeshAsync(vm::ivec3{x, y, z}, lodArray);
 }
 
 //
@@ -123,7 +123,7 @@ EMSCRIPTEN_KEEPALIVE bool eraseCubeDamage(
 //
 
 EMSCRIPTEN_KEEPALIVE void setClipRange(DCInstance *inst, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-    inst->setClipRange(vm::vec3(minX, minY, minZ), vm::vec3(maxX, maxY, maxZ));
+    inst->setClipRange(vm::vec3{minX, minY, minZ}, vm::vec3{maxX, maxY, maxZ});
 }
 
 //

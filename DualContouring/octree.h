@@ -109,13 +109,13 @@ vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst)
 {
     // finding the surface normal with the derivative
     const float H = 0.001f;
-    const float dx = DCContextType::densityFn(p + vm::vec3(H, 0.f, 0.f), inst) -
-                     DCContextType::densityFn(p - vm::vec3(H, 0.f, 0.f), inst);
-    const float dy = DCContextType::densityFn(p + vm::vec3(0.f, H, 0.f), inst) -
-                     DCContextType::densityFn(p - vm::vec3(0.f, H, 0.f), inst);
-    const float dz = DCContextType::densityFn(p + vm::vec3(0.f, 0.f, H), inst) -
-                     DCContextType::densityFn(p - vm::vec3(0.f, 0.f, H), inst);
-    return vm::normalize(vm::vec3(dx, dy, dz));
+    const float dx = DCContextType::densityFn(p + vm::vec3{H, 0.f, 0.f}, inst) -
+                     DCContextType::densityFn(p - vm::vec3{H, 0.f, 0.f}, inst);
+    const float dy = DCContextType::densityFn(p + vm::vec3{0.f, H, 0.f}, inst) -
+                     DCContextType::densityFn(p - vm::vec3{0.f, H, 0.f}, inst);
+    const float dz = DCContextType::densityFn(p + vm::vec3{0.f, 0.f, H}, inst) -
+                     DCContextType::densityFn(p - vm::vec3{0.f, 0.f, H}, inst);
+    return vm::normalize(vm::vec3{dx, dy, dz});
 }
 
 void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
@@ -138,8 +138,8 @@ int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &a
         }
         const vm::ivec3 ip1 = voxelNode->min + CHILD_MIN_OFFSETS[c1] * minVoxelSize;
         const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * minVoxelSize;
-        const vm::vec3 p1 = vm::vec3(ip1.x, ip1.y, ip1.z);
-        const vm::vec3 p2 = vm::vec3(ip2.x, ip2.y, ip2.z);
+        const vm::vec3 p1 = vm::vec3{(float)ip1.x, (float)ip1.y, (float)ip1.z};
+        const vm::vec3 p2 = vm::vec3{(float)ip2.x, (float)ip2.y, (float)ip2.z};
         const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, inst);
         const vm::vec3 n = calculateSurfaceNormal<DCContextType>(p, inst);
         qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
@@ -197,7 +197,7 @@ public:
             for (int y = min.y; y < chunkMax.y; y += lod)
                 for (int z = min.z; z < chunkMax.z; z += lod)
                 {
-                    const vm::ivec3 min = vm::ivec3(x, y, z);
+                    const vm::ivec3 min = vm::ivec3{x, y, z};
                     OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
                     OctreeNode *seamNode = constructLeaf(node, inst);
                     if (seamNode) {
@@ -209,11 +209,11 @@ public:
     VertexData *generateVoxelData(OctreeNode *voxelNode, int &corners, DCInstance *inst)
     {
         svd::QefSolver qef;
-        vm::vec3 averageNormal(0.f);
+        vm::vec3 averageNormal{0.f, 0.f, 0.f};
         int edgeCount = findEdgeIntersection<DCContextType>(voxelNode, qef, averageNormal, corners, minVoxelSize, inst);
         svd::Vec3 qefPosition;
         qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
-        vm::vec3 vertexPosition = vm::vec3(qefPosition.x, qefPosition.y, qefPosition.z);
+        vm::vec3 vertexPosition = vm::vec3{qefPosition.x, qefPosition.y, qefPosition.z};
         // if the generated position is outside of the voxel bounding box :
         clampPositionToMassPoint(voxelNode, qef, vertexPosition);
         VertexData *vertexData = new VertexData();
@@ -230,7 +230,7 @@ public:
         for (int i = 0; i < 8; i++)
         {
             const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
-            const float density = DCContextType::densityFn(vm::vec3(cornerPos.x, cornerPos.y, cornerPos.z), inst);
+            const float density = DCContextType::densityFn(vm::vec3{(float)cornerPos.x, (float)cornerPos.y, (float)cornerPos.z}, inst);
             const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
             corners |= (material << i);
         }
@@ -254,7 +254,7 @@ public:
             return;
         }
 
-        const vm::ivec3 max = node->min + vm::ivec3(node->size);
+        const vm::ivec3 max = node->min + vm::ivec3{node->size, node->size, node->size};
         if (!func(node->min, max))
         {
             return;
@@ -287,8 +287,8 @@ public:
             for (int y = chunkMin.y; y < chunkMax.y; y += lod)
                 for (int z = chunkMin.z; z < chunkMax.z; z += lod)
                 {
-                    const vm::ivec3 min = vm::ivec3(x, y, z);
-                    const vm::ivec3 max = min + vm::ivec3(lod);
+                    const vm::ivec3 min = vm::ivec3{x, y, z};
+                    const vm::ivec3 max = min + vm::ivec3{lod, lod, lod};
                     if (filterFunc(min, max))
                     {
                         OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
@@ -303,7 +303,7 @@ public:
 
     std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, const vm::ivec3 &baseChunkMin, const int lodArray[])
     {
-        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3(chunkSize);
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3{chunkSize, chunkSize, chunkSize};
 
         std::vector<OctreeNode *> seamNodes;
 
@@ -394,7 +394,7 @@ public:
                     bool foundParentNode = false;
                     for (int i = 0; i < 8; i++)
                     {
-                        const vm::ivec3 childPos = parentPos + ((parentSize / 2) * CHILD_MIN_OFFSETS[i]);
+                        const vm::ivec3 childPos = parentPos + (CHILD_MIN_OFFSETS[i] * (parentSize / 2));
                         if (childPos == node->min)
                         {
                             parentNode->children[i] = node;

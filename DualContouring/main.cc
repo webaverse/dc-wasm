@@ -129,20 +129,20 @@ namespace DualContouring
         // delete[] delta;
         // std::cout << "delete 3 " << delta[0].x << std::endl;
 
-        vm::vec3 deltaPoint1(
-            delta[0].x,
-            delta[0].y,
-            delta[0].z
-        );
+        vm::vec3 deltaPoint1{
+            (float)delta[0].x,
+            (float)delta[0].y,
+            (float)delta[0].z
+        };
         float distance1 = length(deltaPoint1);
         
         // std::cout << "delete 3" << std::endl;
 
-        vm::vec3 deltaPoint3(
-            delta[2].x,
-            delta[2].y,
-            delta[2].z
-        );
+        vm::vec3 deltaPoint3{
+            (float)delta[2].x,
+            (float)delta[2].y,
+            (float)delta[2].z
+        };
         // std::cout << "delete 4" << std::endl;
         float distance3 = length(deltaPoint3);
         float caveValue = std::min(std::max((distance3 != 0.f ? (distance1 / distance3) : 0.f) * 1.1f, 0.f), 1.f);

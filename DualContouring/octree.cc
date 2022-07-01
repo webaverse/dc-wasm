@@ -4,14 +4,14 @@
 const vm::ivec3 CHILD_MIN_OFFSETS[] =
     {
         // needs to match the vertMap from Dual Contouring impl
-        vm::ivec3(0, 0, 0),
-        vm::ivec3(0, 0, 1),
-        vm::ivec3(0, 1, 0),
-        vm::ivec3(0, 1, 1),
-        vm::ivec3(1, 0, 0),
-        vm::ivec3(1, 0, 1),
-        vm::ivec3(1, 1, 0),
-        vm::ivec3(1, 1, 1),
+        vm::ivec3{0, 0, 0},
+        vm::ivec3{0, 0, 1},
+        vm::ivec3{0, 1, 0},
+        vm::ivec3{0, 1, 1},
+        vm::ivec3{1, 0, 0},
+        vm::ivec3{1, 0, 1},
+        vm::ivec3{1, 1, 0},
+        vm::ivec3{1, 1, 1},
 };
 // data from the original DC impl, drives the contouring process
 
@@ -65,22 +65,22 @@ const int processEdgeMask[3][4] = {{3, 2, 1, 0}, {7, 5, 6, 4}, {11, 10, 9, 8}};
 
 const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[8] =
     {
-        vm::ivec3(0, 0, 0),
-        vm::ivec3(1, 0, 0),
-        vm::ivec3(0, 0, 1),
-        vm::ivec3(1, 0, 1),
-        vm::ivec3(0, 1, 0),
-        vm::ivec3(1, 1, 0),
-        vm::ivec3(0, 1, 1),
-        vm::ivec3(1, 1, 1),
+        vm::ivec3{0, 0, 0},
+        vm::ivec3{1, 0, 0},
+        vm::ivec3{0, 0, 1},
+        vm::ivec3{1, 0, 1},
+        vm::ivec3{0, 1, 0},
+        vm::ivec3{1, 1, 0},
+        vm::ivec3{0, 1, 1},
+        vm::ivec3{1, 1, 1},
 };
 
 typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
 
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
 {
-    const unsigned int mask = ~(chunkSize - 1);
-    return vm::ivec3(p.x & mask, p.y & mask, p.z & mask);
+    const int mask = ~(chunkSize - 1);
+    return vm::ivec3{p.x & mask, p.y & mask, p.z & mask};
 }
 
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod)
@@ -109,21 +109,21 @@ uint64_t hashOctreeMinLodLayer(const vm::ivec2 &min, int lod, int layer)
 
 //
 
-VertexData::VertexData() : index(-1), corners(0) {}
+// VertexData::VertexData() : index(-1), corners(0) {}
 
 //
 void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition)
 {
 
-    const vm::vec3 min = vm::vec3(voxelNode->min.x, voxelNode->min.y, voxelNode->min.z);
-    const vm::vec3 max = vm::vec3(voxelNode->min.x + vm::ivec3(voxelNode->size).x,
-                                  voxelNode->min.y + vm::ivec3(voxelNode->size).y,
-                                  voxelNode->min.z + vm::ivec3(voxelNode->size).z);
+    const vm::vec3 min = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z};
+    const vm::vec3 max = vm::vec3{(float)(voxelNode->min.x + voxelNode->size),
+                                  (float)(voxelNode->min.y + voxelNode->size),
+                                  (float)(voxelNode->min.z + voxelNode->size)};
     if (vertexPosition.x < min.x || vertexPosition.x > max.x ||
         vertexPosition.y < min.y || vertexPosition.y > max.y ||
         vertexPosition.z < min.z || vertexPosition.z > max.z)
     {
         const auto &mp = qef.getMassPoint();
-        vertexPosition = vm::vec3(mp.x, mp.y, mp.z);
+        vertexPosition = vm::vec3{mp.x, mp.y, mp.z};
     }
 }
