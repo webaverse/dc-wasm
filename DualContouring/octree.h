@@ -74,8 +74,10 @@ enum OctreeNodeType
 class OctreeNode
 {
 public:
-    OctreeNode *children[8]; // only internal nodes have children
-    VertexData *vertexData;            // only leaf nodes (our voxels) have vertex data
+    union {
+        OctreeNode *children[8]; // only internal nodes have children
+        VertexData vertexData;            // only leaf nodes (our voxels) have vertex data
+    };
     vm::ivec3 min;
     int size;
     OctreeNodeType type;
@@ -206,7 +208,7 @@ public:
                 }
         return nodes;
     }
-    VertexData *generateVoxelData(OctreeNode *voxelNode, int &corners, DCInstance *inst)
+    void generateVoxelData(OctreeNode *voxelNode, int &corners, DCInstance *inst)
     {
         svd::QefSolver qef;
         vm::vec3 averageNormal{0.f, 0.f, 0.f};
@@ -216,7 +218,8 @@ public:
         vm::vec3 vertexPosition = vm::vec3{qefPosition.x, qefPosition.y, qefPosition.z};
         // if the generated position is outside of the voxel bounding box :
         clampPositionToMassPoint(voxelNode, qef, vertexPosition);
-        VertexData *vertexData = new VertexData();
+        VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
+        vertexData->index = -1;
         vertexData->position = vertexPosition;
         vertexData->normal = vm::normalize(averageNormal / (float)edgeCount);
         vertexData->corners = corners;
@@ -242,7 +245,7 @@ public:
         else
         {
             // voxel is touching the surface
-            voxelNode->vertexData = generateVoxelData(voxelNode, corners, inst);
+            generateVoxelData(voxelNode, corners, inst);
         }
         return voxelNode;
     }
@@ -479,8 +482,8 @@ void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
         const int c1 = edgevmap[edge][0];
         const int c2 = edgevmap[edge][1];
 
-        const int m1 = (node[i]->vertexData->corners >> c1) & 1;
-        const int m2 = (node[i]->vertexData->corners >> c2) & 1;
+        const int m1 = (node[i]->vertexData.corners >> c1) & 1;
+        const int m2 = (node[i]->vertexData.corners >> c2) & 1;
 
         if (node[i]->size < minSize)
         {
@@ -489,7 +492,7 @@ void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
             flip = m1 != MATERIAL_AIR;
         }
 
-        indices[i] = node[i]->vertexData->index;
+        indices[i] = node[i]->vertexData.index;
 
         signChange[i] =
             (m1 == MATERIAL_AIR && m2 != MATERIAL_AIR) ||
@@ -717,14 +720,14 @@ void generateVertexIndices(OctreeNode *node, DCContextType &dcContext)
     }
     if (node->type == Node_Leaf)
     {
-        if (!node->vertexData) {
+        /* if (!node->vertexData) {
             EM_ASM({
                 printf("Error! The provided voxel has no vertex data!\n");
             });
             abort();
-        }
-        node->vertexData->index = vertexBuffer.positions.size();
-        vertexBuffer.pushVertexData(*(node->vertexData));
+        } */
+        node->vertexData.index = vertexBuffer.positions.size();
+        vertexBuffer.pushVertexData(node->vertexData);
     }
     else
     {

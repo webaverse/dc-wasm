@@ -20,8 +20,6 @@ typedef std::vector<int> BiomeBuffer;
 
 struct VertexData
 {
-    VertexData();
-    
     int index;
     int corners;
     vm::ivec4 biomes;
