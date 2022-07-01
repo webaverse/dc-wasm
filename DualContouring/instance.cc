@@ -18,8 +18,8 @@ DCInstance::DCInstance() :
     cachedAoField(this),
     cachedCaveField(this),
     cachedSdf(this),
-    cachedWaterSdf(this),
-    cachedDamageSdf(this)
+    cachedWaterSdf(this)
+    // cachedDamageSdf(this)
 {}
 DCInstance::~DCInstance() {}
 
@@ -1426,9 +1426,9 @@ float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
     } */
     return f;
 }
-float DCInstance::initDamageSdf(DCInstance *inst, int x, int y, int z) {
+/* float DCInstance::initDamageSdf(DCInstance *inst, int x, int y, int z) {
     return MAX_HEIGHT;
-}
+} */
 float DCInstance::initWaterSdf(DCInstance *inst, int x, int y, int z) {
     /* EM_ASM({
         console.log('init water sdf');
@@ -1595,10 +1595,11 @@ float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, c
     // const float localX = x + 1;
     // const float localY = y + 1;
     // const float localZ = z + 1;
-    return trilinear<decltype(cachedDamageSdf), float>(
+    return MAX_HEIGHT;
+    /* return trilinear<decltype(cachedDamageSdf), float>(
         vm::vec3{x, y, z},
         cachedDamageSdf
-    );
+    ); */
 }
 
 //
