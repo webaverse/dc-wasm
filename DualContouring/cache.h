@@ -53,7 +53,7 @@ public:
     uint32_t hash;
     T value;
 
-    HashValue() : hash(0) {}
+    HashValue() : hash(0xFFFFFFFF) {}
     HashValue(uint32_t hash, T value) : hash(hash), value(value) {}
 };
 
