@@ -172,13 +172,11 @@ Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
 }
 
 // fields
-void DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
-    // Chunk2D &chunkNoise = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
-    // readCachedHeightfield(worldPositionXZ, heights);
-
+float *DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod) {
     const int &size = chunkSize;
-    // const int &gridPoints = DualContouring::gridPoints;
-
+    
+    float *heights = (float *)malloc(sizeof(float) * chunkSize * chunkSize);
+    
     for (int z = 0; z < size; z++)
     {
         for (int x = 0; x < size; x++)
@@ -194,13 +192,13 @@ void DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod, 
             heights[index2D] = cachedHeightField.get(ax, az).heightField;
         }
     }
+    
+    return heights;
 }
-void DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
-    // Chunk3D &chunkNoise = getChunk(worldPosition, lod, GF_AOFIELD);
-    // chunkNoise.getCachedSkylight(skylights);
-
+unsigned char *DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int lod) {
     const int &size = chunkSize;
-    // const int &gridPoints = DualContouring::gridPoints;
+
+    unsigned char *skylights = (unsigned char *)malloc(sizeof(unsigned char) * size * size * size);
 
     for (int z = 0; z < size; z++)
     {
@@ -223,9 +221,13 @@ void DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int lod, unsig
             }
         }
     }
+
+    return skylights;
 }
-void DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
+unsigned char *DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
     const int &size = chunkSize;
+
+    unsigned char *aos = (unsigned char *)malloc(sizeof(unsigned char) * size * size * size);
 
     for (int z = 0; z < size; z++)
     {
@@ -244,62 +246,98 @@ void DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned ch
             }
         }
     }
+
+    return aos;
 }
 
 // splats
-void DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
-    // const int &gridPoints = DualContouring::gridPoints;
+    std::vector<float> ps;
+    std::vector<float> qs;
+    std::vector<float> instances;
+    unsigned int count = 0;
 
-    unsigned int &countBinding = *count;
-    countBinding = 0;
+    // accumulate
+    // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
+    int minX = worldPositionXZ.x / chunkSize * chunkSize;
+    int minZ = worldPositionXZ.y / chunkSize * chunkSize;
 
-    Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
-
-    float seed = DualContouring::noises->grassNoise.in2D(chunk.min.x, chunk.min.y);
+    float seed = DualContouring::noises->grassNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
 
     const int maxNumGrasses = 4 * 1024;
+    // ps.resize(maxNumGrasses * 3);
+    // qs.resize(maxNumGrasses * 4);
+    // instances.resize(maxNumGrasses);
     for (int i = 0; i < maxNumGrasses; i++)
     {
         float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
         float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
 
-        float ax = (float)chunk.min.x + dx;
-        float az = (float)chunk.min.y + dz;
+        float ax = (float)minX + dx;
+        float az = (float)minZ + dz;
 
         // int idx = (int)dx + 1;
         // int idz = (int)dz + 1;
         // int index2D = idx + idz * gridPoints;
         float height = cachedHeightField.get(ax, az).heightField;
 
-        ps[countBinding * 3] = ax;
-        ps[countBinding * 3 + 1] = height;
-        ps[countBinding * 3 + 2] = az;
+        ps.push_back(ax);
+        ps.push_back(height);
+        ps.push_back(az);
 
         Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-        qs[countBinding * 4] = q.x;
-        qs[countBinding * 4 + 1] = q.y;
-        qs[countBinding * 4 + 2] = q.z;
-        qs[countBinding * 4 + 3] = q.w;
+        qs.push_back(q.x);
+        qs.push_back(q.y);
+        qs.push_back(q.z);
+        qs.push_back(q.w);
 
-        instances[countBinding] = (float)rng() / (float)0xFFFFFFFF;
+        instances.push_back((float)rng() / (float)0xFFFFFFFF);
 
-        countBinding++;
+        count++;
+    }
+
+    // serialize
+    {
+        const size_t size = sizeof(uint32_t) +
+            sizeof(float) * ps.size() +
+            sizeof(uint32_t) +
+            sizeof(float) * qs.size() +
+            sizeof(uint32_t) +
+            sizeof(float) * instances.size();
+        uint8_t *buffer = (uint8_t *)malloc(size);
+        int index = 0;
+        ((uint32_t *)(buffer + index))[0] = ps.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
+        index += sizeof(float) * ps.size();
+        ((uint32_t *)(buffer + index))[0] = qs.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
+        index += sizeof(float) * qs.size();
+        ((uint32_t *)(buffer + index))[0] = instances.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
+        index += sizeof(float) * instances.size();
+        return buffer;
     }
 }
-void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+uint8_t *DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
-    // const int &gridPoints = DualContouring::gridPoints;
+    std::vector<float> ps;
+    std::vector<float> qs;
+    std::vector<float> instances;
+    unsigned int count = 0;
 
-    unsigned int &countBinding = *count;
+    // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
 
-    countBinding = 0;
-    Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
+    int minX = worldPositionXZ.x / chunkSize * chunkSize;
+    int minZ = worldPositionXZ.y / chunkSize * chunkSize;
 
-    float seed = DualContouring::noises->vegetationNoise.in2D(chunk.min.x, chunk.min.y);
+    float seed = DualContouring::noises->vegetationNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
@@ -311,8 +349,8 @@ void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const i
         float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
         float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
 
-        float ax = (float)chunk.min.x + dx;
-        float az = (float)chunk.min.y + dz;
+        float ax = (float)minX + dx;
+        float az = (float)minZ + dz;
 
         float noiseValue = DualContouring::noises->vegetationNoise.in2D(ax, az);
 
@@ -325,32 +363,59 @@ void DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const i
             // int index2D = idx + idz * gridPoints;
             float height = cachedHeightField.get(ax, az).heightField;
 
-            ps[countBinding * 3] = ax;
-            ps[countBinding * 3 + 1] = height;
-            ps[countBinding * 3 + 2] = az;
+            ps.push_back(ax);
+            ps.push_back(height);
+            ps.push_back(az);
 
             Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-            qs[countBinding * 4] = q.x;
-            qs[countBinding * 4 + 1] = q.y;
-            qs[countBinding * 4 + 2] = q.z;
-            qs[countBinding * 4 + 3] = q.w;
+            qs.push_back(q.x);
+            qs.push_back(q.y);
+            qs.push_back(q.z);
+            qs.push_back(q.w);
 
-            instances[countBinding] = (float)rng() / (float)0xFFFFFFFF;
+            instances.push_back((float)rng() / (float)0xFFFFFFFF);
 
-            countBinding++;
+            count++;
         }
     }
+    // serialize
+    {
+        const size_t size = sizeof(uint32_t) +
+            sizeof(float) * ps.size() +
+            sizeof(uint32_t) +
+            sizeof(float) * qs.size() +
+            sizeof(uint32_t) +
+            sizeof(float) * instances.size();
+        uint8_t *buffer = (uint8_t *)malloc(size);
+        int index = 0;
+        ((uint32_t *)(buffer + index))[0] = ps.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
+        index += sizeof(float) * ps.size();
+        ((uint32_t *)(buffer + index))[0] = qs.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
+        index += sizeof(float) * qs.size();
+        ((uint32_t *)(buffer + index))[0] = instances.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
+        index += sizeof(float) * instances.size();
+        return buffer;
+    }
 }
-void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+uint8_t *DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
-    // const int &gridPoints = DualContouring::gridPoints;
+    std::vector<float> ps;
+    std::vector<float> qs;
+    std::vector<float> instances;
+    unsigned int count = 0;
 
-    unsigned int &countBinding = *count;
-    countBinding = 0;
+    // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
 
-    Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
+    int minX = worldPositionXZ.x / chunkSize * chunkSize;
+    int minZ = worldPositionXZ.y / chunkSize * chunkSize;
 
-    float seed = DualContouring::noises->mobNoise.in2D(chunk.min.x, chunk.min.y);
+    float seed = DualContouring::noises->mobNoise.in2D(minX, minZ);
     unsigned int seedInt;
     memcpy(&seedInt, &seed, sizeof(unsigned int));
     std::mt19937 rng(seedInt);
@@ -362,8 +427,8 @@ void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod,
         float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
         float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
 
-        float ax = (float)chunk.min.x + dx;
-        float az = (float)chunk.min.y + dz;
+        float ax = (float)minX + dx;
+        float az = (float)minZ + dz;
 
         float noiseValue = DualContouring::noises->mobNoise.in2D(ax, az);
 
@@ -374,20 +439,44 @@ void DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod,
             // int index2D = idx + idz * gridPoints;
             float height = cachedHeightField.get(ax, az).heightField;
 
-            ps[countBinding * 3] = ax;
-            ps[countBinding * 3 + 1] = height;
-            ps[countBinding * 3 + 2] = az;
+            ps.push_back(ax);
+            ps.push_back(height);
+            ps.push_back(az);
 
             Quat q = Quat().setFromAxisAngle(Vec{0, 1, 0}, rng() * 2.0f * M_PI);
-            qs[countBinding * 4] = q.x;
-            qs[countBinding * 4 + 1] = q.y;
-            qs[countBinding * 4 + 2] = q.z;
-            qs[countBinding * 4 + 3] = q.w;
+            qs.push_back(q.x);
+            qs.push_back(q.y);
+            qs.push_back(q.z);
+            qs.push_back(q.w);
 
-            instances[countBinding] = (float)rng() / (float)0xFFFFFFFF;
+            instances.push_back((float)rng() / (float)0xFFFFFFFF);
 
-            countBinding++;
+            count++;
         }
+    }
+    // serialize
+    {
+        const size_t size = sizeof(uint32_t) +
+            sizeof(float) * ps.size() +
+            sizeof(uint32_t) +
+            sizeof(float) * qs.size() +
+            sizeof(uint32_t) +
+            sizeof(float) * instances.size();
+        uint8_t *buffer = (uint8_t *)malloc(size);
+        int index = 0;
+        ((uint32_t *)(buffer + index))[0] = ps.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, ps.data(), sizeof(float) * ps.size());
+        index += sizeof(float) * ps.size();
+        ((uint32_t *)(buffer + index))[0] = qs.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, qs.data(), sizeof(float) * qs.size());
+        index += sizeof(float) * qs.size();
+        ((uint32_t *)(buffer + index))[0] = instances.size();
+        index += sizeof(uint32_t);
+        memcpy(buffer + index, instances.data(), sizeof(float) * instances.size());
+        index += sizeof(float) * instances.size();
+        return buffer;
     }
 }
 
@@ -832,64 +921,55 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 
     return id;
 }
-uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights) {
+uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
     Task *heightfieldTask = new Task([
         this,
         id,
         worldPositionXZ,
-        lod,
-        heights
+        lod
     ]() -> void {
-        getChunkHeightfield(worldPositionXZ, lod, heights);
-
-        void *result = nullptr;
+        void *result = getChunkHeightfield(worldPositionXZ, lod);
         DualContouring::resultQueue.pushResult(id, result);
     });
     DualContouring::taskQueue.pushTask(heightfieldTask);
 
     return id;
 }
-uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights) {
+uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
     Task *skylightTask = new Task([
         this,
         id,
         worldPosition,
-        lod,
-        skylights
+        lod
     ]() -> void {
-        getChunkSkylight(worldPosition, lod, skylights);
-
-        void *result = nullptr;
+        void *result = getChunkSkylight(worldPosition, lod);
         DualContouring::resultQueue.pushResult(id, result);
     });
     DualContouring::taskQueue.pushTask(skylightTask);
 
     return id;
 }
-uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos) {
+uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod) {
     uint32_t id = DualContouring::resultQueue.getNextId();
     
     Task *aoTask = new Task([
         this,
         id,
         worldPosition,
-        lod,
-        aos
+        lod
     ]() -> void {
-        getChunkAo(worldPosition, lod, aos);
-
-        void *result = nullptr;
+        void *result = getChunkAo(worldPosition, lod);
         DualContouring::resultQueue.pushResult(id, result);
     });
     DualContouring::taskQueue.pushTask(aoTask);
 
     return id;
 }
-uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod)
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
@@ -897,18 +977,16 @@ uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, con
         this,
         id,
         worldPositionXZ,
-        lod,
-        ps, qs, instances, count
+        lod
     ]() -> void {
-        createGrassSplat(worldPositionXZ, lod, ps, qs, instances, count);
-        void *result = nullptr;
+        uint8_t *result = createGrassSplat(worldPositionXZ, lod);
         DualContouring::resultQueue.pushResult(id, result);
     });
     DualContouring::taskQueue.pushTask(grassSplatTask);
 
     return id;
 }
-uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod)
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
@@ -916,19 +994,16 @@ uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ
         this,
         id,
         worldPositionXZ,
-        lod,
-        ps, qs, instances, count
+        lod
     ]() -> void {
-        createVegetationSplat(worldPositionXZ, lod, ps, qs, instances, count);
-
-        void *result = nullptr;
+        void *result = createVegetationSplat(worldPositionXZ, lod);
         DualContouring::resultQueue.pushResult(id, result);
     });
     DualContouring::taskQueue.pushTask(vegetationSplatTask);
 
     return id;
 }
-uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count)
+uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod)
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
@@ -936,12 +1011,9 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
         this,
         id,
         worldPositionXZ,
-        lod,
-        ps, qs, instances, count
+        lod
     ]() -> void {
-        createMobSplat(worldPositionXZ, lod, ps, qs, instances, count);
-
-        void *result = nullptr;
+        void *result = createMobSplat(worldPositionXZ, lod);
         DualContouring::resultQueue.pushResult(id, result);
     });
     DualContouring::taskQueue.pushTask(mobSplatTask);
@@ -1205,7 +1277,7 @@ uint8_t DCInstance::initSkylightField(DCInstance *inst, int x, int y, int z) {
             
             // int topAY = min.y + gridPoints - 1;
             // int topAY = 16;
-            uint8_t skylight = std::min(std::max(/*(float)topAY */y - height + maxSkyLightf, 0.f), maxSkyLightf);
+            uint8_t skylight = std::min(std::max(/*(float)topAY */y - height, 0.f), maxSkyLightf);
 
             /* for (int ay = y - 1; ay >= height - maxSkyLighti; ay--)
             {

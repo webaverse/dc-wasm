@@ -89,9 +89,9 @@ public:
 
     //
 
-    void getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod, float *heights);
-    void getChunkSkylight(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights);
-    void getChunkAo(const vm::ivec3 &worldPosition, int lod, unsigned char *ao);
+    float *getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod);
+    unsigned char *getChunkSkylight(const vm::ivec3 &worldPosition, int lod);
+    unsigned char *getChunkAo(const vm::ivec3 &worldPosition, int lod);
     
     //
     
@@ -101,9 +101,9 @@ public:
     
     //
 
-    void createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    void createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    uint8_t *createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod);
+    uint8_t *createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod);
+    uint8_t *createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod);
     
     //
     
@@ -177,13 +177,13 @@ public:
     uint32_t createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8]);
     uint32_t createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8]);
 
-    uint32_t getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod, float *heights);
-    uint32_t getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *skylights);
-    uint32_t getChunkAoAsync(const vm::ivec3 &worldPosition, int lod, unsigned char *aos);
+    uint32_t getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod);
+    uint32_t getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod);
+    uint32_t getChunkAoAsync(const vm::ivec3 &worldPosition, int lod);
 
-    uint32_t createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    uint32_t createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
-    uint32_t createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod, float *ps, float *qs, float *instances, unsigned int *count);
+    uint32_t createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod);
+    uint32_t createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod);
+    uint32_t createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod);
 
     //
 
