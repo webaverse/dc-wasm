@@ -623,13 +623,13 @@ var tempDouble;
 var tempI64;
 
 var ASM_CONSTS = {
- 32004: () => {
+ 32340: () => {
   console.log("task queue destructor");
  },
- 32046: () => {
+ 32382: () => {
   globalThis.requestStartTime = performance.now();
  },
- 32099: ($0, $1) => {
+ 32435: ($0, $1) => {
   const id = $0;
   const result = $1;
   if (!globalThis.resultEvent) {
