@@ -12,6 +12,7 @@
 // #include "octree.h"
 #include "context.h"
 #include "task.h"
+#include "caches.h"
 // #include "result.h"
 #include "../vector.h"
 
@@ -25,47 +26,6 @@ public:
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
     std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
-
-    // 2d caches
-
-    static NoiseField initNoiseField(DCInstance *inst, int x, int y);
-    static uint8_t initBiomesField(DCInstance *inst, int x, int y);
-    static Heightfield initHeightField(DCInstance *inst, int x, int y);
-    static float initWaterField(DCInstance *inst, int x, int y);
-
-    ChunkCache2D<NoiseField, Chunk2D, initNoiseField> cachedNoiseField;
-    ChunkCache2D<uint8_t, Chunk2D, initBiomesField> cachedBiomesField;
-    ChunkCache2D<Heightfield, Chunk2D, initHeightField> cachedHeightField;
-    ChunkCache2D<float, Chunk2D, initWaterField> cachedWaterField;
-
-    // 3d caches
-
-    static uint8_t initSkylightField(DCInstance *inst, int x, int y, int z);
-    static uint8_t initAoField(DCInstance *inst, int x, int y, int z);
-    static float initCaveField(DCInstance *inst, int x, int y, int z);
-    static float initSdf(DCInstance *inst, int x, int y, int z);
-    static float initWaterSdf(DCInstance *inst, int x, int y, int z);
-    // static float initDamageSdf(DCInstance *inst, int x, int y, int z);
-
-    ChunkCache3D<uint8_t, Chunk3D, initSkylightField> cachedSkylightField;
-    ChunkCache3D<uint8_t, Chunk3D, initAoField> cachedAoField;
-    ChunkCache3D<float, Chunk3D, initCaveField> cachedCaveField;
-    ChunkCache3D<float, Chunk3D, initSdf> cachedSdf;
-    ChunkCache3D<float, Chunk3D, initWaterSdf> cachedWaterSdf;
-    // ChunkCache3D<float, Chunk3D, initDamageSdf> cachedDamageSdf;
-
-    // 2d interpolation
-    // unsigned char getCachedBiome(const int lx, const int lz) const;
-    void getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights);
-    void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights);
-
-    // 3d interpolation
-    void getCachedHeightfield(float *heights);
-    void getCachedSkylight(unsigned char *skylights);
-    void getCachedAo(unsigned char *aos);
-    float getCachedInterpolatedSdf(const float x, const float y, const float z);
-    float getCachedWaterInterpolatedSdf(const float x, const float y, const float z);
-    float getCachedDamageInterpolatedSdf(const float x, const float y, const float z);
 
     //
 
@@ -150,14 +110,13 @@ public:
 
     //
 
-    unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
-    void getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights);
+    // unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
+    // void getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights);
     
     //
 
-    float getTemperature(const vm::vec2 &worldPosition, const int &lod);
-    float getHumidity(const vm::vec2 &worldPosition, const int &lod);
-    // float getWater(const vm::vec2 &worldPosition, const int &lod);
+    // float getTemperature(const vm::vec2 &worldPosition, const int &lod);
+    // float getHumidity(const vm::vec2 &worldPosition, const int &lod);
 
     //
     

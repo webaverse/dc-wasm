@@ -4,13 +4,14 @@
 #include <array>
 #include <unordered_map>
 #include <mutex>
+#include <bitset>
 #include "sync.h"
 #include "constants.h"
 #include <emscripten.h>
 
 //
 
-class DCInstance;
+class Caches;
 
 //
 
@@ -61,70 +62,63 @@ uint32_t getCacheIndexLocal(int x, int y, int z);
 
 template <
     typename T,
-    typename ChunkType,
-    T(fn)(DCInstance *, int, int)
+    T(fn)(Caches *, int, int)
 >
 class ChunkCache2D {
 public:
-    DCInstance *inst;
+    Caches *caches;
     // std::unordered_map<uint64_t, ChunkCacheValue<T>> values;
     // std::vector<std::atomic<int>> valueSources;
-    std::array<int16_t, cacheWidth * cacheWidth> valueSources;
+    // std::array<int16_t, cacheWidth * cacheWidth> valueSources;
+    std::bitset<cacheWidth * cacheWidth> bitset;
     std::array<T, cacheWidth * cacheWidth> values;
-    Mutex mutex;
+    // Mutex mutex;
 
-    ChunkCache2D(DCInstance *inst) : inst(inst), mutex(false) {
+    ChunkCache2D(Caches *caches) : caches(caches) {
         // values.resize(cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth);
-        for (size_t i = 0; i < valueSources.size(); i++) {
+        /* for (size_t i = 0; i < valueSources.size(); i++) {
             valueSources[i] = 128;
-        }
+        } */
     }
     ~ChunkCache2D() {}
 
     T get(int x, int y) {
         uint32_t localIndex = getCacheIndexLocal(x, y);
-        int16_t worldIndex = getCacheIndexWorld(x, y);
 
         // found in cache; fast case
-        {
-          // std::unique_lock<Mutex> lock(mutex);
-          if (valueSources[localIndex] == worldIndex) {
-            return values[localIndex];
-          }
+        if (bitset[localIndex]) {
+          return values[localIndex];
         }
+
         // not found in cache; recompute
-        T value = fn(inst, x, y);
-        {
-          // std::unique_lock<Mutex> lock(mutex);
-          values[localIndex] = value;
-          valueSources[localIndex] = worldIndex;
-        }
+        T value = fn(caches, x, y);
+        values[localIndex] = value;
+        bitset.set(localIndex);
+        
         return value;
     }
-    void set(DCInstance *inst, ChunkType *chunk, int x, int z, const T &value) {
+    void set(Caches *caches, int x, int z, const T &value) {
         uint32_t localIndex = getCacheIndexLocal(x, z);
-        int16_t worldIndex = getCacheIndexWorld(x, z);
-        {
-          // std::unique_lock<Mutex> lock(mutex);
-          values[localIndex] = value;
-          valueSources[localIndex] = worldIndex;
-        }
+        // int16_t worldIndex = getCacheIndexWorld(x, z);
+        
+        values[localIndex] = value;
+        bitset.set(localIndex);
     }
 };
 template <
     typename T,
-    typename ChunkType,
-    T(fn)(DCInstance *, int, int, int)
+    T(fn)(Caches *, int, int, int)
 >
 class ChunkCache3D {
 public:
-    DCInstance *inst;
-    std::array<int, cacheWidth * cacheWidth * cacheWidth> valueSources;
+    Caches *caches;
+    // std::array<int, cacheWidth * cacheWidth * cacheWidth> valueSources;
+    std::bitset<cacheWidth * cacheWidth * cacheWidth> bitset;
     std::array<T, cacheWidth * cacheWidth * cacheWidth> values;
-    Mutex mutex;
+    // Mutex mutex;
 
-    ChunkCache3D(DCInstance *inst) : inst(inst), mutex(false) {
+    ChunkCache3D(Caches *caches) : caches(caches) {
         /* if (!mutex.test()) {
           EM_ASM({
             console.log('mutex test failed');
@@ -134,9 +128,9 @@ public:
         // values.reserve(RESERVE_SIZE);
         // values.resize(cacheWidth * cacheWidth * cacheWidth);
         // valueSources.resize(cacheWidth * cacheWidth * cacheWidth);
-        for (size_t i = 0; i < valueSources.size(); i++) {
+        /* for (size_t i = 0; i < valueSources.size(); i++) {
             valueSources[i] = 128;
-        }
+        } */
     }
     ~ChunkCache3D() {}
 
@@ -150,34 +144,28 @@ public:
         } */
 
         uint32_t localIndex = getCacheIndexLocal(x, y, z);
-        int worldIndex = getCacheIndexWorld(x, y, z);
+        // int worldIndex = getCacheIndexWorld(x, y, z);
 
         // std::cout << "index " << x << " " << y << " " << z << " : " << localIndex << " " << worldIndex << std::endl;
 
         // found in cache; fast case
-        {
-          // std::unique_lock<Mutex> lock(mutex);
-          if (valueSources[localIndex] == worldIndex) {
-            return values[localIndex];
-          }
+        if (bitset[localIndex]) {
+          return values[localIndex];
         }
+
         // not found in cache; recompute
-        T value = fn(inst, x, y, z);
-        {
-          // std::unique_lock<Mutex> lock(mutex);
-          values[localIndex] = value;
-          valueSources[localIndex] = worldIndex;
-        }
+        T value = fn(caches, x, y, z);
+        values[localIndex] = value;
+        bitset.set(localIndex);
+
         return value;
     }
     void set(int x, int y, int z, const T &value) {
         uint32_t localIndex = getCacheIndexLocal(x, y, z);
-        int worldIndex = getCacheIndexWorld(x, y, z);
-        {
-          // std::unique_lock<Mutex> lock(mutex);
-          values[localIndex] = value;
-          valueSources[localIndex] = worldIndex;
-        }
+        // int worldIndex = getCacheIndexWorld(x, y, z);
+
+        values[localIndex] = value;
+        bitset.set(localIndex);
     }
 };
 

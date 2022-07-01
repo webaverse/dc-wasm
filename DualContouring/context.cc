@@ -3,12 +3,12 @@
 
 //
 
-float TerrainDCContext::densityFn(const vm::vec3 &position, DCInstance *inst) {
-  return terrainDensityFn(position, inst);
+float TerrainDCContext::densityFn(const vm::vec3 &position, DCInstance *inst, Caches *caches) {
+  return terrainDensityFn(position, inst, caches);
 }
 
 //
 
-float LiquidDCContext::densityFn(const vm::vec3 &position, DCInstance *inst) {
-  return liquidDensityFn(position, inst);
+float LiquidDCContext::densityFn(const vm::vec3 &position, DCInstance *inst, Caches *caches) {
+  return liquidDensityFn(position, inst, caches);
 }

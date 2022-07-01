@@ -9,18 +9,7 @@
 constexpr int CHUNK_RANGE = 1;
 
 // constructor/destructor
-DCInstance::DCInstance() :
-    cachedNoiseField(this),
-    cachedBiomesField(this),
-    cachedHeightField(this),
-    cachedWaterField(this),
-    cachedSkylightField(this),
-    cachedAoField(this),
-    cachedCaveField(this),
-    cachedSdf(this),
-    cachedWaterSdf(this)
-    // cachedDamageSdf(this)
-{}
+DCInstance::DCInstance() {}
 DCInstance::~DCInstance() {}
 
 // chunks
@@ -175,6 +164,9 @@ Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
 
 // fields
 float *DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod) {
+    Caches caches;
+    auto &heightField = caches.getHeightField();
+    
     const int &size = chunkSize;
     
     float *heights = (float *)malloc(sizeof(float) * chunkSize * chunkSize);
@@ -191,13 +183,16 @@ float *DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod
 
             int ax = worldPositionXZ.x + x;
             int az = worldPositionXZ.y + z;
-            heights[index2D] = cachedHeightField.get(ax, az).heightField;
+            heights[index2D] = heightField.get(ax, az).heightField;
         }
     }
     
     return heights;
 }
 unsigned char *DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int lod) {
+    Caches caches;
+    auto &skylightField = caches.getSkylight();
+    
     const int &size = chunkSize;
 
     unsigned char *skylights = (unsigned char *)malloc(sizeof(unsigned char) * size * size * size);
@@ -219,7 +214,7 @@ unsigned char *DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int 
                 int ay = worldPosition.y + y;
                 int az = worldPosition.z + z;
                 // int index = getIndex(ax, ay);
-                skylights[dstIndex] = cachedSkylightField.get(ax, ay, az);
+                skylights[dstIndex] = skylightField.get(ax, ay, az);
             }
         }
     }
@@ -227,6 +222,9 @@ unsigned char *DCInstance::getChunkSkylight(const vm::ivec3 &worldPosition, int 
     return skylights;
 }
 unsigned char *DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
+    Caches caches;
+    auto &ao = caches.getAo();
+
     const int &size = chunkSize;
 
     unsigned char *aos = (unsigned char *)malloc(sizeof(unsigned char) * size * size * size);
@@ -244,7 +242,7 @@ unsigned char *DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
                 int ay = worldPosition.y + y;
                 int az = worldPosition.y + z;
                 // int index = getIndex(ax, ay);
-                aos[dstIndex] = cachedAoField.get(ax, ay, az);
+                aos[dstIndex] = ao.get(ax, ay, az);
             }
         }
     }
@@ -255,6 +253,9 @@ unsigned char *DCInstance::getChunkAo(const vm::ivec3 &worldPosition, int lod) {
 // splats
 uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
+    Caches caches;
+    auto &heightField = caches.getHeightField();
+
     std::vector<float> ps;
     std::vector<float> qs;
     std::vector<float> instances;
@@ -285,7 +286,7 @@ uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
         // int idx = (int)dx + 1;
         // int idz = (int)dz + 1;
         // int index2D = idx + idz * gridPoints;
-        float height = cachedHeightField.get(ax, az).heightField;
+        float height = heightField.get(ax, az).heightField;
 
         ps.push_back(ax);
         ps.push_back(height);
@@ -329,6 +330,9 @@ uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
 }
 uint8_t *DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
+    Caches caches;
+    auto &heightField = caches.getHeightField();
+
     std::vector<float> ps;
     std::vector<float> qs;
     std::vector<float> instances;
@@ -363,7 +367,7 @@ uint8_t *DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
             // int idx = (int)dx + 1;
             // int idz = (int)dz + 1;
             // int index2D = idx + idz * gridPoints;
-            float height = cachedHeightField.get(ax, az).heightField;
+            float height = heightField.get(ax, az).heightField;
 
             ps.push_back(ax);
             ps.push_back(height);
@@ -407,6 +411,9 @@ uint8_t *DCInstance::createVegetationSplat(const vm::ivec2 &worldPositionXZ, con
 }
 uint8_t *DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int lod)
 {
+    Caches caches;
+    auto &heightField = caches.getHeightField();
+
     std::vector<float> ps;
     std::vector<float> qs;
     std::vector<float> instances;
@@ -439,7 +446,7 @@ uint8_t *DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
             // int idx = (int)dx + 1;
             // int idz = (int)dz + 1;
             // int index2D = idx + idz * gridPoints;
-            float height = cachedHeightField.get(ax, az).heightField;
+            float height = heightField.get(ax, az).heightField;
 
             ps.push_back(ax);
             ps.push_back(height);
@@ -483,19 +490,12 @@ uint8_t *DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
 }
 
 // biomes
-// get biome value for a world point
-unsigned char DCInstance::getBiome(const vm::vec2 &worldPosition, const int &lod) {
+/* unsigned char DCInstance::getBiome(const vm::vec2 &worldPosition, const int &lod) {
     return cachedBiomesField.get(worldPosition.x, worldPosition.y);
-    /* Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
-    int lx = (int)worldPosition.x - chunkNoise.min.x;
-    int lz = (int)worldPosition.y - chunkNoise.min.y;
-    return chunkNoise.getCachedBiome(lx, lz); */
 }
-// get biomes weights for a world point
 void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    // Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
     getCachedInterpolatedBiome2D(worldPosition, biome, biomeWeights);
-}
+} */
 
 //
 
@@ -566,41 +566,41 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
 uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
+    Caches caches;
+    /* if (generateMutex.try_lock())
     {
-        /* if (generateMutex.try_lock())
-        {
-            generateMutex.unlock();
-        } else {
-            EM_ASM(
-                console.log('generateMutex failed to lock');
-            );
-            abort();
-        }
-        std::unique_lock<Mutex> lock(generateMutex); */
-
-        ChunkOctree<TerrainDCContext> chunkOctree(this, worldPosition, lodArray);
-        if (!chunkOctree.root)
-        {
-            // printf("Chunk Has No Data\n");
-            return nullptr;
-        }
-        TerrainDCContext vertexContext;
-        generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
-        generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
-
-        auto &vertexBuffer = vertexContext.vertexBuffer;
-        if (vertexBuffer.indices.size() == 0)
-        {
-            // printf("Generated Mesh Is Not Valid\n");
-            return nullptr;
-        }
-
-        return vertexBuffer.getBuffer();
+        generateMutex.unlock();
+    } else {
+        EM_ASM(
+            console.log('generateMutex failed to lock');
+        );
+        abort();
     }
+    std::unique_lock<Mutex> lock(generateMutex); */
+
+    ChunkOctree<TerrainDCContext> chunkOctree(this, &caches, worldPosition, lodArray);
+    if (!chunkOctree.root)
+    {
+        // printf("Chunk Has No Data\n");
+        return nullptr;
+    }
+    TerrainDCContext vertexContext;
+    generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
+    generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
+
+    auto &vertexBuffer = vertexContext.vertexBuffer;
+    if (vertexBuffer.indices.size() == 0)
+    {
+        // printf("Generated Mesh Is Not Valid\n");
+        return nullptr;
+    }
+
+    return vertexBuffer.getBuffer();
 }
 uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
+    Caches caches;
     /* EM_ASM({
         console.log('createLiquidChunkMesh', $0, $1, $2, $3);
     }, worldPosition.x, worldPosition.y, worldPosition.z, lod); */
@@ -612,7 +612,7 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
         abort();
     } */
 
-    ChunkOctree<LiquidDCContext> chunkOctree(this, worldPosition, lodArray);
+    ChunkOctree<LiquidDCContext> chunkOctree(this, &caches, worldPosition, lodArray);
     if (!chunkOctree.root)
     {
         // printf("Chunk Has No Data\n");
@@ -1055,552 +1055,6 @@ void DCInstance::ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags
 void DCInstance::ensureChunk(const vm::ivec3 &position3D, int lod, GenerateFlags flags) {
     Chunk3D &chunk = getChunk(position3D, lod, flags);
 } */
-
-// 2d caches
-
-NoiseField DCInstance::initNoiseField(DCInstance *inst, int x, int z) {
-    // const int &size = chunkSize;
-    // const vm::ivec2 &min = chunk->min;
-    // const int &lod = chunk->lod;
-    
-    /* NoiseField noiseField;
-    noiseField.temperature.resize(size * size);
-    noiseField.humidity.resize(size * size);
-    noiseField.ocean.resize(size * size);
-    noiseField.river.resize(size * size);
-    for (int z = 0; z < size; z++)
-    {
-        for (int x = 0; x < size; x++)
-        { */
-            // int index = x + z * size;
-            // int ax = x;
-            // int az = y;
-
-            float tNoise = (float)DualContouring::noises->temperatureNoise.in2D(x, z);
-            // noiseField.temperature[index] = tNoise;
-
-            float hNoise = (float)DualContouring::noises->humidityNoise.in2D(x, z);
-            // noiseField.humidity[index] = hNoise;
-
-            float oNoise = (float)DualContouring::noises->oceanNoise.in2D(x, z);
-            // noiseField.ocean[index] = oNoise;
-
-            float rNoise = (float)DualContouring::noises->riverNoise.in2D(x, z);
-            // noiseField.river[index] = rNoise;
-
-            return NoiseField{
-                tNoise,
-                hNoise,
-                oNoise,
-                rNoise
-            };
-        /* }
-    }
-
-    return noiseField; */
-}
-uint8_t DCInstance::initBiomesField(DCInstance *inst, int x, int z) {
-    // const int &size = chunkSize;
-    // const auto &cachedNoiseField = chunk->cachedNoiseField;
-    
-    // std::vector<uint8_t> biomesField(size * size);
-    /* for (int z = 0; z < size; z++)
-    {
-        for (int x = 0; x < size; x++)
-        { */
-            // int index = x + z * size;
-            // unsigned char biome = cachedBiomesField.get(x, z);
-            unsigned char biome = 0xFF;
-
-            const auto &noise = inst->cachedNoiseField.get(x, z);
-            float temperatureNoise = noise.temperature;
-            float humidityNoise = noise.humidity;
-            float oceanNoise = noise.ocean;
-            float riverNoise = noise.river;
-
-            if (oceanNoise < (80.0f / 255.0f))
-            {
-                biome = (unsigned char)BIOME::biOcean;
-            }
-            if (biome == 0xFF)
-            {
-                const float range = 0.022f;
-                if (riverNoise > 0.5f - range && riverNoise < 0.5f + range)
-                {
-                    biome = (unsigned char)BIOME::biRiver;
-                }
-            }
-            if (std::pow(temperatureNoise, 1.3f) < ((4.0f * 16.0f) / 255.0f))
-            {
-                if (biome == (unsigned char)BIOME::biOcean)
-                {
-                    biome = (unsigned char)BIOME::biFrozenOcean;
-                }
-                else if (biome == (unsigned char)BIOME::biRiver)
-                {
-                    biome = (unsigned char)BIOME::biFrozenRiver;
-                }
-            }
-            if (biome == 0xFF)
-            {
-                float temperatureNoise2 = vm::clamp(std::pow(temperatureNoise, 1.3f), 0.f, 1.f);
-                float humidityNoise2 = vm::clamp(std::pow(humidityNoise, 1.3f), 0.f, 1.f);
-
-                int t = (int)std::floor(temperatureNoise2 * 16.0f);
-                int h = (int)std::floor(humidityNoise2 * 16.0f);
-                biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
-            }
-            return biome;
-        /* }
-    } */
-    // return biomesField;
-}
-Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
-    const int &size = chunkSize;
-    // const int &gridPoints = DualContouring::gridPoints;
-    // const int &lod = chunk->lod;
-    // const vm::ivec2 &min = chunk->min;
-    
-    Heightfield heightfield;
-    // heightfield.biomesVectorField.resize(gridPoints * gridPoints * 4);
-    // heightfield.biomesWeightsVectorField.resize(gridPoints * gridPoints * 4);
-    // heightfield.heightField.resize(gridPoints * gridPoints);
-    /* for (int z = 0; z < gridPoints; z++)
-    {
-        for (int x = 0; x < gridPoints; x++)
-        { */
-            // int index2D = x + z * gridPoints;
-            // int ax = x;
-            // int az = z;
-            
-            // int lx = x - 1;
-            // int lz = z - 1;
-            // int index2D2 = lx + lz * size;
-            // bool isInRange = lx >= 0 && lx < size && lz >= 0 && lz < size;
-
-            std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-            int numSamples = 0;
-            for (int dz = -size/2; dz < size/2; dz++)
-            {
-                for (int dx = -size/2; dx < size/2; dx++)
-                {
-                    // vm::vec2 worldPosition(ax + dx, az + dz);
-                    unsigned char b = inst->cachedBiomesField.get(x + dx, z + dz);
-
-                    biomeCounts[b]++;
-                    numSamples++;
-                }
-            }
-
-            std::vector<unsigned char> biomes;
-            biomes.resize(biomeCounts.size());
-            int index = 0;
-            for (auto kv : biomeCounts)
-            {
-                biomes[index++] = kv.first;
-            }
-            // sort by increasing occurence count of the biome
-            std::sort(biomes.begin(), biomes.end(), [&biomeCounts](unsigned char b1, unsigned char b2)
-                      { return biomeCounts[b1] > biomeCounts[b2]; });
-
-            for (size_t i = 0; i < 4; i++)
-            {
-                if (i < biomes.size())
-                {
-                    heightfield.biomesVectorField[i] = biomes[i];
-                    heightfield.biomesWeightsVectorField[i] = (float)biomeCounts[biomes[i]] / (float)numSamples;
-                }
-                else
-                {
-                    heightfield.biomesVectorField[i] = 0;
-                    heightfield.biomesWeightsVectorField[i] = 0;
-                }
-            }
-
-            float elevationSum = 0.f;
-            vm::vec2 fWorldPosition{(float)x, (float)z};
-            for (auto const &iter : biomeCounts)
-            {
-                elevationSum += iter.second * DualContouring::getComputedBiomeHeight(iter.first, fWorldPosition);
-            }
-
-            float elevation = elevationSum / (float)numSamples;
-            heightfield.heightField = elevation;
-        /* }
-    } */
-    return heightfield;
-}
-float DCInstance::initWaterField(DCInstance *inst, int x, int z) {
-    const int &size = chunkSize;
-
-    float value = 0;
-    // std::unordered_map<unsigned char, unsigned int> biomeCounts(numBiomes);
-    // int numSamples = 0;
-    for (int dz = -size/2; dz < size/2; dz++)
-    {
-        for (int dx = -size/2; dx < size/2; dx++)
-        {
-            unsigned char b = inst->cachedBiomesField.get(x + dx, z + dz);
-
-            if (isWaterBiome(b)) {
-                // waterField[index2D]++;
-                value++;
-            }
-        }
-    }
-
-    return value;
-}
-
-// 3d caches
-
-uint8_t DCInstance::initSkylightField(DCInstance *inst, int x, int y, int z) {
-    // const int &gridPoints = DualContouring::gridPoints;
-    // const vm::ivec3 &min = chunk->min;
-    // auto &chunk2d = chunk->chunk2d;
-    // auto &cachedSdf = chunk->cachedSdf;
-
-    constexpr uint8_t maxSkyLightu8 = 8;
-    constexpr int maxSkyLighti = (int)maxSkyLightu8;
-    constexpr float maxSkyLightf = (float)maxSkyLighti;
-    // std::vector<uint8_t> skylightField(gridPoints * gridPoints * gridPoints, maxSkyLight);
-    /* for (int z = 0; z < gridPoints; z++)
-    {
-        // int lz = z + 1;
-
-        for (int x = 0; x < gridPoints; x++)
-        { */
-            // int lx = x + 1;
-
-            // int index2D = x + z * gridPoints;
-            float height = inst->cachedHeightField.get(x, z).heightField;
-            
-            // int topAY = min.y + gridPoints - 1;
-            // int topAY = 16;
-            uint8_t skylight = std::min(std::max(/*(float)topAY */y - height, 0.f), maxSkyLightf);
-
-            /* for (int ay = y - 1; ay >= height - maxSkyLighti; ay--)
-            {
-                // int ly = y + 1;
-                // int ay = y + dy;
-
-                // int sdfIndex = x + z * gridPoints + y * gridPoints * gridPoints;
-                if (inst->cachedSdf.get(x, ay, z) < 0.f)
-                {
-                    skylight--;
-                }
-
-                // int skylightIndex = x + z * gridPoints + y * gridPoints * gridPoints;
-                // skylightField[skylightIndex] = skylight;
-            } */
-        /* }
-    } */
-
-    skylight = std::min(std::max(skylight, (uint8_t)0), maxSkyLightu8);
-
-    // XXX should flood fill the light
-
-    /* for (int x = 0; x < gridPoints; x++)
-    {
-        for (int z = 0; z < gridPoints; z++)
-        {
-            // int lz = z + 1;
-            // int lx = x + 1;
-
-            // for (int y = gridPoints - 1; y >= 0; y--) {
-            for (int y = 0; y < gridPoints; y++)
-            {
-                // int ly = y + 1;
-
-                int skylightIndex = x + z * gridPoints + y * gridPoints * gridPoints;
-                float maxNeighborSkylight = cachedSkylightField[skylightIndex];
-                for (int dz = -1; dz <= 1; dz += 2)
-                {
-                    for (int dx = -1; dx <= 1; dx += 2)
-                    {
-                        for (int dy = -1; dy <= 1; dy += 2)
-                        {
-                            int lx = x + dx;
-                            int ly = y + dy;
-                            int lz = z + dz;
-
-                            float deltaRadius = std::sqrt(dx * dx + dy * dy + dz * dz);
-
-                            if (lx >= 0 && lx < gridPoints && ly >= 0 && ly < gridPoints && lz >= 0 && lz < gridPoints)
-                            {
-                                int neighborIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                                float skylight = cachedSkylightField[neighborIndex];
-                                maxNeighborSkylight = std::max(maxNeighborSkylight, skylight - deltaRadius);
-                            }
-                        }
-                    }
-                }
-
-                cachedSkylightField[skylightIndex] = maxNeighborSkylight;
-            }
-        }
-    } */
-    return skylight;
-}
-uint8_t DCInstance::initAoField(DCInstance *inst, int x, int y, int z) {
-    const int &size = chunkSize;
-    // const int &gridPoints = DualContouring::gridPoints;
-    // auto &cachedSdf = chunk->cachedSdf;
-    
-    /* std::vector<uint8_t> aoField(size * size * size, 3 * 3 * 3);
-    for (int y = 0; y < size; y++)
-    {
-        int ly = y + 1;
-
-        for (int z = 0; z < size; z++)
-        {
-            int lz = z + 1;
-
-            for (int x = 0; x < size; x++)
-            {
-                int lx = x + 1; */
-
-                unsigned char numOpens = 0;
-                for (int dy = -1; dy <= 1; dy++)
-                {
-                    for (int dz = -1; dz <= 1; dz++)
-                    {
-                        for (int dx = -1; dx <= 1; dx++)
-                        {
-                            // int sdfIndex = (lx + dx) + (lz + dz) * gridPoints + (ly + dy) * gridPoints * gridPoints;
-                            numOpens += (unsigned char)(inst->cachedSdf.get(x + dx, y + dy, z + dz) >= 0.f);
-                        }
-                    }
-                }
-
-                // int aoIndex = x + z * size + y * size * size;
-                // aoField[aoIndex] = numOpens;
-            /* }
-        }
-    } */
-    return numOpens;
-}
-float DCInstance::initCaveField(DCInstance *inst, int x, int y, int z) {
-    return DualContouring::getComputedCaveNoise(x, y, z);;
-}
-float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
-    // const int &gridPoints = DualContouring::gridPoints;
-    /* auto &chunk2d = chunk->chunk2d;
-    const vm::ivec3 &min = chunk->min;
-    const int &lod = chunk->lod; */
-
-    /* std::vector<float> sdf(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
-    for (int z = 0; z < gridPoints; z++)
-    {
-        for (int x = 0; x < gridPoints; x++)
-        { */
-            // int index2D = x + z * gridPoints;
-            float height = inst->cachedHeightField.get(x, z).heightField;
-
-            /* for (int y = 0; y < gridPoints; y++)
-            { */
-                // int index3D = x + z * gridPoints + y * gridPoints * gridPoints;
-
-                // height
-                float heightValue = (float)y - height;
-                heightValue = std::min(
-                    std::max(
-                        heightValue,
-                        (float)-1),
-                    (float)1);
-
-                float caveValue = inst->cachedCaveField.get(x, y, z);
-                float f = heightValue + caveValue * 1.1f;
-                /* f = std::min( // XXX does not fix
-                    std::max(
-                        f,
-                        -1.f
-                    ),
-                    1.f
-                ); */
-
-                // result
-                // sdf[index3D] = f;
-            // }
-        /* }
-    } */
-    return f;
-}
-/* float DCInstance::initDamageSdf(DCInstance *inst, int x, int y, int z) {
-    return MAX_HEIGHT;
-} */
-float DCInstance::initWaterSdf(DCInstance *inst, int x, int y, int z) {
-    /* EM_ASM({
-        console.log('init water sdf');
-    }); */
-    // const int &gridPoints = DualContouring::gridPoints;
-    // auto &chunk2d = chunk->chunk2d;
-    // const vm::ivec3 &min = chunk->min;
-
-    const float fSize = (float)chunkSize;
-
-    // std::vector<float> waterSdf(gridPoints * gridPoints * gridPoints, MAX_HEIGHT);
-    /* EM_ASM({
-        console.log('water sdf set size', $0, $1, $2, $3, $4);
-    }, chunk->min.x, chunk->min.y, chunk->min.z, chunk->lod, waterSdf.size()); */
-    /* for (int z = 0; z < gridPoints; z++)
-    {
-        int az = min.z + z - 1;
-        for (int x = 0; x < gridPoints; x++)
-        {
-            int ax = min.x + x - 1; */
-
-            // int lx = x + 1;
-            // int lz = z + 1;
-            // int index2D = x + z * gridPoints;
-            float waterValue = -inst->cachedWaterField.get(x, z) / fSize;
-            // float waterValue = -inst->getWater(vm::vec2(ax, az), lod) / fSize;
-            // waterValue *= -1.1f;
-            /* for (int y = 0; y < gridPoints; y++)
-            {
-                int ay = min.y + y - 1; */
-
-                float heightValue = (float)y - waterBaseHeight;
-                heightValue = std::min(
-                    std::max(
-                        heightValue,
-                        -1.f
-                    ),
-                    1.f
-                );
-                
-                float value = std::max(waterValue, heightValue);
-
-                // int index3D = x + z * gridPoints + y * gridPoints * gridPoints;
-                // waterSdf[index3D] = value;
-            // }
-        /* }
-    } */
-    return value;
-}
-
-//
-
-// biomes
-/* unsigned char DCInstance::getCachedBiome(const int lx, const int lz) const {
-    const int &size = chunkSize;
-    int index = lx + lz * size;
-    return cachedBiomesField.value[index];
-} */
-void DCInstance::getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    // const int &gridPoints = DualContouring::gridPoints;
-    
-    /* const float &x = worldPosition.x;
-    const float &z = worldPosition.y;
-    int lx = int(x) - min.x + 1;
-    int lz = int(z) - min.y + 1;
-    int index2D = lx + lz * gridPoints; */
-
-    const auto &heightfield = cachedHeightField.get(worldPosition.x, worldPosition.y);
-    biome.x = heightfield.biomesVectorField[0];
-    biome.y = heightfield.biomesVectorField[1];
-    biome.z = heightfield.biomesVectorField[2];
-    biome.w = heightfield.biomesVectorField[3];
-
-    biomeWeights.x = heightfield.biomesWeightsVectorField[0];
-    biomeWeights.y = heightfield.biomesWeightsVectorField[1];
-    biomeWeights.z = heightfield.biomesWeightsVectorField[2];
-    biomeWeights.w = heightfield.biomesWeightsVectorField[3];
-}
-void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    // const int &gridPoints = DualContouring::gridPoints;
-
-    const int x = worldPosition.x;
-    const int y = worldPosition.y;
-    const int z = worldPosition.z;
-    /* if (std::isnan(x) || std::isnan(y) || std::isnan(z)) {
-        EM_ASM({
-           console.log('got nan getCachedInterpolatedBiome3D', $0, $1, $2);
-        }, x, y, z);
-        abort();
-    } */
-
-    getCachedInterpolatedBiome2D(vm::vec2{worldPosition.x, worldPosition.z}, biome, biomeWeights);
-
-    // int heightfieldIndex = lx + lz * gridPoints;
-    float heightValue = cachedHeightField.get(x, z).heightField;
-    // int sdfIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-    float sdfValue = cachedSdf.get(x, y, z);
-
-    bool neighborHeightsValid = true;
-    for (int dx = -1; dx <= 1; dx += 2)
-    {
-        for (int dz = -1; dz <= 1; dz += 2)
-        {
-            int lx2 = x + dx;
-            int lz2 = z + dz;
-            // int neighborHeightfieldIndex = lx2 + lz2 * gridPoints;
-            float heightValue = cachedHeightField.get(lx2, lz2).heightField;
-            if (y + 3 > heightValue)
-            {
-                neighborHeightsValid = false;
-                break;
-            }
-        }
-        if (!neighborHeightsValid)
-        {
-            break;
-        }
-    }
-
-    if (neighborHeightsValid)
-    {
-        if (y < heightValue - 12)
-        {
-            unsigned char firstBiome = (unsigned char)BIOME::teStone;
-            biome.w = biome.z;
-            biome.z = biome.y;
-            biome.y = biome.x;
-            biome.x = firstBiome;
-        }
-        else if (y < heightValue - 2)
-        {
-            unsigned char firstBiome = (unsigned char)BIOME::teDirt;
-            biome.w = biome.z;
-            biome.z = biome.y;
-            biome.y = biome.x;
-            biome.x = firstBiome;
-        }
-    }
-}
-
-// lighting
-
-// sdf
-float DCInstance::getCachedInterpolatedSdf(const float x, const float y, const float z) {
-    return trilinear<decltype(cachedSdf), float>(
-        vm::vec3{x, y, z},
-        cachedSdf
-    );
-}
-float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, const float z) {
-    // const int &gridPoints = DualContouring::gridPoints;
-
-    // const float localX = x + 1;
-    // const float localY = y + 1;
-    // const float localZ = z + 1;
-    return trilinear<decltype(cachedWaterSdf), float>(
-        vm::vec3{x, y, z},
-        cachedWaterSdf
-    );
-}
-float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, const float z) {
-    // const int &gridPoints = DualContouring::gridPoints;
-
-    // const float localX = x + 1;
-    // const float localY = y + 1;
-    // const float localZ = z + 1;
-    return MAX_HEIGHT;
-    /* return trilinear<decltype(cachedDamageSdf), float>(
-        vm::vec3{x, y, z},
-        cachedDamageSdf
-    ); */
-}
 
 //
 
