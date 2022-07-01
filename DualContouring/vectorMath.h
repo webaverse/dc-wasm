@@ -9,71 +9,41 @@ namespace vm
 {
     struct vec2
     {
-        vec2()
-        {
-            x = 0;
-            y = 0;
-        }
-        vec2(const float &_x, const float &_y)
-        {
-            x = _x;
-            y = _y;
-        }
-        vec2(const float &_v)
-        {
-            x = _v;
-            y = _v;
-        }
+        // vec2()
+        // {
+        //     x = 0;
+        //     y = 0;
+        // }
+        // vec2(const float &_x, const float &_y) : x(_x), y(_y) {}
+        // vec2(const float &_v) : x(_v), y(_v) {}
         float x;
         float y;
     };
     struct vec3
     {
-        vec3()
-        {
-            x = 0;
-            y = 0;
-            z = 0;
-        }
-        vec3(const float &_x, const float &_y, const float &_z)
-        {
-            x = _x;
-            y = _y;
-            z = _z;
-        }
-        vec3(const float &_v)
-        {
-            x = _v;
-            y = _v;
-            z = _v;
-        }
+        // vec3()
+        // {
+        //     x = 0;
+        //     y = 0;
+        //     z = 0;
+        // }
+        // vec3(const float &_x, const float &_y, const float &_z) : x(_x), y(_y), z(_z) {}
+        // vec3(const float &_v) : x(_v), y(_v), z(_v) {}
         float x;
         float y;
         float z;
     };
     struct vec4
     {
-        vec4()
-        {
-            x = 0;
-            y = 0;
-            z = 0;
-            w = 0;
-        }
-        vec4(const float &_x, const float &_y, const float &_z, const float &_w)
-        {
-            x = _x;
-            y = _y;
-            z = _z;
-            w = _w;
-        }
-        vec4(const float &_v)
-        {
-            x = _v;
-            y = _v;
-            z = _v;
-            w = _v;
-        }
+        // vec4()
+        // {
+        //     x = 0;
+        //     y = 0;
+        //     z = 0;
+        //     w = 0;
+        // }
+        // vec4(const float &_x, const float &_y, const float &_z, const float &_w) : x(_x), y(_y), z(_z), w(_w) {}
+        // vec4(const float &_v) : x(_v), y(_v), z(_v), w(_v) {}
         float x;
         float y;
         float z;
@@ -81,71 +51,41 @@ namespace vm
     };
     struct ivec2
     {
-        ivec2()
-        {
-            x = 0;
-            y = 0;
-        }
-        ivec2(const int &_x, const int &_y)
-        {
-            x = _x;
-            y = _y;
-        }
-        ivec2(const int &_v)
-        {
-            x = _v;
-            y = _v;
-        }
+        // ivec2()
+        // {
+        //     x = 0;
+        //     y = 0;
+        // }
+        // ivec2(const int &_x, const int &_y) : x(_x), y(_y) {}
+        // ivec2(const int &_v) : x(_v), y(_v) {}
         int x;
         int y;
     };
     struct ivec3
     {
-        ivec3()
-        {
-            x = 0;
-            y = 0;
-            z = 0;
-        }
-        ivec3(const int &_x, const int &_y, const int &_z)
-        {
-            x = _x;
-            y = _y;
-            z = _z;
-        }
-        ivec3(const int _v)
-        {
-            x = _v;
-            y = _v;
-            z = _v;
-        }
+        // ivec3()
+        // {
+        //     x = 0;
+        //     y = 0;
+        //     z = 0;
+        // }
+        // ivec3(const int &_x, const int &_y, const int &_z) : x(_x), y(_y), z(_z) {}
+        // ivec3(const int _v) : x(_v), y(_v), z(_v) {}
         int x;
         int y;
         int z;
     };
     struct ivec4
     {
-        ivec4()
-        {
-            x = 0;
-            y = 0;
-            z = 0;
-            w = 0;
-        }
-        ivec4(const int &_x, const int &_y, const int &_z, const int &_w)
-        {
-            x = _x;
-            y = _y;
-            z = _z;
-            w = _w;
-        }
-        ivec4(const int &_v)
-        {
-            x = _v;
-            y = _v;
-            z = _v;
-            w = _v;
-        }
+        // ivec4()
+        // {
+        //     x = 0;
+        //     y = 0;
+        //     z = 0;
+        //     w = 0;
+        // }
+        // ivec4(const int &_x, const int &_y, const int &_z, const int &_w) : x(_x), y(_y), z(_z), w(_w) {}
+        // ivec4(const int &_v) : x(_v), y(_v), z(_v), w(_v) {}
         int x;
         int y;
         int z;
@@ -153,31 +93,23 @@ namespace vm
     };
     struct ibox3
     {
-        ibox3()
-        {
-            min = ivec3(0);
-            max = ivec3(0);
-        }
-        ibox3(const ivec3 &_min, const ivec3 &_max)
-        {
-            min = _min;
-            max = _max;
-        }
+        // ibox3()
+        // {
+        //     min = ivec3(0);
+        //     max = ivec3(0);
+        // }
+        // ibox3(const ivec3 &_min, const ivec3 &_max) : min(_min), max(_max) {}
         ivec3 min;
         ivec3 max;
     };
     struct box3
     {
-        box3()
-        {
-            min = vec3(0);
-            max = vec3(0);
-        }
-        box3(const vec3 &_min, const vec3 &_max)
-        {
-            min = _min;
-            max = _max;
-        }
+        // box3()
+        // {
+        //     min = vec3(0);
+        //     max = vec3(0);
+        // }
+        // box3(const vec3 &_min, const vec3 &_max) : min(_min), max(_max) {}
         vec3 min;
         vec3 max;
     };
