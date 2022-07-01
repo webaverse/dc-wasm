@@ -21,14 +21,14 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
 /* EMSCRIPTEN_KEEPALIVE void getHeightfieldRange(DCInstance *inst, int x, int z, int w, int h, int lod, float *heights) {
     return inst->getHeightfieldRange(x, z, w, h, lod, heights);
 } */
-EMSCRIPTEN_KEEPALIVE uint32_t getChunkHeightfieldAsync(DCInstance *inst, int x, int z, int lod, float *heights) {
-    return inst->getChunkHeightfieldAsync(vm::ivec2(x, z), lod, heights);
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkHeightfieldAsync(DCInstance *inst, int x, int z, int lod) {
+    return inst->getChunkHeightfieldAsync(vm::ivec2(x, z), lod);
 }
-EMSCRIPTEN_KEEPALIVE uint32_t getChunkSkylightAsync(DCInstance *inst, int x, int y, int z, int lod, unsigned char *skylights) {
-    return inst->getChunkSkylightAsync(vm::ivec3(x, y, z), lod, skylights);
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkSkylightAsync(DCInstance *inst, int x, int y, int z, int lod) {
+    return inst->getChunkSkylightAsync(vm::ivec3(x, y, z), lod);
 }
-EMSCRIPTEN_KEEPALIVE uint32_t getChunkAoAsync(DCInstance *inst, int x, int y, int z, int lod, unsigned char *aos) {
-    return inst->getChunkAoAsync(vm::ivec3(x, y, z), lod, aos);
+EMSCRIPTEN_KEEPALIVE uint32_t getChunkAoAsync(DCInstance *inst, int x, int y, int z, int lod) {
+    return inst->getChunkAoAsync(vm::ivec3(x, y, z), lod);
 }
 /* EMSCRIPTEN_KEEPALIVE void getSkylightFieldRange(DCInstance *inst, int x, int y, int z, int w, int h, int d, int lod, unsigned char *skylights) {
     return inst->getSkylightFieldRange(x, y, z, w, h, d, lod, skylights);
@@ -42,14 +42,14 @@ EMSCRIPTEN_KEEPALIVE void getAoFieldRange(DCInstance *inst, int x, int y, int z,
 
 // 
 
-EMSCRIPTEN_KEEPALIVE uint32_t createGrassSplatAsync(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
-    return inst->createGrassSplatAsync(vm::ivec2(x, z), lod, ps, qs, instances, count);
+EMSCRIPTEN_KEEPALIVE uint32_t createGrassSplatAsync(DCInstance *inst, int x, int z, int lod) {
+    return inst->createGrassSplatAsync(vm::ivec2(x, z), lod);
 }
-EMSCRIPTEN_KEEPALIVE uint32_t createVegetationSplatAsync(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
-    return inst->createVegetationSplatAsync(vm::ivec2(x, z), lod, ps, qs, instances, count);
+EMSCRIPTEN_KEEPALIVE uint32_t createVegetationSplatAsync(DCInstance *inst, int x, int z, int lod) {
+    return inst->createVegetationSplatAsync(vm::ivec2(x, z), lod);
 }
-EMSCRIPTEN_KEEPALIVE uint32_t createMobSplatAsync(DCInstance *inst, int x, int z, int lod, float *ps, float *qs, float *instances, unsigned int *count) {
-    return inst->createMobSplatAsync(vm::ivec2(x, z), lod, ps, qs, instances, count);
+EMSCRIPTEN_KEEPALIVE uint32_t createMobSplatAsync(DCInstance *inst, int x, int z, int lod) {
+    return inst->createMobSplatAsync(vm::ivec2(x, z), lod);
 }
 
 /* EMSCRIPTEN_KEEPALIVE void clearChunkRootDualContouring(float x, float y, float z) {
