@@ -7,7 +7,7 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=1073741824 
   --profiling \
   objectize.cc \
   FastNoise.cpp util.cc vector.cc worley.cc \
-  DualContouring/main.cc DualContouring/noise.cc DualContouring/vectorMath.cc DualContouring/qef.cc DualContouring/svd.cc DualContouring/biomes.cc DualContouring/density.cc DualContouring/mesh.cc DualContouring/octree.cc DualContouring/chunk.cc DualContouring/instance.cc DualContouring/context.cc DualContouring/task.cc DualContouring/result.cc DualContouring/lock.cc DualContouring/sync.cc DualContouring/promise.cc DualContouring/cache.cc \
+  DualContouring/main.cc DualContouring/noise.cc DualContouring/vectorMath.cc DualContouring/qef.cc DualContouring/svd.cc DualContouring/biomes.cc DualContouring/density.cc DualContouring/mesh.cc DualContouring/octree.cc DualContouring/chunk.cc DualContouring/instance.cc DualContouring/context.cc DualContouring/task.cc DualContouring/result.cc DualContouring/lock.cc DualContouring/sync.cc DualContouring/promise.cc DualContouring/cache.cc DualContouring/caches.cc \
   -I. \
   -o bin/dc.js
 
