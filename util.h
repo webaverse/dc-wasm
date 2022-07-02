@@ -23,6 +23,7 @@ T bilinear(
 template<typename T, typename R>
 R trilinear(
   const vm::vec3 &location,
+  const int lod,
   T &data
 )
 {
@@ -35,13 +36,13 @@ R trilinear(
   int iz = int(rz);
   
   vm::ivec3 p000{ix, iy, iz};
-  vm::ivec3 p100{ix + 1, iy, iz};
-  vm::ivec3 p010{ix, iy + 1, iz};
-  vm::ivec3 p110{ix + 1, iy + 1, iz};
-  vm::ivec3 p001{ix, iy, iz + 1};
-  vm::ivec3 p101{ix + 1, iy, iz + 1};
-  vm::ivec3 p011{ix, iy + 1, iz + 1};
-  vm::ivec3 p111{ix + 1, iy + 1, iz + 1};
+  vm::ivec3 p100{ix + lod, iy, iz};
+  vm::ivec3 p010{ix, iy + lod, iz};
+  vm::ivec3 p110{ix + lod, iy + lod, iz};
+  vm::ivec3 p001{ix, iy, iz + lod};
+  vm::ivec3 p101{ix + lod, iy, iz + lod};
+  vm::ivec3 p011{ix, iy + lod, iz + lod};
+  vm::ivec3 p111{ix + lod, iy + lod, iz + lod};
 
   const R &v000 = data.get(p000.x, p000.y, p000.z);
   const R &v100 = data.get(p100.x, p100.y, p100.z);
