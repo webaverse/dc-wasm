@@ -7,7 +7,21 @@
 
 ResultQueue::ResultQueue() :
   ids(0)
-  {}
+{
+  MAIN_THREAD_ASYNC_EM_ASM({
+      const resultEvent = new MessageEvent('result', {
+        data: {
+          id: 0,
+          result: 0,
+        },
+      });
+      globalThis.handleResult = (id, result) => {
+        resultEvent.data.id = id;
+        resultEvent.data.result = result;
+        globalThis.dispatchEvent(resultEvent);
+      };
+  });
+}
 ResultQueue::~ResultQueue() {}
 
 uint32_t ResultQueue::getNextId() {
@@ -22,19 +36,7 @@ void ResultQueue::pushResult(uint32_t id, void *result) {
     return performance.now() - globalThis.requestStartTime;
   }); */
   MAIN_THREAD_ASYNC_EM_ASM({
-    const id = $0;
-    const result = $1;
-    if (!globalThis.resultEvent) {
-      globalThis.resultEvent = new MessageEvent('result', {
-        data: {
-          id: 0,
-          result: 0,
-        },
-      });
-    }
-    globalThis.resultEvent.data.id = id;
-    globalThis.resultEvent.data.result = result;
-    globalThis.dispatchEvent(globalThis.resultEvent);
+    handleResult($0, $1);
   }, id, result);
   // emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, (int)result);
   // emscripten_wasm_worker_post_function_vii(DualContouring::parentThreadId, result_em_func_vii, (int)id, (int)result);
