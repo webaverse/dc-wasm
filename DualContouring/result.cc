@@ -5,23 +5,7 @@
 
 //
 
-ResultQueue::ResultQueue() :
-  ids(0)
-{
-  MAIN_THREAD_ASYNC_EM_ASM({
-      const resultEvent = new MessageEvent('result', {
-        data: {
-          id: 0,
-          result: 0,
-        },
-      });
-      globalThis.handleResult = (id, result) => {
-        resultEvent.data.id = id;
-        resultEvent.data.result = result;
-        globalThis.dispatchEvent(resultEvent);
-      };
-  });
-}
+ResultQueue::ResultQueue() : ids(0) {}
 ResultQueue::~ResultQueue() {}
 
 uint32_t ResultQueue::getNextId() {
