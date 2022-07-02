@@ -170,9 +170,9 @@ public:
     {
         const int maxNodeCount = 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
         chunkNodes.resize(maxNodeCount);
-        const int &size = chunkSize * lodArray[0];
+        const int size = chunkSize * minVoxelSize;
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
-        std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, min, lodArray[0]);
+        std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, min, minVoxelSize);
         root = constructOctreeUpwards(rootNode, voxelNodes, min, size);
         std::vector<OctreeNode *> seamNodes = generateSeamNodes(inst, min, lodArray);
         seamRoot = constructOctreeUpwards(seamRoot, seamNodes, min, size * 2);
