@@ -24,11 +24,6 @@ void ResultQueue::pushResult(uint32_t id, void *result) {
   MAIN_THREAD_ASYNC_EM_ASM({
     const id = $0;
     const result = $1;
-    // const time = $2;
-    // console.log('result', time);
-    // console.log('dc threader got result', {id, result, lol: globalThis.lol});
-    // alert('hello world!');
-    // throw 'all done';
     if (!globalThis.resultEvent) {
       globalThis.resultEvent = new MessageEvent('result', {
         data: {
@@ -40,7 +35,6 @@ void ResultQueue::pushResult(uint32_t id, void *result) {
     globalThis.resultEvent.data.id = id;
     globalThis.resultEvent.data.result = result;
     globalThis.dispatchEvent(globalThis.resultEvent);
-    // console.timeEnd('result');
   }, id, result);
   // emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_VII, result_em_func_vii, (int)id, (int)result);
   // emscripten_wasm_worker_post_function_vii(DualContouring::parentThreadId, result_em_func_vii, (int)id, (int)result);
