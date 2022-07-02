@@ -170,7 +170,7 @@ public:
     {
         const int maxNodeCount = 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
         chunkNodes.resize(maxNodeCount);
-        const int &size = chunkSize;
+        const int &size = chunkSize * lodArray[0];
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(inst, min, lodArray[0]);
         root = constructOctreeUpwards(rootNode, voxelNodes, min, size);
@@ -193,7 +193,7 @@ public:
     std::vector<OctreeNode *> generateVoxelNodes(DCInstance *inst, const vm::ivec3 &min, int lod)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = min + chunkSize;
+        const vm::ivec3 chunkMax = min + chunkSize * lod;
 
         for (int x = min.x; x < chunkMax.x; x += lod)
             for (int y = min.y; y < chunkMax.y; y += lod)
@@ -283,7 +283,7 @@ public:
     std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunkMin + chunkSize;
+        const vm::ivec3 chunkMax = chunkMin + chunkSize * lod;
 
         for (int x = chunkMin.x; x < chunkMax.x; x += lod)
             for (int y = chunkMin.y; y < chunkMax.y; y += lod)
