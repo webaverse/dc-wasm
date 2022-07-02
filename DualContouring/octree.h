@@ -305,7 +305,7 @@ public:
 
     std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, const vm::ivec3 &baseChunkMin, const int lodArray[])
     {
-        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3{chunkSize, chunkSize, chunkSize};
+        const vm::ivec3 seamValues = baseChunkMin + vm::ivec3{chunkSize, chunkSize, chunkSize} * lodArray[0];
 
         std::vector<OctreeNode *> seamNodes;
 
@@ -353,7 +353,7 @@ public:
         std::vector<OctreeNode *> neighbourNodes;
         for (int i = 1; i < 8; i++)
         {
-            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkSize;
+            const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkSize * lodArray[i];
             const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
             std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[i], chunkMin, selectionFuncs[i], chunkSize);
             neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
