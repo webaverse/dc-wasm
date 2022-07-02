@@ -14,14 +14,14 @@ class TerrainDCContext {
 public:
     TerrainVertexBuffer vertexBuffer;
 
-    static float densityFn(const vm::vec3 &position, DCInstance *inst);
+    static float densityFn(const vm::vec3 &position, const int lod, DCInstance *inst);
 };
 
 class LiquidDCContext {
 public:
     LiquidVertexBuffer vertexBuffer;
 
-    static float densityFn(const vm::vec3 &position, DCInstance *inst);
+    static float densityFn(const vm::vec3 &position, const int lod, DCInstance *inst);
 };
 
 #endif // CONTEXT_H

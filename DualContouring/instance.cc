@@ -1571,13 +1571,14 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
 // lighting
 
 // sdf
-float DCInstance::getCachedInterpolatedSdf(const float x, const float y, const float z) {
+float DCInstance::getCachedInterpolatedSdf(const float x, const float y, const float z, const int lod) {
     return trilinear<decltype(cachedSdf), float>(
         vm::vec3{x, y, z},
+        lod,
         cachedSdf
     );
 }
-float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, const float z) {
+float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, const float z, const int lod) {
     // const int &gridPoints = DualContouring::gridPoints;
 
     // const float localX = x + 1;
@@ -1585,10 +1586,11 @@ float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, co
     // const float localZ = z + 1;
     return trilinear<decltype(cachedWaterSdf), float>(
         vm::vec3{x, y, z},
+        lod,
         cachedWaterSdf
     );
 }
-float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, const float z) {
+float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, const float z, const int lod) {
     // const int &gridPoints = DualContouring::gridPoints;
 
     // const float localX = x + 1;

@@ -86,7 +86,7 @@ public:
 //
 
 template<typename DCContextType>
-vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, DCInstance *inst)
+vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, const int lod, DCInstance *inst)
 {
     // approximate the zero crossing by finding the min value along the edge
     float minValue = 100000.f;
@@ -96,7 +96,7 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
     {
         const float percentage = i / steps;
         const vm::vec3 p = p0 + ((p1 - p0) * percentage);
-        const float density = abs(DCContextType::densityFn(p, inst));
+        const float density = abs(DCContextType::densityFn(p, lod, inst));
         if (density < minValue)
         {
             minValue = density;
@@ -107,16 +107,16 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
     return p0 + ((p1 - p0) * t);
 }
 template<typename DCContextType>
-vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, DCInstance *inst)
+vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, const int lod, DCInstance *inst)
 {
     // finding the surface normal with the derivative
     const float H = 0.001f;
-    const float dx = DCContextType::densityFn(p + vm::vec3{H, 0.f, 0.f}, inst) -
-                     DCContextType::densityFn(p - vm::vec3{H, 0.f, 0.f}, inst);
-    const float dy = DCContextType::densityFn(p + vm::vec3{0.f, H, 0.f}, inst) -
-                     DCContextType::densityFn(p - vm::vec3{0.f, H, 0.f}, inst);
-    const float dz = DCContextType::densityFn(p + vm::vec3{0.f, 0.f, H}, inst) -
-                     DCContextType::densityFn(p - vm::vec3{0.f, 0.f, H}, inst);
+    const float dx = DCContextType::densityFn(p + vm::vec3{H, 0.f, 0.f}, lod, inst) -
+                     DCContextType::densityFn(p - vm::vec3{H, 0.f, 0.f}, lod, inst);
+    const float dy = DCContextType::densityFn(p + vm::vec3{0.f, H, 0.f}, lod, inst) -
+                     DCContextType::densityFn(p - vm::vec3{0.f, H, 0.f}, lod, inst);
+    const float dz = DCContextType::densityFn(p + vm::vec3{0.f, 0.f, H}, lod, inst) -
+                     DCContextType::densityFn(p - vm::vec3{0.f, 0.f, H}, lod, inst);
     return vm::normalize(vm::vec3{dx, dy, dz});
 }
 
@@ -142,8 +142,8 @@ int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &a
         const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * minVoxelSize;
         const vm::vec3 p1 = vm::vec3{(float)ip1.x, (float)ip1.y, (float)ip1.z};
         const vm::vec3 p2 = vm::vec3{(float)ip2.x, (float)ip2.y, (float)ip2.z};
-        const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, inst);
-        const vm::vec3 n = calculateSurfaceNormal<DCContextType>(p, inst);
+        const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, minVoxelSize, inst);
+        const vm::vec3 n = calculateSurfaceNormal<DCContextType>(p, minVoxelSize, inst);
         qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
         averageNormal += n;
         edgeCount++;
@@ -232,7 +232,7 @@ public:
         for (int i = 0; i < 8; i++)
         {
             const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
-            const float density = DCContextType::densityFn(vm::vec3{(float)cornerPos.x, (float)cornerPos.y, (float)cornerPos.z}, inst);
+            const float density = DCContextType::densityFn(vm::vec3{(float)cornerPos.x, (float)cornerPos.y, (float)cornerPos.z}, minVoxelSize, inst);
             const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
             corners |= (material << i);
         }
