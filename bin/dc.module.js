@@ -4183,4 +4183,5 @@ if (Module["noInitialRun"]) shouldRunNow = false;
 
 run();
 let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;
+let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;
 export default Module;

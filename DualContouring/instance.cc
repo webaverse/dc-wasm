@@ -667,7 +667,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
                         {
                             // int gridSize = chunkSize + 3 + lod;
                             // int damageBufferSize = gridSize * gridSize * gridSize;
-                            // memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.value.data(), sizeof(float) * damageBufferSize);
+                            // memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), this->cachedDamageSdf.value.data(), sizeof(float) * damageBufferSize);
 
                             outPositions[(*outPositionsCount) * 3] = min.x;
                             outPositions[(*outPositionsCount) * 3 + 1] = min.y;
