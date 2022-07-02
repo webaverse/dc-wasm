@@ -14,8 +14,7 @@ class DCInstance;
 
 //
 
-template<typename T>
-inline int modulo(T x, T N){
+inline int modulo(int x, int N){
     return (x % N + N) % N;
 }
 
