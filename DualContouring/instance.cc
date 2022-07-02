@@ -1276,7 +1276,7 @@ uint8_t DCInstance::initSkylightField(DCInstance *inst, int x, int y, int z) {
             
             // int topAY = min.y + gridPoints - 1;
             // int topAY = 16;
-            uint8_t skylight = std::min(std::max(/*(float)topAY */y - height, 0.f), maxSkyLightf);
+            uint8_t skylight = std::min(std::max(/*(float)topAY */maxSkyLightf + y - height, 0.f), maxSkyLightf);
 
             /* for (int ay = y - 1; ay >= height - maxSkyLighti; ay--)
             {
