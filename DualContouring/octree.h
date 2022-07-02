@@ -57,9 +57,10 @@ typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFun
 
 const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p);
 
+uint64_t hashOctreeMin(const vm::ivec2 &min);
+uint64_t hashOctreeMin(const vm::ivec3 &min);
 uint64_t hashOctreeMinLod(const vm::ivec2 &min, int lod);
 uint64_t hashOctreeMinLod(const vm::ivec3 &min, int lod);
-uint64_t hashOctreeMinLodLayer(const vm::ivec2 &min, int lod, int flags);
 
 //
 

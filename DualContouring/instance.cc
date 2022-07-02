@@ -33,7 +33,7 @@ Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags
         }, lod);
         abort();
     } */
-    uint64_t minHash = hashOctreeMinLod(min, lod);
+    uint64_t minHash = hashOctreeMin(min);
 
     /* if (tryLock(min, lod)) {
         EM_ASM({
@@ -52,7 +52,7 @@ Chunk3D &DCInstance::getChunk(const vm::ivec3 &min, const int lod, GenerateFlags
     return *chunkNoise;
 }
 Chunk3D &DCInstance::getChunkInternal(const vm::ivec3 &min, int lod) {
-    uint64_t minHash = hashOctreeMinLod(min, lod);
+    uint64_t minHash = hashOctreeMin(min);
 
     const auto &iter = chunksCache3D.find(minHash);
     if (iter == chunksCache3D.end()) {
@@ -92,7 +92,7 @@ Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags
         }, lod);
         abort();
     } */
-    uint64_t minHash = hashOctreeMinLod(min, lod);
+    uint64_t minHash = hashOctreeMin(min);
 
     /* if (tryLock(min, lod)) {
         EM_ASM({
@@ -110,7 +110,7 @@ Chunk2D &DCInstance::getChunk(const vm::ivec2 &min, const int lod, GenerateFlags
     return *chunkNoise;
 }
 Chunk2D &DCInstance::getChunkInternal(const vm::ivec2 &min, int lod) {
-    uint64_t minHash = hashOctreeMinLod(min, lod);
+    uint64_t minHash = hashOctreeMin(min);
 
     const auto &iter = chunksCache2D.find(minHash);
     if (iter == chunksCache2D.end()) {
@@ -149,7 +149,7 @@ Mutex *DCInstance::getChunkLock(const vm::ivec2 &worldPos, const int lod, const 
     } */
     
     Mutex *chunkLock;
-    uint64_t minLodHash = hashOctreeMinLodLayer(worldPos, lod, flags);
+    uint64_t minLodHash = hashOctreeMin(worldPos);
     {
         std::unique_lock<Mutex> lock(locksMutex);
         chunkLock = &chunkLocks2D[minLodHash];
@@ -165,7 +165,7 @@ Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
     } */
 
     Mutex *chunkLock;
-    uint64_t minLodHash = hashOctreeMinLod(worldPos, lod);
+    uint64_t minLodHash = hashOctreeMin(worldPos);
     {
         std::unique_lock<Mutex> lock(locksMutex);
         chunkLock = &chunkLocks3D[minLodHash];
@@ -655,7 +655,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
             {
                 vm::ivec3 min = chunkMin + vm::ivec3{(int)dx, (int)dy, (int)dz} * chunkSize;
                 
-                uint64_t minHash = hashOctreeMinLod(min, lod);
+                uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
                     seenHashes.insert(minHash);
@@ -706,7 +706,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
             {
                vm::ivec3 min = chunkMin + vm::ivec3{(int)dx, (int)dy, (int)dz} * chunkSize;
 
-                uint64_t minHash = hashOctreeMinLod(min, lod);
+                uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
                     seenHashes.insert(minHash);
@@ -767,7 +767,7 @@ bool DCInstance::drawCubeDamage(
                                     (int)std::floor(ay / (float)chunkSize),
                                     (int)std::floor(az / (float)chunkSize)} *
                                 chunkSize;
-                uint64_t minHash = hashOctreeMinLod(min, lod);
+                uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
                     seenHashes.insert(minHash);
@@ -831,7 +831,7 @@ bool DCInstance::eraseCubeDamage(
                                     (int)std::floor(ay / (float)chunkSize),
                                     (int)std::floor(az / (float)chunkSize)} *
                                 chunkSize;
-                uint64_t minHash = hashOctreeMinLod(min, lod);
+                uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
                     seenHashes.insert(minHash);
