@@ -116,8 +116,6 @@ public:
     uint8_t *createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8]);
 
     //
-    bool bakeSphereDamage(std::vector<float> &bakedDamage, const vm::vec3 &worldPos,const vm::ivec3 &min, const float radius);
-
     bool drawSphereDamage(const float &x, const float &y, const float &z,
                           const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                           const int &lod);

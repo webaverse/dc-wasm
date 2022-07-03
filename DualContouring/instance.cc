@@ -1550,14 +1550,14 @@ float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, co
 }
 float DCInstance::getCachedDamageInterpolatedSdf(const float &x, const float &y, const float &z, const int &lod) {
     const float defaultDistance = chunkSize * lod;
-    DamageBuffersList damageBuffersList = damageBuffers.chunks;
+    DamageBuffersMap &damageBuffersMap = damageBuffers.chunks;
 
-    if(damageBuffersList.size() > 0){
+    if(damageBuffersMap.size() > 0){
         const vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{int(x),int(y),int(z)});
-        const uint64_t hashedMin = hashOctreeMinLod(chunkMin,lod);
+        const uint64_t hashedMin = hashOctreeMin(chunkMin);
         // search for the chunk of the voxel
-        auto iter = damageBuffersList.find(hashedMin);
-        if (iter == end(damageBuffersList))
+        auto iter = damageBuffersMap.find(hashedMin);
+        if (iter == end(damageBuffersMap))
         {
             // the requested voxel's chunk doesn't have damage, so return the default distance
             return defaultDistance;
@@ -1565,10 +1565,9 @@ float DCInstance::getCachedDamageInterpolatedSdf(const float &x, const float &y,
         else 
         {
             // the requested voxel's chunk has damage
-            const vm::vec3 localPos = vm::vec3{x, y, z} - vm::vec3{(float)chunkMin.x,(float)chunkMin.y,(float)chunkMin.z};
-            std::vector<float> cachedDamageSdf = iter->second->bakedDamage;
-            return trilinear<float>(
-                localPos,
+            DamageSdf &cachedDamageSdf = iter->second->bakedDamageSdf;
+            return trilinear<decltype(cachedDamageSdf),float>(
+                vm::vec3{x, y, z},
                 lod,
                 cachedDamageSdf
             );
