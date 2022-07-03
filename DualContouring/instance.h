@@ -57,8 +57,8 @@ public:
 
     // 2d interpolation
     // unsigned char getCachedBiome(const int lx, const int lz) const;
-    void getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights);
-    void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights);
+    void getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs);
+    void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs);
 
     // 3d interpolation
     void getCachedHeightfield(float *heights);
@@ -153,8 +153,7 @@ public:
 
     //
 
-    unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
-    void getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights);
+    // unsigned char getBiome(const vm::vec2 &worldPosition, const int &lod);
     
     //
 

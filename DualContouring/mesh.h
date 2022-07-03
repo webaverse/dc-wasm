@@ -2,8 +2,10 @@
 #define MESH_H
 
 #include "vectorMath.h"
+#include "biomes.h"
 
 #include <vector>
+#include <array>
 #include <stdint.h>
 #include <cstring>
 
@@ -13,6 +15,7 @@ typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
+typedef std::vector<std::array<UV, 4>> BiomesUvsBuffer;
 typedef std::vector<int> IndexBuffer;
 typedef std::vector<int> BiomeBuffer;
 
@@ -22,10 +25,13 @@ struct VertexData
 {
     int index;
     int corners;
-    vm::ivec4 biomes;
-    vm::vec4 biomesWeights;
+
     vm::vec3 position;
     vm::vec3 normal;
+
+    vm::ivec4 biomes;
+    vm::vec4 biomesWeights;
+    std::array<UV, 4> biomeUvs;
 };
 
 //
@@ -34,9 +40,11 @@ class TerrainVertexBuffer {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
+    IndexBuffer indices;
+
     BiomesBuffer biomes;
     BiomesWeightBuffer biomesWeights;
-    IndexBuffer indices;
+    BiomesUvsBuffer biomesUvs;
 
     uint8_t *getBuffer() const;
     
@@ -47,8 +55,9 @@ class LiquidVertexBuffer {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
-    BiomeBuffer biomes;
     IndexBuffer indices;
+
+    BiomeBuffer biomes;
 
     uint8_t *getBuffer() const;
 
