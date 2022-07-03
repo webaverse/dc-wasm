@@ -55,12 +55,12 @@ public:
     ChunkCache3D<float, Chunk3D, initWaterSdf> cachedWaterSdf;
     // ChunkCache3D<float, Chunk3D, initDamageSdf> cachedDamageSdf;
 
-    // 2d interpolation
-    // unsigned char getCachedBiome(const int lx, const int lz) const;
+    // vertex interpolation
     void getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs);
     void getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs);
+    void getCachedInterpolatedLight(const vm::vec3 &worldPosition, uint8_t &skylight, uint8_t &ao);
 
-    // 3d interpolation
+    // chunk interpolation
     void getCachedHeightfield(float *heights);
     void getCachedSkylight(unsigned char *skylights);
     void getCachedAo(unsigned char *aos);

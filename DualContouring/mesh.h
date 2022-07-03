@@ -18,6 +18,7 @@ typedef std::vector<vm::vec4> BiomesWeightBuffer;
 typedef std::vector<std::array<UV, 4>> BiomesUvsBuffer;
 typedef std::vector<int> IndexBuffer;
 typedef std::vector<int> BiomeBuffer;
+typedef std::vector<uint8_t> LightBuffer;
 
 //
 
@@ -32,6 +33,9 @@ struct VertexData
     vm::ivec4 biomes;
     vm::vec4 biomesWeights;
     std::array<UV, 4> biomeUvs;
+
+    uint8_t skylight;
+    uint8_t ao;
 };
 
 //
@@ -45,6 +49,9 @@ public:
     BiomesBuffer biomes;
     BiomesWeightBuffer biomesWeights;
     BiomesUvsBuffer biomesUvs;
+
+    LightBuffer skylights;
+    LightBuffer aos;
 
     uint8_t *getBuffer() const;
     
