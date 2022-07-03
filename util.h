@@ -6,6 +6,8 @@
 #include <functional>
 
 float lerp(const float &a, const float &b, const float &f);
+int align(int x, int N);
+int align4(int x);
 
 template<typename T>
 T bilinear( 
