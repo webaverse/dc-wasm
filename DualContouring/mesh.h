@@ -9,21 +9,21 @@
 #include <stdint.h>
 #include <cstring>
 
-//
+// defines
 
 typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
 typedef std::vector<vm::ivec4> BiomesBuffer;
 typedef std::vector<vm::vec4> BiomesWeightBuffer;
-typedef std::vector<std::array<UV, 4>> BiomesUvsBuffer;
+typedef std::vector<UVVec4> BiomesUvsBuffer;
 typedef std::vector<int> IndexBuffer;
 typedef std::vector<int> BiomeBuffer;
 typedef std::vector<uint8_t> LightBuffer;
 
-//
+// octree internal data
 
-struct VertexData
-{
+class VertexData {
+public:
     int index;
     int corners;
 
@@ -32,13 +32,15 @@ struct VertexData
 
     vm::ivec4 biomes;
     vm::vec4 biomesWeights;
-    std::array<UV, 4> biomeUvs;
+    UVVec4 biomesUvs;
 
     uint8_t skylight;
     uint8_t ao;
+
+    uint8_t _padding[2];
 };
 
-//
+// output data
 
 class TerrainVertexBuffer {
 public:

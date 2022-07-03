@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "../util.h"
 #include <iostream>
 
 uint8_t *TerrainVertexBuffer::getBuffer() const {
@@ -10,6 +11,9 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     // normals
     sizeof(uint32_t) +
     normals.size() * sizeof(normals[0]) +
+    // indices
+    sizeof(uint32_t) +
+    indices.size() * sizeof(indices[0]) +
     // biomes
     sizeof(uint32_t) +
     biomes.size() * sizeof(biomes[0]) +
@@ -19,9 +23,12 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     // biomesUvs
     sizeof(uint32_t) +
     biomesUvs.size() * sizeof(biomesUvs[0]) +
-    // indices
+    // skylights
     sizeof(uint32_t) +
-    indices.size() * sizeof(indices[0]);
+    skylights.size() * sizeof(skylights[0]) +
+    // aos
+    sizeof(uint32_t) +
+    aos.size() * sizeof(aos[0]);
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
@@ -38,6 +45,12 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
   index += normals.size() * sizeof(normals[0]);
+
+  // indices
+  *((uint32_t *)(buffer + index)) = indices.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
+  index += indices.size() * sizeof(indices[0]);
 
   // biomes
   *((uint32_t *)(buffer + index)) = biomes.size();
@@ -57,11 +70,27 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
   std::memcpy(buffer + index, &biomesUvs[0], biomesUvs.size() * sizeof(biomesUvs[0]));
   index += biomesUvs.size() * sizeof(biomesUvs[0]);
 
-  // indices
-  *((uint32_t *)(buffer + index)) = indices.size();
+  // skylights
+  *((uint32_t *)(buffer + index)) = skylights.size();
+  /* std::cout << "skylights wasm size " << biomesWeights.size() << " " << skylights.size() << " " << index << " " << (skylights.size() * sizeof(skylights[0])) << std::endl;
+  if (skylights.size() == 0) {
+    std::cout << "skylights.size() == 0" << std::endl;
+    abort();
+  } else if (skylights.size() > 64 * 1024) {
+    std::cout << "skylights.size() overflow " << skylights.size() << std::endl;
+    abort();
+  } */
   index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
-  index += indices.size() * sizeof(indices[0]);
+  std::memcpy(buffer + index, &skylights[0], skylights.size() * sizeof(skylights[0]));
+  index += skylights.size() * sizeof(skylights[0]);
+  index = align4(index);
+
+  // aos
+  *((uint32_t *)(buffer + index)) = aos.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &aos[0], aos.size() * sizeof(aos[0]));
+  index += aos.size() * sizeof(aos[0]);
+  index = align4(index);
 
   return buffer;
 }
@@ -70,6 +99,9 @@ void TerrainVertexBuffer::pushVertexData(const VertexData &vertexData) {
   normals.push_back(vertexData.normal);
   biomes.push_back(vertexData.biomes);
   biomesWeights.push_back(vertexData.biomesWeights);
+  biomesUvs.push_back(vertexData.biomesUvs);
+  skylights.push_back(vertexData.skylight);
+  aos.push_back(vertexData.ao);
 }
 
 //
@@ -83,12 +115,12 @@ uint8_t *LiquidVertexBuffer::getBuffer() const {
     // normals
     sizeof(uint32_t) +
     normals.size() * sizeof(normals[0]) +
-    // biomes
-    sizeof(uint32_t) +
-    biomes.size() * sizeof(biomes[0]) +
     // indices
     sizeof(uint32_t) +
-    indices.size() * sizeof(indices[0]);
+    indices.size() * sizeof(indices[0]) +
+    // biomes
+    sizeof(uint32_t) +
+    biomes.size() * sizeof(biomes[0]);
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
@@ -106,17 +138,17 @@ uint8_t *LiquidVertexBuffer::getBuffer() const {
   std::memcpy(buffer + index, &normals[0], normals.size() * sizeof(normals[0]));
   index += normals.size() * sizeof(normals[0]);
 
-  // biomes
-  *((uint32_t *)(buffer + index)) = biomes.size();
-  index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &biomes[0], biomes.size() * sizeof(biomes[0]));
-  index += biomes.size() * sizeof(biomes[0]);
-
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
   index += indices.size() * sizeof(indices[0]);
+
+  // biomes
+  *((uint32_t *)(buffer + index)) = biomes.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &biomes[0], biomes.size() * sizeof(biomes[0]));
+  index += biomes.size() * sizeof(biomes[0]);
 
   return buffer;
 }

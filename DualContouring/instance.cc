@@ -1108,7 +1108,7 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
     // const int &gridPoints = DualContouring::gridPoints;
     // const int &lod = chunk->lod;
     // const vm::ivec2 &min = chunk->min;
-    
+
     Heightfield heightfield;
     // heightfield.biomesVectorField.resize(gridPoints * gridPoints * 4);
     // heightfield.biomesWeightsVectorField.resize(gridPoints * gridPoints * 4);
@@ -1434,7 +1434,7 @@ float DCInstance::initWaterSdf(DCInstance *inst, int x, int y, int z) {
     int index = lx + lz * size;
     return cachedBiomesField.value[index];
 } */
-void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs) {
+void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, UVVec4 &biomeUvs) {
     const auto &heightfield = cachedHeightField.get(worldPosition.x, worldPosition.y);
     biome.x = heightfield.biomesVectorField[0];
     biome.y = heightfield.biomesVectorField[1];
@@ -1446,12 +1446,12 @@ void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &bio
     biomeWeights.z = heightfield.biomesWeightsVectorField[2];
     biomeWeights.w = heightfield.biomesWeightsVectorField[3];
 
-    biomeUvs[0] = BIOME_UVS[(int)biome.x];
-    biomeUvs[1] = BIOME_UVS[(int)biome.y];
-    biomeUvs[2] = BIOME_UVS[(int)biome.z];
-    biomeUvs[3] = BIOME_UVS[(int)biome.w];
+    biomeUvs.x = BIOME_UVS[(int)biome.x];
+    biomeUvs.y = BIOME_UVS[(int)biome.y];
+    biomeUvs.z = BIOME_UVS[(int)biome.z];
+    biomeUvs.w = BIOME_UVS[(int)biome.w];
 }
-inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs, BIOME b) {
+inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, UVVec4 &biomeUvs, BIOME b) {
     // move the biomes to make room
     biome.w = biome.z;
     biome.z = biome.y;
@@ -1463,12 +1463,12 @@ inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, std::ar
     biomeWeights.y = 0;
     biomeWeights.x = 1;
 
-    biomeUvs[3] = biomeUvs[2];
-    biomeUvs[2] = biomeUvs[1];
-    biomeUvs[1] = biomeUvs[0];
-    biomeUvs[0] = BIOME_UVS[(int)b];
+    biomeUvs.w = UV{0, 0};
+    biomeUvs.z = UV{0, 0};
+    biomeUvs.y = UV{0, 0};
+    biomeUvs.x = BIOME_UVS[(int)b];
 }
-void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs) {
+void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, UVVec4 &biomeUvs) {
     vm::ivec3 iWorldPosition{(int)worldPosition.x, (int)worldPosition.y, (int)worldPosition.z};
     vm::ivec2 iWorldPositionXZ{(int)worldPosition.x, (int)worldPosition.z};
 
