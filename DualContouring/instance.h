@@ -9,6 +9,7 @@
 #include <string.h>
 #include <memory>
 #include "chunk.h"
+#include "damage.h"
 // #include "octree.h"
 #include "context.h"
 #include "task.h"
@@ -65,7 +66,10 @@ public:
     void getCachedAo(unsigned char *aos);
     float getCachedInterpolatedSdf(const float x, const float y, const float z, const int lod);
     float getCachedWaterInterpolatedSdf(const float x, const float y, const float z, const int lod);
-    float getCachedDamageInterpolatedSdf(const float x, const float y, const float z, const int lod);
+    float getCachedDamageInterpolatedSdf(const float &x, const float &y, const float &z, const int &lod);
+
+    // damage buffers
+    DamageBuffers damageBuffers;
 
     //
 
@@ -112,9 +116,8 @@ public:
     uint8_t *createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8]);
 
     //
-
     bool drawSphereDamage(const float &x, const float &y, const float &z,
-                          const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                          const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                           const int &lod);
     bool eraseSphereDamage(const float &x, const float &y, const float &z,
                            const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
@@ -197,7 +200,7 @@ public:
     float signedDistanceToSphere(float cx, float cy, float cz, float r, float px, float py, float pz);
     void patchFrontier(DCInstance *inst, std::unordered_map<uint64_t, bool> &erased);
 
-    bool addSphereDamage(const float &x, const float &y, const float &z, const float radius);
+    // bool bakeSphereDamage(const float &x, const float &y, const float &z, const float radius);
     bool removeSphereDamage(const float &x, const float &y, const float &z, const float radius);
     bool addCubeDamage(
         const float &x, const float &y, const float &z,

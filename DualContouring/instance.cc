@@ -635,54 +635,12 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
 //
 
 bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z,
-                                  const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                                  const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
                                   const int &lod)
 {
     unsigned int maxPositionsCount = *outPositionsCount;
     *outPositionsCount = 0;
-
-    bool drew = false;
-    std::set<uint64_t> seenHashes;
-
-    // chunk min of the hit point
-    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{(int)x, (int)y, (int)z});
-
-    for (float dx = -1; dx <= 1; dx += 1)
-    {
-        for (float dz = -1; dz <= 1; dz += 1)
-        {
-            for (float dy = -1; dy <= 1; dy += 1)
-            {
-                vm::ivec3 min = chunkMin + vm::ivec3{(int)dx, (int)dy, (int)dz} * chunkSize;
-                
-                uint64_t minHash = hashOctreeMin(min);
-                if (seenHashes.find(minHash) == seenHashes.end())
-                {
-                    seenHashes.insert(minHash);
-
-                    // Chunk3D &chunkNoise = getChunk(min, lod, GF_SDF);
-                    if (addSphereDamage(x, y, z, radius))
-                    {
-                        if (*outPositionsCount < maxPositionsCount)
-                        {
-                            // int gridSize = chunkSize + 3 + lod;
-                            // int damageBufferSize = gridSize * gridSize * gridSize;
-                            // memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), chunkNoise.cachedDamageSdf.value.data(), sizeof(float) * damageBufferSize);
-
-                            outPositions[(*outPositionsCount) * 3] = min.x;
-                            outPositions[(*outPositionsCount) * 3 + 1] = min.y;
-                            outPositions[(*outPositionsCount) * 3 + 2] = min.z;
-
-                            (*outPositionsCount)++;
-                        }
-
-                        drew = true;
-                    }
-                }
-            }
-        }
-    }
-    return drew;
+    return damageBuffers.damage(vm::vec3{x,y,z}, radius, outPositions, outPositionsCount, outDamages, lod);
 }
 
 bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &z,
@@ -1590,17 +1548,36 @@ float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, co
         cachedWaterSdf
     );
 }
-float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, const float z, const int lod) {
-    // const int &gridPoints = DualContouring::gridPoints;
+float DCInstance::getCachedDamageInterpolatedSdf(const float &x, const float &y, const float &z, const int &lod) {
+    const float defaultDistance = chunkSize * lod;
+    DamageBuffersMap &damageBuffersMap = damageBuffers.chunks;
 
-    // const float localX = x + 1;
-    // const float localY = y + 1;
-    // const float localZ = z + 1;
-    return MAX_HEIGHT;
-    /* return trilinear<decltype(cachedDamageSdf), float>(
-        vm::vec3{x, y, z},
-        cachedDamageSdf
-    ); */
+    if(damageBuffersMap.size() > 0){
+        const vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{int(x),int(y),int(z)});
+        const uint64_t hashedMin = hashOctreeMin(chunkMin);
+        // search for the chunk of the voxel
+        auto iter = damageBuffersMap.find(hashedMin);
+        if (iter == end(damageBuffersMap))
+        {
+            // the requested voxel's chunk doesn't have damage, so return the default distance
+            return defaultDistance;
+        }
+        else 
+        {
+            // the requested voxel's chunk has damage
+            DamageSdf &cachedDamageSdf = iter->second->bakedDamageSdf;
+            return trilinear<decltype(cachedDamageSdf),float>(
+                vm::vec3{x, y, z},
+                lod,
+                cachedDamageSdf
+            );
+        }
+    }
+    else
+    {
+        return defaultDistance;
+    }
+    
 }
 
 //
@@ -1708,38 +1685,6 @@ void DCInstance::patchFrontier(DCInstance *inst, std::unordered_map<uint64_t, bo
     } */
 }
 
-bool DCInstance::addSphereDamage(const float &x, const float &y, const float &z, const float radius)
-{
-    return false;
-    /* const int &gridPoints = DualContouring::gridPoints;
-
-    bool drew = false;
-    for (int ly = 0; ly < gridPoints; ly++)
-    {
-        for (int lz = 0; lz < gridPoints; lz++)
-        {
-            for (int lx = 0; lx < gridPoints; lx++)
-            {
-                int ax = min.x + lx - lod;
-                int ay = min.y + ly - lod;
-                int az = min.z + lz - lod;
-
-                float newDistance = signedDistanceToSphere(x, y, z, radius, ax, ay, az);
-
-                // int index = lx + lz * gridPoints + ly * gridPoints * gridPoints;
-                int index = getIndex(ax, ay, az);
-                float oldDistance = inst->cachedDamageSdf.get(ax, ay, az);
-
-                if (newDistance < oldDistance)
-                {
-                    inst->cachedDamageSdf.set(ax, ay, az, newDistance);
-                    drew = true;
-                }
-            }
-        }
-    }
-    return drew; */
-}
 bool DCInstance::removeSphereDamage(const float &x, const float &y, const float &z, const float radius)
 {
     return false;

@@ -103,21 +103,21 @@ public:
 
     void patchFrontier(DCInstance *inst, std::unordered_map<uint64_t, bool> &erased);
 
-    bool addSphereDamage(DCInstance *inst, const float &x, const float &y, const float &z, const float radius);
-    bool removeSphereDamage(DCInstance *inst, const float &x, const float &y, const float &z, const float radius);
+    // bool addSphereDamage(DCInstance *inst, const float &x, const float &y, const float &z, const float radius);
+    // bool removeSphereDamage(DCInstance *inst, const float &x, const float &y, const float &z, const float radius);
 
-    bool addCubeDamage(
-        DCInstance *inst,
-        const float &x, const float &y, const float &z,
-        const float &qx, const float &qy, const float &qz, const float &qw,
-        const float &sx, const float &sy, const float &sz
-    );
-    bool removeCubeDamage(
-        DCInstance *inst,
-        const float &x, const float &y, const float &z,
-        const float &qx, const float &qy, const float &qz, const float &qw,
-        const float &sx, const float &sy, const float &sz
-    );
+    // bool addCubeDamage(
+    //     DCInstance *inst,
+    //     const float &x, const float &y, const float &z,
+    //     const float &qx, const float &qy, const float &qz, const float &qw,
+    //     const float &sx, const float &sy, const float &sz
+    // );
+    // bool removeCubeDamage(
+    //     DCInstance *inst,
+    //     const float &x, const float &y, const float &z,
+    //     const float &qx, const float &qy, const float &qz, const float &qw,
+    //     const float &sx, const float &sy, const float &sz
+    // );
 
     // void injectDamage(float *damageBuffer);
 };
