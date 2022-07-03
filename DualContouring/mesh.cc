@@ -71,6 +71,8 @@ void TerrainVertexBuffer::pushVertexData(const VertexData &vertexData) {
   biomes.push_back(vertexData.biomes);
   biomesWeights.push_back(vertexData.biomesWeights);
   biomesUvs.push_back(vertexData.biomeUvs);
+  skylights.push_back(vertexData.skylight);
+  aos.push_back(vertexData.ao);
 }
 
 //

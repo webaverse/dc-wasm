@@ -14,7 +14,7 @@ public:
 // extern std::tuple<float, float> groundNormals[];
 // extern std::tuple<float, float> groundHeights[];
 // extern std::tuple<float, float> groundEmissives[];
-extern UV BIOME_UVS[];
+// extern UV BIOME_UVS[];
 
 // constexpr int waterLevel = 5;
 constexpr float waterBaseHeight = 64.0f;
@@ -1420,6 +1420,78 @@ const BIOME BIOMES_TEMPERATURE_HUMIDITY[] {
 		/* 14 */ BIOME::biTaiga,  BIOME::biTaiga,  BIOME::biTaiga,        BIOME::biTaiga,        BIOME::biJungle,       BIOME::biJungle,       BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle,       BIOME::biJungle,      BIOME::biSwampland,    BIOME::biSwampland,    BIOME::biSwampland,   BIOME::biSwampland,
 		/* 15 */ BIOME::biTaiga,  BIOME::biTaiga,  BIOME::biTaiga,        BIOME::biTaiga,        BIOME::biJungle,       BIOME::biJungle,       BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle, BIOME::biJungle,       BIOME::biJungle,      BIOME::biSwampland,    BIOME::biSwampland,    BIOME::biSwampland,   BIOME::biSwampland,
 	};
+
+// computed in the frontend
+const UV BIOME_UVS[] {
+  {0, 0}, // biOcean
+  {0.14285714285714285, 0}, // biPlains
+  {0.2857142857142857, 0}, // biDesert
+  {0.42857142857142855, 0}, // biExtremeHills
+  {0.5714285714285714, 0}, // biForest
+  {0.7142857142857143, 0}, // biTaiga
+  {0.8571428571428571, 0}, // biSwampland
+  {0, 0.14285714285714285}, // biRiver
+  {0.14285714285714285, 0.14285714285714285}, // biNether
+  {0.2857142857142857, 0.14285714285714285}, // biEnd
+  {0.42857142857142855, 0.14285714285714285}, // biFrozenOcean
+  {0.5714285714285714, 0.14285714285714285}, // biFrozenRiver
+  {0.7142857142857143, 0.14285714285714285}, // biTundra
+  {0.8571428571428571, 0.14285714285714285}, // biIceMountains
+  {0, 0.2857142857142857}, // biMushroomIsland
+  {0.14285714285714285, 0.2857142857142857}, // biMushroomShore
+  {0.2857142857142857, 0}, // biBeach
+  {0.2857142857142857, 0.2857142857142857}, // biDesertHills
+  {0.42857142857142855, 0.2857142857142857}, // biForestHills
+  {0.5714285714285714, 0.2857142857142857}, // biTaigaHills
+  {0.42857142857142855, 0}, // biExtremeHillsEdge
+  {0.7142857142857143, 0.2857142857142857}, // biJungle
+  {0.8571428571428571, 0.2857142857142857}, // biJungleHills
+  {0, 0.42857142857142855}, // biJungleEdge
+  {0, 0}, // biDeepOcean
+  {0.14285714285714285, 0.42857142857142855}, // biStoneBeach
+  {0.2857142857142857, 0.42857142857142855}, // biColdBeach
+  {0.5714285714285714, 0.2857142857142857}, // biBirchForest
+  {0.42857142857142855, 0.42857142857142855}, // biBirchForestHills
+  {0.7142857142857143, 0}, // biRoofedForest
+  {0.5714285714285714, 0.42857142857142855}, // biColdTaiga
+  {0.7142857142857143, 0}, // biColdTaigaHills
+  {0.7142857142857143, 0.42857142857142855}, // biMegaTaiga
+  {0.8571428571428571, 0.42857142857142855}, // biMegaTaigaHills
+  {0.42857142857142855, 0}, // biExtremeHillsPlus
+  {0.42857142857142855, 0.42857142857142855}, // biSavanna
+  {0, 0.5714285714285714}, // biSavannaPlateau
+  {0.2857142857142857, 0.2857142857142857}, // biMesa
+  {0.14285714285714285, 0.5714285714285714}, // biMesaPlateauF
+  {0.14285714285714285, 0.5714285714285714}, // biMesaPlateau
+  {0.2857142857142857, 0.5714285714285714}, // biSunflowerPlains
+  {0.42857142857142855, 0.5714285714285714}, // biDesertM
+  {0.42857142857142855, 0}, // biExtremeHillsM
+  {0.14285714285714285, 0}, // biFlowerForest
+  {0.7142857142857143, 0}, // biTaigaM
+  {0.8571428571428571, 0}, // biSwamplandM
+  {0.5714285714285714, 0.5714285714285714}, // biIcePlainsSpikes
+  {0.7142857142857143, 0.2857142857142857}, // biJungleM
+  {0, 0.42857142857142855}, // biJungleEdgeM
+  {0.5714285714285714, 0.2857142857142857}, // biBirchForestM
+  {0.42857142857142855, 0.42857142857142855}, // biBirchForestHillsM
+  {0.7142857142857143, 0}, // biRoofedForestM
+  {0.5714285714285714, 0.42857142857142855}, // biColdTaigaM
+  {0.7142857142857143, 0.42857142857142855}, // biMegaSpruceTaiga
+  {0.8571428571428571, 0.42857142857142855}, // biMegaSpruceTaigaHills
+  {0.42857142857142855, 0}, // biExtremeHillsPlusM
+  {0.42857142857142855, 0.42857142857142855}, // biSavannaM
+  {0, 0.5714285714285714}, // biSavannaPlateauM
+  {0.7142857142857143, 0.5714285714285714}, // biMesaBryce
+  {0.14285714285714285, 0.5714285714285714}, // biMesaPlateauFM
+  {0.14285714285714285, 0.5714285714285714}, // biMesaPlateauM
+  {0.8571428571428571, 0.5714285714285714}, // teDirt
+  {0, 0}, // teStone
+  {0, 0.7142857142857143}, // liWater
+  {0.14285714285714285, 0.7142857142857143}, // liWaterOcean
+  {0.2857142857142857, 0.7142857142857143}, // liWaterRiverFrozen
+  {0.42857142857142855, 0.7142857142857143}, // liWaterOceanFrozen
+  {0.5714285714285714, 0.7142857142857143}, // liLava
+};
 
 bool isWaterBiome(unsigned char b);
 
