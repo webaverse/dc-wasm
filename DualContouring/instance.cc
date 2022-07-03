@@ -640,7 +640,7 @@ bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z
 {
     unsigned int maxPositionsCount = *outPositionsCount;
     *outPositionsCount = 0;
-    return damageBuffers.damage(vm::vec3{x,y,z}, radius, outPositions, outPositionsCount, outDamages);
+    return damageBuffers.damage(vm::vec3{x,y,z}, radius, outPositions, outPositionsCount, outDamages, lod);
 }
 
 bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &z,
@@ -1548,15 +1548,15 @@ float DCInstance::getCachedWaterInterpolatedSdf(const float x, const float y, co
         cachedWaterSdf
     );
 }
-float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, const float z, const int lod) {
+float DCInstance::getCachedDamageInterpolatedSdf(const float &x, const float &y, const float &z, const int &lod) {
     const float defaultDistance = chunkSize * lod;
     DamageBuffersList damageBuffersList = damageBuffers.chunks;
 
     if(damageBuffersList.size() > 0){
         const vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{int(x),int(y),int(z)});
-        const uint64_t hashedMin = hashOctreeMin(chunkMin);
+        const uint64_t hashedMin = hashOctreeMinLod(chunkMin,lod);
         // search for the chunk of the voxel
-        auto iter = damageBuffersList.find(chunkMin);
+        auto iter = damageBuffersList.find(hashedMin);
         if (iter == end(damageBuffersList))
         {
             // the requested voxel's chunk doesn't have damage, so return the default distance
@@ -1565,9 +1565,10 @@ float DCInstance::getCachedDamageInterpolatedSdf(const float x, const float y, c
         else 
         {
             // the requested voxel's chunk has damage
-            std::vector<float> cachedDamageSdf = iter->second;
-            return trilinear<decltype(cachedDamageSdf), float>(
-                vm::vec3{x, y, z},
+            const vm::vec3 localPos = vm::vec3{x, y, z} - vm::vec3{(float)chunkMin.x,(float)chunkMin.y,(float)chunkMin.z};
+            std::vector<float> cachedDamageSdf = iter->second->bakedDamage;
+            return trilinear<float>(
+                localPos,
                 lod,
                 cachedDamageSdf
             );

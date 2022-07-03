@@ -66,7 +66,7 @@ public:
     void getCachedAo(unsigned char *aos);
     float getCachedInterpolatedSdf(const float x, const float y, const float z, const int lod);
     float getCachedWaterInterpolatedSdf(const float x, const float y, const float z, const int lod);
-    float getCachedDamageInterpolatedSdf(const float x, const float y, const float z, const int lod);
+    float getCachedDamageInterpolatedSdf(const float &x, const float &y, const float &z, const int &lod);
 
     // damage buffers
     DamageBuffers damageBuffers;

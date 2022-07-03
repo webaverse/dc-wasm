@@ -11,7 +11,7 @@ float signedDistanceToSphere(float cx, float cy, float cz, float r, float px, fl
     return d - r;
 }
 
-bool ChunkDamageBuffer::bakeSphereDamage(std::vector<float> &bakedDamage, const vm::vec3 &worldPos,const vm::ivec3 &min, const float radius)
+bool ChunkDamageBuffer::bakeSphereDamage(const vm::vec3 &worldPos,const vm::ivec3 &min, const float radius)
 {
     bool drew = false;
 
@@ -32,6 +32,10 @@ bool ChunkDamageBuffer::bakeSphereDamage(std::vector<float> &bakedDamage, const 
                 }
             }
 
+    if(drew){
+        std::cout << "DREW" << std::endl;
+    }
+
     return drew;
 }
 
@@ -40,7 +44,6 @@ bool ChunkDamageBuffer::drawSphereDamage(const vm::vec3 &worldPos, const float &
     *outPositionsCount = 0;
 
     bool drew = false;
-    std::set<uint64_t> seenHashes;
 
     // chunk min of the hit point
     vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{(int)worldPos.x, (int)worldPos.y, (int)worldPos.z});
@@ -53,7 +56,7 @@ bool ChunkDamageBuffer::drawSphereDamage(const vm::vec3 &worldPos, const float &
             {
                 vm::ivec3 min = chunkMin + vm::ivec3{(int)dx, (int)dy, (int)dz} * chunkSize;
 
-                if (bakeSphereDamage(bakedDamage, worldPos, min, radius))
+                if (bakeSphereDamage(worldPos, min, radius))
                 {
                     if (*outPositionsCount < maxPositionsCount)
                     {
@@ -75,10 +78,10 @@ bool ChunkDamageBuffer::drawSphereDamage(const vm::vec3 &worldPos, const float &
     return drew;
 }
 
-bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages)
+bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages, const int &lod)
 {
     bool drew = false;
-    uint64_t chunkHash = hashOctreeMinLod(vm::ivec3{(int)worldPos.x, (int)worldPos.y, (int)worldPos.z}, 1);
+    uint64_t chunkHash = hashOctreeMinLod(vm::ivec3{(int)worldPos.x, (int)worldPos.y, (int)worldPos.z}, lod);
     DamageBuffersList chunkRefsCopy;
     {
         std::unique_lock<Mutex> lock(mutex);

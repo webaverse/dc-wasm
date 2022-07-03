@@ -61,5 +61,55 @@ R trilinear(
   const R &f = bilinear<R>(tx, ty, v001, v101, v011, v111); 
   return e * (1 - tz) + f * tz; 
 }
+template<typename R>
+R trilinear(
+  const vm::vec3 &location,
+  const int lod,
+  std::vector<R> &data
+)
+{
+  float rx = std::round(location.x);
+  float ry = std::round(location.y);
+  float rz = std::round(location.z);
+
+  int ix = int(rx);
+  int iy = int(ry);
+  int iz = int(rz);
+  
+  vm::ivec3 p000{ix, iy, iz};
+  vm::ivec3 p100{ix + lod, iy, iz};
+  vm::ivec3 p010{ix, iy + lod, iz};
+  vm::ivec3 p110{ix + lod, iy + lod, iz};
+  vm::ivec3 p001{ix, iy, iz + lod};
+  vm::ivec3 p101{ix + lod, iy, iz + lod};
+  vm::ivec3 p011{ix, iy + lod, iz + lod};
+  vm::ivec3 p111{ix + lod, iy + lod, iz + lod};
+
+  int i000 = p000.x + p000.z * chunkSize + p000.y * chunkSize * chunkSize;
+  int i100 = p100.x + p100.z * chunkSize + p100.y * chunkSize * chunkSize;
+  int i010 = p010.x + p010.z * chunkSize + p010.y * chunkSize * chunkSize;
+  int i110 = p110.x + p110.z * chunkSize + p110.y * chunkSize * chunkSize;
+  int i001 = p001.x + p001.z * chunkSize + p001.y * chunkSize * chunkSize;
+  int i101 = p101.x + p101.z * chunkSize + p101.y * chunkSize * chunkSize;
+  int i011 = p011.x + p011.z * chunkSize + p011.y * chunkSize * chunkSize;
+  int i111 = p111.x + p111.z * chunkSize + p111.y * chunkSize * chunkSize;
+
+  const R &v000 = data[i000];
+  const R &v100 = data[i100];
+  const R &v010 = data[i010];
+  const R &v110 = data[i110];
+  const R &v001 = data[i001];
+  const R &v101 = data[i101];
+  const R &v011 = data[i011];
+  const R &v111 = data[i111];
+
+  float tx = location.x - p000.x;
+  float ty = location.y - p000.y;
+  float tz = location.z - p000.z;
+
+  const R &e = bilinear<R>(tx, ty, v000, v100, v010, v110); 
+  const R &f = bilinear<R>(tx, ty, v001, v101, v011, v111); 
+  return e * (1 - tz) + f * tz; 
+}
 
 #endif // _UTIL_H_

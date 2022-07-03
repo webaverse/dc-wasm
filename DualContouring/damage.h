@@ -7,19 +7,18 @@
 #include "cache.h"
 #include <unordered_map>
 
-
-
 class ChunkDamageBuffer
 {
 public:
     // members
-    ChunkCache3D<float, Chunk3D, initDamageSdf> bakedDamage;
-    
-    void initDamageSdf(){
+    std::vector<float> bakedDamage;
+
+    // constructors
+    ChunkDamageBuffer()
+    {
         bakedDamage.resize(chunkSize * chunkSize * chunkSize, chunkSize);
     }
-
-    bool bakeSphereDamage(std::vector<float> &bakedDamage, const vm::vec3 &worldPos,const vm::ivec3 &min, const float radius);
+    bool bakeSphereDamage(const vm::vec3 &worldPos,const vm::ivec3 &min, const float radius);
     bool drawSphereDamage(const vm::vec3 &worldPos,
                           const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
 };
@@ -37,7 +36,7 @@ public:
         std::unique_lock<Mutex> lock(other.mutex);
         chunks = other.chunks;
     }
-    bool damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
+    bool damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages, const int &lod);
 };
 
 #endif // DAMAGE_H
