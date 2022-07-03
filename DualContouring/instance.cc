@@ -2,6 +2,7 @@
 #include "main.h"
 #include "octree.h"
 #include "lock.h"
+#include "biomes.h"
 #include "../vector.h"
 #include "../util.h"
 #include <emscripten.h>
@@ -484,18 +485,9 @@ uint8_t *DCInstance::createMobSplat(const vm::ivec2 &worldPositionXZ, const int 
 
 // biomes
 // get biome value for a world point
-unsigned char DCInstance::getBiome(const vm::vec2 &worldPosition, const int &lod) {
+/* unsigned char DCInstance::getBiome(const vm::vec2 &worldPosition, const int &lod) {
     return cachedBiomesField.get(worldPosition.x, worldPosition.y);
-    /* Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
-    int lx = (int)worldPosition.x - chunkNoise.min.x;
-    int lz = (int)worldPosition.y - chunkNoise.min.y;
-    return chunkNoise.getCachedBiome(lx, lz); */
-}
-// get biomes weights for a world point
-void DCInstance::getInterpolatedBiomes(const vm::vec2 &worldPosition, const int &lod, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    // Chunk2D &chunkNoise = getChunkAt(worldPosition.x, worldPosition.y, lod, GF_BIOMES);
-    getCachedInterpolatedBiome2D(worldPosition, biome, biomeWeights);
-}
+} */
 
 //
 
@@ -1442,15 +1434,7 @@ float DCInstance::initWaterSdf(DCInstance *inst, int x, int y, int z) {
     int index = lx + lz * size;
     return cachedBiomesField.value[index];
 } */
-void DCInstance::getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    // const int &gridPoints = DualContouring::gridPoints;
-    
-    /* const float &x = worldPosition.x;
-    const float &z = worldPosition.y;
-    int lx = int(x) - min.x + 1;
-    int lz = int(z) - min.y + 1;
-    int index2D = lx + lz * gridPoints; */
-
+void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs) {
     const auto &heightfield = cachedHeightField.get(worldPosition.x, worldPosition.y);
     biome.x = heightfield.biomesVectorField[0];
     biome.y = heightfield.biomesVectorField[1];
@@ -1461,25 +1445,40 @@ void DCInstance::getCachedInterpolatedBiome2D(const vm::vec2 &worldPosition, vm:
     biomeWeights.y = heightfield.biomesWeightsVectorField[1];
     biomeWeights.z = heightfield.biomesWeightsVectorField[2];
     biomeWeights.w = heightfield.biomesWeightsVectorField[3];
+
+    biomeUvs[0] = BIOME_UVS[(int)biome.x];
+    biomeUvs[1] = BIOME_UVS[(int)biome.y];
+    biomeUvs[2] = BIOME_UVS[(int)biome.z];
+    biomeUvs[3] = BIOME_UVS[(int)biome.w];
 }
-void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights) {
-    // const int &gridPoints = DualContouring::gridPoints;
+inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs, BIOME b) {
+    // move the biomes to make room
+    biome.w = biome.z;
+    biome.z = biome.y;
+    biome.y = biome.x;
+    biome.x = (unsigned char)b;
 
-    const int x = worldPosition.x;
-    const int y = worldPosition.y;
-    const int z = worldPosition.z;
-    /* if (std::isnan(x) || std::isnan(y) || std::isnan(z)) {
-        EM_ASM({
-           console.log('got nan getCachedInterpolatedBiome3D', $0, $1, $2);
-        }, x, y, z);
-        abort();
-    } */
+    biomeWeights.w = 0;
+    biomeWeights.z = 0;
+    biomeWeights.y = 0;
+    biomeWeights.x = 1;
 
-    getCachedInterpolatedBiome2D(vm::vec2{worldPosition.x, worldPosition.z}, biome, biomeWeights);
+    biomeUvs[3] = biomeUvs[2];
+    biomeUvs[2] = biomeUvs[1];
+    biomeUvs[1] = biomeUvs[0];
+    biomeUvs[0] = BIOME_UVS[(int)b];
+}
+void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs) {
+    vm::ivec3 iWorldPosition{(int)worldPosition.x, (int)worldPosition.y, (int)worldPosition.z};
+    vm::ivec2 iWorldPositionXZ{(int)worldPosition.x, (int)worldPosition.z};
 
-    // int heightfieldIndex = lx + lz * gridPoints;
+    const int &x = iWorldPosition.x;
+    const int &y = iWorldPosition.y;
+    const int &z = iWorldPosition.z;
+
+    getCachedBiome2D(iWorldPositionXZ, biome, biomeWeights, biomeUvs);
+
     float heightValue = cachedHeightField.get(x, z).heightField;
-    // int sdfIndex = lx + lz * gridPoints + ly * gridPoints * gridPoints;
     float sdfValue = cachedSdf.get(x, y, z);
 
     bool neighborHeightsValid = true;
@@ -1489,7 +1488,6 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
         {
             int lx2 = x + dx;
             int lz2 = z + dz;
-            // int neighborHeightfieldIndex = lx2 + lz2 * gridPoints;
             float heightValue = cachedHeightField.get(lx2, lz2).heightField;
             if (y + 3 > heightValue)
             {
@@ -1507,19 +1505,11 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
     {
         if (y < heightValue - 12)
         {
-            unsigned char firstBiome = (unsigned char)BIOME::teStone;
-            biome.w = biome.z;
-            biome.z = biome.y;
-            biome.y = biome.x;
-            biome.x = firstBiome;
+            shiftOverrideBiome(biome, biomeWeights, biomeUvs, BIOME::teStone);
         }
         else if (y < heightValue - 2)
         {
-            unsigned char firstBiome = (unsigned char)BIOME::teDirt;
-            biome.w = biome.z;
-            biome.z = biome.y;
-            biome.y = biome.x;
-            biome.x = firstBiome;
+            shiftOverrideBiome(biome, biomeWeights, biomeUvs, BIOME::teDirt);
         }
     }
 }
