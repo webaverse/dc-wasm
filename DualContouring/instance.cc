@@ -1515,6 +1515,16 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
 }
 
 // lighting
+void DCInstance::getCachedInterpolatedLight(const vm::vec3 &worldPosition, uint8_t &skylight, uint8_t &ao) {
+    vm::ivec3 iWorldPosition{(int)worldPosition.x, (int)worldPosition.y, (int)worldPosition.z};
+
+    const int &x = iWorldPosition.x;
+    const int &y = iWorldPosition.y;
+    const int &z = iWorldPosition.z;
+
+    skylight = cachedSkylightField.get(x, y, z);
+    ao = cachedAoField.get(x, y, z);
+}
 
 // sdf
 float DCInstance::getCachedInterpolatedSdf(const float x, const float y, const float z, const int lod) {

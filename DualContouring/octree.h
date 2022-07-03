@@ -224,7 +224,17 @@ public:
         vertexData->position = vertexPosition;
         vertexData->normal = vm::normalize(averageNormal / (float)edgeCount);
         vertexData->corners = corners;
-        inst->getCachedInterpolatedBiome3D(vertexData->position, vertexData->biomes, vertexData->biomesWeights, vertexData->biomeUvs);
+        inst->getCachedInterpolatedBiome3D(
+            vertexData->position,
+            vertexData->biomes,
+            vertexData->biomesWeights,
+            vertexData->biomeUvs
+        );
+        inst->getCachedInterpolatedLight(
+            vertexData->position,
+            vertexData->skylight,
+            vertexData->ao
+        );
     }
 
     OctreeNode *constructLeaf(OctreeNode *voxelNode, DCInstance *inst)
