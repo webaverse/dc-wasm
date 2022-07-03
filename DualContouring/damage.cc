@@ -34,39 +34,29 @@ bool ChunkDamageBuffer::bakeSphereDamage(const vm::vec3 &worldPos, const vm::ive
     return drew;
 }
 
-bool ChunkDamageBuffer::drawSphereDamage(const vm::vec3 &worldPos, const vm::ivec3 &min, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages)
+void ChunkDamageBuffer::drawSphereDamage(bool &drew, const vm::vec3 &worldPos, const vm::ivec3 &min, const float &radius, float *outPositions, unsigned int *outPositionsCount)
 {
-    unsigned int maxPositionsCount = *outPositionsCount;
-    *outPositionsCount = 0;
-    bool drew = false;
-
     if (bakeSphereDamage(worldPos, min, radius))
     {
-        if (*outPositionsCount < maxPositionsCount)
-        {
-            // int damageBufferSize = chunkSize * chunkSize * chunkSize;
-            // memcpy(outDamages + ((*outPositionsCount) * damageBufferSize), bakedDamageSdf.data(), sizeof(float) * damageBufferSize);
-
-            outPositions[(*outPositionsCount) * 3] = min.x;
-            outPositions[(*outPositionsCount) * 3 + 1] = min.y;
-            outPositions[(*outPositionsCount) * 3 + 2] = min.z;
-
-            (*outPositionsCount)++;
-        }
+        outPositions[(*outPositionsCount) * 3] = min.x;
+        outPositions[(*outPositionsCount) * 3 + 1] = min.y;
+        outPositions[(*outPositionsCount) * 3 + 2] = min.z;
+        (*outPositionsCount)++;
 
         drew = true;
     }
-    return drew;
 }
 
-bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages, const int &lod)
+bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, const int &lod)
 {
-    bool drew = false;
     DamageBuffersMap chunkRefsCopy;
     {
         std::unique_lock<Mutex> lock(mutex);
         chunkRefsCopy = chunks;
     }
+    unsigned int maxPositionsCount = *outPositionsCount;
+    *outPositionsCount = 0;
+    bool drew = false;
 
     const vm::ivec3 hitPosition = vm::ivec3{(int)worldPos.x, (int)worldPos.y, (int)worldPos.z};
     const float diameter = radius * 2;
@@ -92,7 +82,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
                         std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(min);
                         // modify damage
                         // std::cout << "DAMAGED : Created" << std::endl;
-                        drew = editedChunkCopy->drawSphereDamage(worldPos, min, radius, outPositions, outPositionsCount, outDamages);
+                        editedChunkCopy->drawSphereDamage(drew, worldPos, min, radius, outPositions, outPositionsCount);
                         chunkRefsCopy[minHash] = editedChunkCopy;
                     }
                     else
@@ -101,7 +91,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
                         // modify damage
                         // std::cout << "DAMAGED : Modified" << std::endl;
                         std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(*iter->second);
-                        drew = editedChunkCopy->drawSphereDamage(worldPos, min, radius, outPositions, outPositionsCount, outDamages);
+                        editedChunkCopy->drawSphereDamage(drew, worldPos, min, radius, outPositions, outPositionsCount);
                         chunkRefsCopy[minHash] = editedChunkCopy;
                     }
                 }

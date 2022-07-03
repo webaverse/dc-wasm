@@ -68,8 +68,8 @@ EMSCRIPTEN_KEEPALIVE uint32_t createLiquidChunkMeshAsync(DCInstance *inst, int x
 
 //
 
-EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(DCInstance *inst, float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {
-    return inst->drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, outDamages, 1);
+EMSCRIPTEN_KEEPALIVE bool drawSphereDamage(DCInstance *inst, float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount) {
+    return inst->drawSphereDamage(x, y, z, radius, outPositions, outPositionsCount, 1);
 }
 
 EMSCRIPTEN_KEEPALIVE bool eraseSphereDamage(DCInstance *inst, float x, float y, float z, float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages) {

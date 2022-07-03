@@ -50,8 +50,8 @@ public:
     ChunkDamageBuffer(const vm::ivec3 &min) : bakedDamageSdf(min){};
     ChunkDamageBuffer(ChunkDamageBuffer &other) : bakedDamageSdf(other.bakedDamageSdf){};
     bool bakeSphereDamage(const vm::vec3 &worldPos, const vm::ivec3 &min, const float radius);
-    bool drawSphereDamage(const vm::vec3 &worldPos, const vm::ivec3 &min,
-                          const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages);
+    void drawSphereDamage(bool &drew, const vm::vec3 &worldPos, const vm::ivec3 &min,
+                          const float &radius, float *outPositions, unsigned int *outPositionsCount);
 };
 
 typedef std::unordered_map<uint64_t, std::shared_ptr<ChunkDamageBuffer>> DamageBuffersMap;
@@ -67,7 +67,7 @@ public:
         std::unique_lock<Mutex> lock(other.mutex);
         chunks = other.chunks;
     }
-    bool damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages, const int &lod);
+    bool damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, const int &lod);
 };
 
 #endif // DAMAGE_H

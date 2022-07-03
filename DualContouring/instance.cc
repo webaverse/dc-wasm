@@ -635,12 +635,10 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
 //
 
 bool DCInstance::drawSphereDamage(const float &x, const float &y, const float &z,
-                                  const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                                  const float &radius, float *outPositions, unsigned int *outPositionsCount,
                                   const int &lod)
 {
-    unsigned int maxPositionsCount = *outPositionsCount;
-    *outPositionsCount = 0;
-    return damageBuffers.damage(vm::vec3{x,y,z}, radius, outPositions, outPositionsCount, outDamages, lod);
+    return damageBuffers.damage(vm::vec3{x,y,z}, radius, outPositions, outPositionsCount, lod);
 }
 
 bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &z,

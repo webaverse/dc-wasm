@@ -117,7 +117,7 @@ public:
 
     //
     bool drawSphereDamage(const float &x, const float &y, const float &z,
-                          const float &radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
+                          const float &radius, float *outPositions, unsigned int *outPositionsCount,
                           const int &lod);
     bool eraseSphereDamage(const float &x, const float &y, const float &z,
                            const float radius, float *outPositions, unsigned int *outPositionsCount, float *outDamages,
