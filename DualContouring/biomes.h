@@ -4,10 +4,17 @@
 #include <string>
 #include <tuple>
 
-extern std::tuple<float, float> groundColors[];
-extern std::tuple<float, float> groundNormals[];
-extern std::tuple<float, float> groundHeights[];
-extern std::tuple<float, float> groundEmissives[];
+class UV {
+public:
+  float u;
+  float v;
+};
+
+// extern std::tuple<float, float> groundColors[];
+// extern std::tuple<float, float> groundNormals[];
+// extern std::tuple<float, float> groundHeights[];
+// extern std::tuple<float, float> groundEmissives[];
+extern UV BIOME_UVS[];
 
 // constexpr int waterLevel = 5;
 constexpr float waterBaseHeight = 64.0f;
