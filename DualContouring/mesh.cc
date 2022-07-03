@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "util.h"
 #include <iostream>
 
 uint8_t *TerrainVertexBuffer::getBuffer() const {
@@ -18,10 +19,24 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     biomesWeights.size() * sizeof(biomesWeights[0]) +
     // biomesUvs
     sizeof(uint32_t) +
-    biomesUvs.size() * sizeof(biomesUvs[0]) +
+    biomesUvs.size() * sizeof(biomesUvs[0]);
+
+  neededSize +=
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
+
+  neededSize +=
+    // skylights
+    sizeof(uint32_t) +
+    skylights.size() * sizeof(skylights[0]);
+  neededSize = align4(neededSize);
+  
+  neededSize +=
+    // aos
+    sizeof(uint32_t) +
+    aos.size() * sizeof(aos[0]);
+  neededSize = align4(neededSize);
 
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
@@ -62,6 +77,20 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
   index += sizeof(uint32_t);
   std::memcpy(buffer + index, &indices[0], indices.size() * sizeof(indices[0]));
   index += indices.size() * sizeof(indices[0]);
+
+  // skylights
+  *((uint32_t *)(buffer + index)) = skylights.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &skylights[0], skylights.size() * sizeof(skylights[0]));
+  index += skylights.size() * sizeof(skylights[0]);
+  index = align4(index);
+
+  // aos
+  *((uint32_t *)(buffer + index)) = aos.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &aos[0], aos.size() * sizeof(aos[0]));
+  index += aos.size() * sizeof(aos[0]);
+  index = align4(index);
 
   return buffer;
 }
