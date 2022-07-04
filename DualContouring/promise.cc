@@ -5,20 +5,34 @@
 
 //
 
-Promise::Promise() : flag(0), value(nullptr) {}
+Promise::Promise(uint32_t id, ResultQueue *resultQueue) : id(id), resultQueue(resultQueue), live(true) {}
 Promise::~Promise() {}
 
 /* void *Promise::get() {
   return value;
 } */
-void Promise::resolve(void *newValue) {
-  value = newValue;
-  flag.store(1);
-  flag.notify_all();
+bool Promise::resolve(void *value) {
+  if (live.exchange(false)) {
+    resultQueue->resolvePromise(id, value);
+    // value = newValue;
+    // flag.store(1);
+    // flag.notify_all();
+    return true;
+  } else {
+    return false;
+  }
 }
-bool Promise::test() {
+bool Promise::kill() {
+  if (live.exchange(false)) {
+    resultQueue->killPromise(id);
+    return true;
+  } else {
+    return false;
+  }
+}
+/* bool Promise::test() {
   return flag.load() == 1;
 }
 void Promise::wait() {
   flag.wait(0);
-}
+} */

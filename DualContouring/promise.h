@@ -3,6 +3,7 @@
 
 #include "vectorMath.h"
 #include "sync.h"
+#include "result.h"
 // #include "lock.h"
 #include <vector>
 #include <deque>
@@ -13,16 +14,19 @@
 
 class Promise {
 public:
-    std::atomic<int> flag;
-    void *value;
+    uint32_t id;
+    ResultQueue *resultQueue;
+    // void *value;
+    // Mutex mutex;
+    std::atomic<bool> live;
 
-    Promise();
+    Promise(uint32_t id, ResultQueue *resultQueue);
     ~Promise();
 
     // void *get();
-    void resolve(void *value = nullptr);
-    bool test();
-    void wait();
+    bool resolve(void *value = nullptr);
+    bool kill();
+    // void wait();
 };
 
 #endif // PROMISE_H

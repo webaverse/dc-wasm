@@ -83,13 +83,14 @@ bool MultiChunkLock::lock3D() {
   return true;
 }
 bool MultiChunkLock::lockPromises() {
-  for (int i = 0; i < promises.size(); i++) {
+  abort(); // XXX API outdated
+  /* for (int i = 0; i < promises.size(); i++) {
     Promise *promise = promises[i];
     if (!promise->test()) {
       return false;
     }
   }
-  return true;
+  return true; */
 }
 
 //

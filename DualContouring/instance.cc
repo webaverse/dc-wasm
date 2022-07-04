@@ -830,143 +830,140 @@ void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 
 uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
-    uint32_t id = DualContouring::resultQueue.getNextId();
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    Task *terrainTask = new Task(id, [
+    Task *terrainTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPosition,
         lod,
         lodVector = std::move(lodVector)
     ]() -> void {
         uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(terrainTask);
 
-    return id;
+    return promise->id;
 }
 uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
-    uint32_t id = DualContouring::resultQueue.getNextId();
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    Task *liquidTask = new Task(id, [
+    Task *liquidTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPosition,
         lodVector = std::move(lodVector)
     ]() -> void {
         uint8_t *result = createLiquidChunkMesh(worldPosition, lodVector.data());
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(liquidTask);
 
-    return id;
+    return promise->id;
 }
 uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod) {
-    uint32_t id = DualContouring::resultQueue.getNextId();
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
-    Task *heightfieldTask = new Task(id, [
+    Task *heightfieldTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPositionXZ,
         lod
     ]() -> void {
         void *result = getChunkHeightfield(worldPositionXZ, lod);
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(heightfieldTask);
 
-    return id;
+    return promise->id;
 }
 uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod) {
-    uint32_t id = DualContouring::resultQueue.getNextId();
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
-    Task *skylightTask = new Task(id, [
+    Task *skylightTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPosition,
         lod
     ]() -> void {
         void *result = getChunkSkylight(worldPosition, lod);
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(skylightTask);
 
-    return id;
+    return promise->id;
 }
 uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod) {
-    uint32_t id = DualContouring::resultQueue.getNextId();
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
     
-    Task *aoTask = new Task(id, [
+    Task *aoTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPosition,
         lod
     ]() -> void {
         void *result = getChunkAo(worldPosition, lod);
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(aoTask);
 
-    return id;
+    return promise->id;
 }
-uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod)
-{
-    uint32_t id = DualContouring::resultQueue.getNextId();
+uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod) {
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
-    Task *grassSplatTask = new Task(id, [
+    Task *grassSplatTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPositionXZ,
         lod
     ]() -> void {
         uint8_t *result = createGrassSplat(worldPositionXZ, lod);
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(grassSplatTask);
 
-    return id;
+    return promise->id;
 }
-uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod)
-{
-    uint32_t id = DualContouring::resultQueue.getNextId();
+uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod) {
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
-    Task *vegetationSplatTask = new Task(id, [
+    Task *vegetationSplatTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPositionXZ,
         lod
     ]() -> void {
         void *result = createVegetationSplat(worldPositionXZ, lod);
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(vegetationSplatTask);
 
-    return id;
+    return promise->id;
 }
-uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod)
-{
-    uint32_t id = DualContouring::resultQueue.getNextId();
+uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const int lod) {
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise();
 
-    Task *mobSplatTask = new Task(id, [
+    Task *mobSplatTask = new Task(promise->id, [
         this,
-        id,
+        promise,
         worldPositionXZ,
         lod
     ]() -> void {
         void *result = createMobSplat(worldPositionXZ, lod);
-        DualContouring::resultQueue.pushResult(id, result);
+        promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(mobSplatTask);
 
-    return id;
+    return promise->id;
 }
 
 //

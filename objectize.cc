@@ -128,6 +128,7 @@ EMSCRIPTEN_KEEPALIVE void setClipRange(DCInstance *inst, float minX, float minY,
 
 EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
     DualContouring::taskQueue.cancelTask(taskId);
+    DualContouring::resultQueue.cancelPromise(taskId);
 }
 
 //
