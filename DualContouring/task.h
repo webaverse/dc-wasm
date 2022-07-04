@@ -20,7 +20,7 @@ class Task {
 public:
     uint32_t id;
     std::function<void()> fn;
-    bool live;
+    std::atomic<bool> live;
 
     Task(uint32_t id, std::function<void()> fn);
     ~Task();

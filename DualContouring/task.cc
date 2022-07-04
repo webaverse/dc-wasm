@@ -16,7 +16,7 @@ void Task::run() {
   fn();
 }
 void Task::cancel() {
-  live = false;
+  live.store(false);
 }
 
 //
@@ -139,8 +139,10 @@ void TaskQueue::cancelTask(uint32_t taskId) {
   std::unique_lock<Mutex> lock(taskMutex);
   for (auto it = tasks.begin(); it != tasks.end(); it++) {
     Task *task = (*it);
-    if (task->id == taskId) {
-      // std::cout << "cancel task " << taskId << std::endl;
+    if (task->id == taskId && task->live) {
+      /* EM_ASM({
+        console.log('cancel task', $0);
+      }, task->id); */
       task->cancel();
       break;
     }
