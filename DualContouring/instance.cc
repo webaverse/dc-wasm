@@ -843,7 +843,10 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
         lodVector = std::move(lodVector)
     ]() -> void {
         uint8_t *result = createTerrainChunkMesh(worldPosition, lodVector.data());
-        promise->resolve(result);
+        if (!promise->resolve(result)) {
+            // XXX cleanup
+            // XXX also cleanup the other async calls
+        }
     });
     DualContouring::taskQueue.pushTask(terrainTask);
 
