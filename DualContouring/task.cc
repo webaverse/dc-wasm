@@ -93,10 +93,10 @@ Task *TaskQueue::popLockTask() {
     std::cout << "pop task 2 " << currentNumActiveThreads2 << " " << time << std::endl;
   } */
 
-  EM_ASM({
+  /* EM_ASM({
     // console.time('pop task ' + $0);
     globalThis.requestStartTime = performance.now();
-  });
+  }); */
 
   /* EM_ASM({
     console.timeEnd('pop task ' + $0);

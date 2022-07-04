@@ -13,6 +13,9 @@ Promise::~Promise() {}
 } */
 bool Promise::resolve(void *value) {
   if (live.exchange(false)) {
+    /* EM_ASM({
+      console.log('promise resolve', $0);
+    }, id); */
     resultQueue->resolvePromise(id, value);
     // value = newValue;
     // flag.store(1);
@@ -24,6 +27,9 @@ bool Promise::resolve(void *value) {
 }
 bool Promise::kill() {
   if (live.exchange(false)) {
+    /* EM_ASM({
+      console.log('promise kill', $0);
+    }, id); */
     resultQueue->killPromise(id);
     return true;
   } else {
