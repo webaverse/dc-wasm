@@ -1434,7 +1434,7 @@ float DCInstance::initWaterSdf(DCInstance *inst, int x, int y, int z) {
     int index = lx + lz * size;
     return cachedBiomesField.value[index];
 } */
-void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs) {
+void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 2> &biomeUvs1, std::array<UV, 2> &biomeUvs2) {
     const auto &heightfield = cachedHeightField.get(worldPosition.x, worldPosition.y);
     biome.x = heightfield.biomesVectorField[0];
     biome.y = heightfield.biomesVectorField[1];
@@ -1446,29 +1446,29 @@ void DCInstance::getCachedBiome2D(const vm::ivec2 &worldPosition, vm::ivec4 &bio
     biomeWeights.z = heightfield.biomesWeightsVectorField[2];
     biomeWeights.w = heightfield.biomesWeightsVectorField[3];
 
-    biomeUvs[0] = BIOME_UVS[(int)biome.x];
-    biomeUvs[1] = BIOME_UVS[(int)biome.y];
-    biomeUvs[2] = BIOME_UVS[(int)biome.z];
-    biomeUvs[3] = BIOME_UVS[(int)biome.w];
+    biomeUvs1[0] = BIOME_UVS[(int)biome.x];
+    biomeUvs1[1] = BIOME_UVS[(int)biome.y];
+    biomeUvs2[0] = BIOME_UVS[(int)biome.z];
+    biomeUvs2[1] = BIOME_UVS[(int)biome.w];
 }
-inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs, BIOME b) {
+inline void shiftOverrideBiome(vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 2> &biomeUvs1, std::array<UV, 2> &biomeUvs2, BIOME b) {
     // move the biomes to make room
     biome.w = biome.z;
     biome.z = biome.y;
     biome.y = biome.x;
     biome.x = (unsigned char)b;
 
-    biomeWeights.w = 0;
-    biomeWeights.z = 0;
-    biomeWeights.y = 0;
     biomeWeights.x = 1;
+    biomeWeights.y = 0;
+    biomeWeights.z = 0;
+    biomeWeights.w = 0;
 
-    biomeUvs[3] = biomeUvs[2];
-    biomeUvs[2] = biomeUvs[1];
-    biomeUvs[1] = biomeUvs[0];
-    biomeUvs[0] = BIOME_UVS[(int)b];
+    biomeUvs1[0] = BIOME_UVS[(int)b];
+    biomeUvs1[1] = {0, 0};
+    biomeUvs2[0] = {0, 0};
+    biomeUvs2[1] = {0, 0};
 }
-void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 4> &biomeUvs) {
+void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm::ivec4 &biome, vm::vec4 &biomeWeights, std::array<UV, 2> &biomeUvs1, std::array<UV, 2> &biomeUvs2) {
     vm::ivec3 iWorldPosition{(int)worldPosition.x, (int)worldPosition.y, (int)worldPosition.z};
     vm::ivec2 iWorldPositionXZ{(int)worldPosition.x, (int)worldPosition.z};
 
@@ -1476,7 +1476,7 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
     const int &y = iWorldPosition.y;
     const int &z = iWorldPosition.z;
 
-    getCachedBiome2D(iWorldPositionXZ, biome, biomeWeights, biomeUvs);
+    getCachedBiome2D(iWorldPositionXZ, biome, biomeWeights, biomeUvs1, biomeUvs2);
 
     float heightValue = cachedHeightField.get(x, z).heightField;
     float sdfValue = cachedSdf.get(x, y, z);
@@ -1505,11 +1505,11 @@ void DCInstance::getCachedInterpolatedBiome3D(const vm::vec3 &worldPosition, vm:
     {
         if (y < heightValue - 12)
         {
-            shiftOverrideBiome(biome, biomeWeights, biomeUvs, BIOME::teStone);
+            shiftOverrideBiome(biome, biomeWeights, biomeUvs1, biomeUvs2, BIOME::teStone);
         }
         else if (y < heightValue - 2)
         {
-            shiftOverrideBiome(biome, biomeWeights, biomeUvs, BIOME::teDirt);
+            shiftOverrideBiome(biome, biomeWeights, biomeUvs1, biomeUvs2, BIOME::teDirt);
         }
     }
 }

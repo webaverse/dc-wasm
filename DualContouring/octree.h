@@ -228,7 +228,8 @@ public:
             vertexData->position,
             vertexData->biomes,
             vertexData->biomesWeights,
-            vertexData->biomeUvs
+            vertexData->biomeUvs1,
+            vertexData->biomeUvs2
         );
         inst->getCachedInterpolatedLight(
             vertexData->position,

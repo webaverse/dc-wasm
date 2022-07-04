@@ -17,9 +17,12 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     // biomesWeights
     sizeof(uint32_t) +
     biomesWeights.size() * sizeof(biomesWeights[0]) +
-    // biomesUvs
+    // biomesUvs1
     sizeof(uint32_t) +
-    biomesUvs.size() * sizeof(biomesUvs[0]);
+    biomesUvs1.size() * sizeof(biomesUvs1[0]) +
+    // biomesUvs2
+    sizeof(uint32_t) +
+    biomesUvs2.size() * sizeof(biomesUvs2[0]);
 
   neededSize +=
     // indices
@@ -66,11 +69,17 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
   std::memcpy(buffer + index, &biomesWeights[0], biomesWeights.size() * sizeof(biomesWeights[0]));
   index += biomesWeights.size() * sizeof(biomesWeights[0]);
 
-  // biomesUvs
-  *((uint32_t *)(buffer + index)) = biomesUvs.size();
+  // biomesUvs1
+  *((uint32_t *)(buffer + index)) = biomesUvs1.size();
   index += sizeof(uint32_t);
-  std::memcpy(buffer + index, &biomesUvs[0], biomesUvs.size() * sizeof(biomesUvs[0]));
-  index += biomesUvs.size() * sizeof(biomesUvs[0]);
+  std::memcpy(buffer + index, &biomesUvs1[0], biomesUvs1.size() * sizeof(biomesUvs1[0]));
+  index += biomesUvs1.size() * sizeof(biomesUvs1[0]);
+
+  // biomesUvs2
+  *((uint32_t *)(buffer + index)) = biomesUvs2.size();
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &biomesUvs2[0], biomesUvs2.size() * sizeof(biomesUvs2[0]));
+  index += biomesUvs2.size() * sizeof(biomesUvs2[0]);
 
   // indices
   *((uint32_t *)(buffer + index)) = indices.size();
@@ -99,7 +108,10 @@ void TerrainVertexBuffer::pushVertexData(const VertexData &vertexData) {
   normals.push_back(vertexData.normal);
   biomes.push_back(vertexData.biomes);
   biomesWeights.push_back(vertexData.biomesWeights);
-  biomesUvs.push_back(vertexData.biomeUvs);
+  
+  biomesUvs1.push_back(vertexData.biomeUvs1);
+  biomesUvs2.push_back(vertexData.biomeUvs2);
+  
   skylights.push_back(vertexData.skylight);
   aos.push_back(vertexData.ao);
 }
