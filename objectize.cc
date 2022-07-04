@@ -126,6 +126,10 @@ EMSCRIPTEN_KEEPALIVE void setClipRange(DCInstance *inst, float minX, float minY,
     inst->setClipRange(vm::vec3{minX, minY, minZ}, vm::vec3{maxX, maxY, maxZ});
 }
 
+EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
+    DualContouring::taskQueue.cancelTask(taskId);
+}
+
 //
 
 EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {

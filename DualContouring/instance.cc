@@ -835,7 +835,7 @@ uint32_t DCInstance::createTerrainChunkMeshAsync(const vm::ivec3 &worldPosition,
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    Task *terrainTask = new Task([
+    Task *terrainTask = new Task(id, [
         this,
         id,
         worldPosition,
@@ -856,7 +856,7 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    Task *liquidTask = new Task([
+    Task *liquidTask = new Task(id, [
         this,
         id,
         worldPosition,
@@ -872,7 +872,7 @@ uint32_t DCInstance::createLiquidChunkMeshAsync(const vm::ivec3 &worldPosition, 
 uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, int lod) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    Task *heightfieldTask = new Task([
+    Task *heightfieldTask = new Task(id, [
         this,
         id,
         worldPositionXZ,
@@ -888,7 +888,7 @@ uint32_t DCInstance::getChunkHeightfieldAsync(const vm::ivec2 &worldPositionXZ, 
 uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int lod) {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    Task *skylightTask = new Task([
+    Task *skylightTask = new Task(id, [
         this,
         id,
         worldPosition,
@@ -904,7 +904,7 @@ uint32_t DCInstance::getChunkSkylightAsync(const vm::ivec3 &worldPosition, int l
 uint32_t DCInstance::getChunkAoAsync(const vm::ivec3 &worldPosition, int lod) {
     uint32_t id = DualContouring::resultQueue.getNextId();
     
-    Task *aoTask = new Task([
+    Task *aoTask = new Task(id, [
         this,
         id,
         worldPosition,
@@ -921,7 +921,7 @@ uint32_t DCInstance::createGrassSplatAsync(const vm::ivec2 &worldPositionXZ, con
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    Task *grassSplatTask = new Task([
+    Task *grassSplatTask = new Task(id, [
         this,
         id,
         worldPositionXZ,
@@ -938,7 +938,7 @@ uint32_t DCInstance::createVegetationSplatAsync(const vm::ivec2 &worldPositionXZ
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    Task *vegetationSplatTask = new Task([
+    Task *vegetationSplatTask = new Task(id, [
         this,
         id,
         worldPositionXZ,
@@ -955,7 +955,7 @@ uint32_t DCInstance::createMobSplatAsync(const vm::ivec2 &worldPositionXZ, const
 {
     uint32_t id = DualContouring::resultQueue.getNextId();
 
-    Task *mobSplatTask = new Task([
+    Task *mobSplatTask = new Task(id, [
         this,
         id,
         worldPositionXZ,

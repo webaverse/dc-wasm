@@ -18,16 +18,18 @@ class DCInstance;
 
 class Task {
 public:
+    uint32_t id;
     std::function<void()> fn;
-    // std::atomic_flag popped;
+    bool live;
 
-    Task(std::function<void()> fn);
+    Task(uint32_t id, std::function<void()> fn);
     ~Task();
 
     // bool tryLock();
     // void lock();
     // void unlock();
     void run();
+    void cancel();
     // void ensurePop();
 };
 
@@ -47,6 +49,7 @@ public:
     void pushTask(Task *task);
     Task *popLockTask();
     void runLoop();
+    void cancelTask(uint32_t taskId);
     // void flushTasks();
 };
 

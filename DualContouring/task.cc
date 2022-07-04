@@ -5,13 +5,18 @@
 
 //
 
-Task::Task(std::function<void()> fn) :
-  fn(fn)
+Task::Task(uint32_t id, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true)
 {}
 Task::~Task() {}
 
 void Task::run() {
   fn();
+}
+void Task::cancel() {
+  live = false;
 }
 
 //
@@ -130,6 +135,17 @@ Task *TaskQueue::popLockTask() {
   } */
   return task;
 }
+void TaskQueue::cancelTask(uint32_t taskId) {
+  std::unique_lock<Mutex> lock(taskMutex);
+  for (auto it = tasks.begin(); it != tasks.end(); it++) {
+    Task *task = (*it);
+    if (task->id == taskId) {
+      // std::cout << "cancel task " << taskId << std::endl;
+      task->cancel();
+      break;
+    }
+  }
+}
 void TaskQueue::runLoop() {
   /* EM_ASM(
     console.log('run loop');
@@ -138,10 +154,12 @@ void TaskQueue::runLoop() {
     for (;;) {
       Task *task = popLockTask();
       if (!task) {
+        std::cout << "failed to pop task" << std::endl;
         abort();
       }
-      task->run();
-      // task->unlock();
+      if (task->live) {
+        task->run();
+      }
       /* EM_ASM({
         console.log('done running task');
       }); */
@@ -154,6 +172,7 @@ void TaskQueue::runLoop() {
   /* EM_ASM(
     console.log('thread exited due to no task!');
   ); */
+  std::cout << "main loop exited" << std::endl;
   abort();
 }
 /* void TaskQueue::flushTasks() {
