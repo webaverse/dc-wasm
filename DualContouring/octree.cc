@@ -77,9 +77,9 @@ const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[8] =
 
 typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
 
-const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
+const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p, const int &lod)
 {
-    const int mask = ~(chunkSize - 1);
+    const int mask = ~(chunkSize * lod - 1);
     return vm::ivec3{p.x & mask, p.y & mask, p.z & mask};
 }
 

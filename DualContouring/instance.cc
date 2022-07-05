@@ -577,8 +577,8 @@ uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, cons
             return nullptr;
         }
         TerrainDCContext vertexContext;
-        generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
-        generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
+        generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext, lod);
+        generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext, lod);
 
         auto &vertexBuffer = vertexContext.vertexBuffer;
         if (vertexBuffer.indices.size() == 0)
@@ -611,8 +611,8 @@ uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const
         return nullptr;
     }
     LiquidDCContext vertexContext;
-    generateMeshFromOctree<LiquidDCContext, false>(chunkOctree.root, vertexContext);
-    generateMeshFromOctree<LiquidDCContext, false>(chunkOctree.seamRoot, vertexContext);
+    generateMeshFromOctree<LiquidDCContext, false>(chunkOctree.root, vertexContext, lod);
+    generateMeshFromOctree<LiquidDCContext, false>(chunkOctree.seamRoot, vertexContext, lod);
 
     auto &vertexBuffer = vertexContext.vertexBuffer;
     if (vertexBuffer.indices.size() == 0)
@@ -644,7 +644,7 @@ bool DCInstance::eraseSphereDamage(const float &x, const float &y, const float &
     std::set<uint64_t> seenHashes;
 
     // chunk min of the hit point
-    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{(int)x, (int)y, (int)z});
+    vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{(int)x, (int)y, (int)z}, lod);
 
     for (float dx = -1; dx <= 1; dx += 1)
     {
@@ -1535,7 +1535,7 @@ float DCInstance::getCachedDamageInterpolatedSdf(const float &x, const float &y,
     DamageBuffersMap &damageBuffersMap = damageBuffers.chunks;
 
     if(damageBuffersMap.size() > 0){
-        const vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{int(x),int(y),int(z)});
+        const vm::ivec3 chunkMin = chunkMinForPosition(vm::ivec3{int(x),int(y),int(z)}, lod);
         const uint64_t hashedMin = hashOctreeMin(chunkMin);
         // search for the chunk of the voxel
         auto iter = damageBuffersMap.find(hashedMin);
