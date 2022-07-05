@@ -1,5 +1,6 @@
 #include "octree.h"
 #include "main.h"
+#include <cmath>
 
 const vm::ivec3 CHILD_MIN_OFFSETS[] =
     {
@@ -81,6 +82,11 @@ const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p)
 {
     const int mask = ~(chunkSize - 1);
     return vm::ivec3{p.x & mask, p.y & mask, p.z & mask};
+}
+const vm::ivec3 chunkMinForPosition(const vm::vec3 &p)
+{
+    const vm::vec3 v = p / chunkSize;
+    return vm::ivec3{std::floor(v.x), std::floor(v.y), std::floor(v.z)} * chunkSize;
 }
 
 uint64_t hashOctreeMin(const vm::ivec2 &min)
