@@ -62,7 +62,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
     const float diameter = radius * 2.f;
 
     // chunk min of the hit point
-    vm::ivec3 chunkMin = chunkMinForPosition(hitPosition);
+    vm::ivec3 chunkMin = chunkMinForPosition(hitPosition, lod);
     const vm::vec3 sphereBoundingBoxMin = worldPos - radius;
     const vm::vec3 sphereBoundingBoxMax = sphereBoundingBoxMin + vm::length(vm::vec2{diameter, diameter});
 
@@ -72,7 +72,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
         for (float dy = sphereBoundingBoxMin.y; dy <= sphereBoundingBoxMax.y; dy += diameter)
             for (float dx = sphereBoundingBoxMin.x; dx <= sphereBoundingBoxMax.x; dx += diameter)
             {
-                vm::ivec3 min = chunkMinForPosition(vm::vec3{(dx, dy, dz});
+                vm::ivec3 min = chunkMinForPosition(vm::ivec3{(int)dx, (int)dy, (int)dz}, lod);
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
