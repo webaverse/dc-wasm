@@ -72,7 +72,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
         for (float dy = sphereBoundingBoxMin.y; dy <= sphereBoundingBoxMax.y; dy += diameter)
             for (float dx = sphereBoundingBoxMin.x; dx <= sphereBoundingBoxMax.x; dx += diameter)
             {
-                vm::ivec3 min = chunkMinForPosition(vm::ivec3{(int)dx, (int)dy, (int)dz}, lod);
+                vm::ivec3 min = chunkMinForPosition(vm::vec3{dx, dy, dz}, lod);
                 uint64_t minHash = hashOctreeMin(min);
                 if (seenHashes.find(minHash) == seenHashes.end())
                 {
@@ -83,7 +83,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
                         // chunk damage buffer doesn't exist already so create a new one
                         std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(min);
                         // modify damage
-                        std::cout << "DAMAGED : Created" << std::endl;
+                        // std::cout << "DAMAGED : Created" << std::endl;
                         editedChunkCopy->drawSphereDamage(drew, worldPos, min, radius, outPositions, outPositionsCount);
                         chunkRefsCopy[minHash] = editedChunkCopy;
                     }
@@ -91,7 +91,7 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
                     {
                         // chunk damage buffer already exists so replace it with a new one
                         // modify damage
-                        std::cout << "DAMAGED : Modified" << std::endl;
+                        // std::cout << "DAMAGED : Modified" << std::endl;
                         std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(*iter->second);
                         editedChunkCopy->drawSphereDamage(drew, worldPos, min, radius, outPositions, outPositionsCount);
                         chunkRefsCopy[minHash] = editedChunkCopy;

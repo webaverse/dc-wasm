@@ -83,10 +83,10 @@ const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p, const int &lod)
     const int mask = ~(chunkSize * lod - 1);
     return vm::ivec3{p.x & mask, p.y & mask, p.z & mask};
 }
-const vm::ivec3 chunkMinForPosition(const vm::vec3 &p)
+const vm::ivec3 chunkMinForPosition(const vm::vec3 &p, const int &lod)
 {
     const vm::vec3 v = p / chunkSize;
-    return vm::ivec3{std::floor(v.x), std::floor(v.y), std::floor(v.z)} * chunkSize;
+    return vm::ivec3{(int)std::floor(v.x), (int)std::floor(v.y), (int)std::floor(v.z)} * chunkSize;
 }
 
 uint64_t hashOctreeMin(const vm::ivec2 &min)
