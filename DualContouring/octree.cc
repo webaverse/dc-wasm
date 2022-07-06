@@ -85,7 +85,7 @@ const vm::ivec3 chunkMinForPosition(const vm::ivec3 &p, const int &lod)
 }
 const vm::ivec3 chunkMinForPosition(const vm::vec3 &p, const int &lod)
 {
-    const vm::vec3 v = p / chunkSize;
+    const vm::vec3 v = p / (chunkSize * lod);
     return vm::ivec3{(int)std::floor(v.x), (int)std::floor(v.y), (int)std::floor(v.z)} * chunkSize;
 }
 

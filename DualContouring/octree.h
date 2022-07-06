@@ -203,9 +203,9 @@ public:
                 {
                     const vm::ivec3 min = vm::ivec3{x, y, z};
                     OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
-                    OctreeNode *seamNode = constructLeaf(node, inst);
-                    if (seamNode) {
-                        nodes.push_back(seamNode);
+                    OctreeNode *voxelNode = constructLeaf(node, inst);
+                    if (voxelNode) {
+                        nodes.push_back(voxelNode);
                     }
                 }
         return nodes;
@@ -293,7 +293,7 @@ public:
         return nodes;
     }
 
-    std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc, const int &chunkSize)
+    std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc)
     {
         std::vector<OctreeNode *> nodes;
         const vm::ivec3 chunkMax = chunkMin + chunkSize * lod;
@@ -368,7 +368,7 @@ public:
         {
             const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkSize * lodArray[0];
             const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[i], chunkMin, selectionFuncs[i], chunkSize);
+            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[i], chunkMin, selectionFuncs[i]);
             neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
         }
 
