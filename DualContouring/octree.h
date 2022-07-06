@@ -76,9 +76,10 @@ enum OctreeNodeType
 class OctreeNode
 {
 public:
-    union {
+    union
+    {
         OctreeNode *children[8]; // only internal nodes have children
-        VertexData vertexData;            // only leaf nodes (our voxels) have vertex data
+        VertexData vertexData;   // only leaf nodes (our voxels) have vertex data
     };
     vm::ivec3 min;
     int size;
@@ -87,7 +88,7 @@ public:
 
 //
 
-template<typename DCContextType>
+template <typename DCContextType>
 vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1, const int lod, DCInstance *inst)
 {
     // approximate the zero crossing by finding the min value along the edge
@@ -108,7 +109,7 @@ vm::vec3 approximateZeroCrossingPosition(const vm::vec3 &p0, const vm::vec3 &p1,
 
     return p0 + ((p1 - p0) * t);
 }
-template<typename DCContextType>
+template <typename DCContextType>
 vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, const int lod, DCInstance *inst)
 {
     // finding the surface normal with the derivative
@@ -124,7 +125,7 @@ vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, const int lod, DCInstance *in
 
 void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
 
-template<typename DCContextType>
+template <typename DCContextType>
 int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst)
 {
     const int MAX_CROSSINGS = 6;
@@ -162,7 +163,7 @@ public:
     // members
     std::vector<OctreeNode> chunkNodes; // keeping track of all the heap allocated nodes in the chunk octree class
     int nextNodeIndex = 0;
-    OctreeNode *root; // chunk nodes root (without the seams)
+    OctreeNode *root;     // chunk nodes root (without the seams)
     OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
     int minVoxelSize; // determined by level of detail
@@ -183,7 +184,8 @@ public:
     // methods
 
     // ! only create new octree nodes with this function
-    OctreeNode *newOctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type){
+    OctreeNode *newOctreeNode(const vm::ivec3 &min, const int &size, const OctreeNodeType &type)
+    {
         OctreeNode *newNode = &chunkNodes[nextNodeIndex];
         newNode->min = min;
         newNode->size = size;
@@ -204,7 +206,8 @@ public:
                     const vm::ivec3 min = vm::ivec3{x, y, z};
                     OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
                     OctreeNode *voxelNode = constructLeaf(node, inst);
-                    if (voxelNode) {
+                    if (voxelNode)
+                    {
                         nodes.push_back(voxelNode);
                     }
                 }
@@ -230,13 +233,11 @@ public:
             vertexData->biomes,
             vertexData->biomesWeights,
             vertexData->biomeUvs1,
-            vertexData->biomeUvs2
-        );
+            vertexData->biomeUvs2);
         inst->getCachedInterpolatedLight(
             vertexData->position,
             vertexData->skylight,
-            vertexData->ao
-        );
+            vertexData->ao);
     }
 
     OctreeNode *constructLeaf(OctreeNode *voxelNode, DCInstance *inst)
@@ -308,7 +309,8 @@ public:
                     {
                         OctreeNode *node = newOctreeNode(min, lod, Node_Leaf);
                         OctreeNode *seamNode = constructLeaf(node, inst);
-                        if (seamNode) {
+                        if (seamNode)
+                        {
                             nodes.push_back(seamNode);
                         }
                     }
@@ -324,37 +326,37 @@ public:
 
         FilterNodesFunc selectionFuncs[8] =
             {[&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.x == seamValues.x;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.z == seamValues.z;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.x == seamValues.x && min.z == seamValues.z;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.y == seamValues.y;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.x == seamValues.x && min.y == seamValues.y;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.y == seamValues.y && min.z == seamValues.z;
-                },
-                [&](const vm::ivec3 &min, const vm::ivec3 &max)
-                {
-                    return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
-                }};
+             {
+                 return max.x == seamValues.x || max.y == seamValues.y || max.z == seamValues.z;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.x == seamValues.x;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.z == seamValues.z;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.x == seamValues.x && min.z == seamValues.z;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.y == seamValues.y;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.x == seamValues.x && min.y == seamValues.y;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.y == seamValues.y && min.z == seamValues.z;
+             },
+             [&](const vm::ivec3 &min, const vm::ivec3 &max)
+             {
+                 return min.x == seamValues.x && min.y == seamValues.y && min.z == seamValues.z;
+             }};
 
         std::vector<OctreeNode *> rootChunkSeamNodes = findOctreeNodes(root, selectionFuncs[0]);
 
@@ -362,14 +364,19 @@ public:
         seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
 
         // creating the seam nodes of the neighbouring chunks
-        // NEIGHBOUR_CHUNKS_OFFSETS[i]
+        std::set<uint64_t> seenHashes;
         std::vector<OctreeNode *> neighbourNodes;
         for (int i = 1; i < 8; i++)
         {
             const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkSize * lodArray[0];
-            const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
-            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[i], chunkMin, selectionFuncs[i]);
-            neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
+            const vm::ivec3 chunkMin = chunkMinForPosition(baseChunkMin + offsetMin, lodArray[i]);
+            uint64_t minHash = hashOctreeMin(chunkMin);
+            if (seenHashes.find(minHash) == seenHashes.end())
+            {
+                seenHashes.insert(minHash);
+                std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[i], chunkMin, selectionFuncs[i]);
+                neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
+            }
         }
 
         seamNodes.insert(std::end(seamNodes), std::begin(neighbourNodes), std::end(neighbourNodes));
@@ -386,7 +393,7 @@ public:
         std::unordered_map<uint64_t, OctreeNode *> parentsHashmap;
 
         for_each(begin(nodes), end(nodes), [&](OctreeNode *node)
-                    {
+                 {
                     // because the octree is regular we can calculate the parent min
                     const vm::ivec3 localPos = (node->min - rootMin);
                     const vm::ivec3 parentPos = node->min - (localPos % parentSize);
@@ -420,7 +427,7 @@ public:
 
         std::vector<OctreeNode *> parents;
         for_each(begin(parentsHashmap), end(parentsHashmap), [&](std::pair<uint64_t, OctreeNode *> pair)
-                    { parents.push_back(pair.second); });
+                 { parents.push_back(pair.second); });
 
         return parents;
     }
@@ -438,10 +445,10 @@ public:
 
         std::vector<OctreeNode *> nodes(begin(inputNodes), end(inputNodes));
         std::sort(std::begin(nodes), std::end(nodes),
-                    [](OctreeNode *lhs, OctreeNode *rhs)
-                    {
-                        return lhs->size < rhs->size;
-                    });
+                  [](OctreeNode *lhs, OctreeNode *rhs)
+                  {
+                      return lhs->size < rhs->size;
+                  });
 
         // the input nodes may be different sizes if a seam octree is being constructed
         // in that case we need to process the input nodes in stages along with the newly
@@ -479,7 +486,7 @@ public:
 
 // dual contouring
 
-template<bool isSeam>
+template <bool isSeam>
 void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 {
     int minSize = 2147483647; // arbitrary big number
@@ -535,7 +542,7 @@ void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
         }
     }
 }
-template<bool isSeam>
+template <bool isSeam>
 void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, const int &lod)
 {
     if (!node[0] || !node[1] || !node[2] || !node[3])
@@ -592,7 +599,7 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, con
         }
     }
 }
-template<bool isSeam>
+template <bool isSeam>
 void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, const int &lod)
 {
     if (!node[0] || !node[1])
@@ -670,7 +677,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, con
         }
     }
 }
-template<bool isSeam>
+template <bool isSeam>
 void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, const int &lod)
 {
     if (!node || node->type == Node_Leaf)
