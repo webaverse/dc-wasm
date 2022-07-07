@@ -245,8 +245,8 @@ public:
         int corners = 0;
         for (int i = 0; i < 8; i++)
         {
-            const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * minVoxelSize;
-            const float density = DCContextType::densityFn(vm::vec3{(float)cornerPos.x, (float)cornerPos.y, (float)cornerPos.z}, minVoxelSize, inst);
+            const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * voxelNode->size;
+            const float density = DCContextType::densityFn(vm::vec3{(float)cornerPos.x, (float)cornerPos.y, (float)cornerPos.z}, voxelNode->size, inst);
             const int material = density < 0.f ? MATERIAL_SOLID : MATERIAL_AIR;
             corners |= (material << i);
         }
