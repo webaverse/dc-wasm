@@ -294,10 +294,10 @@ public:
         return nodes;
     }
 
-    std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc)
+    std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, const int &baseLod, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunkMin + chunkSize * lod;
+        const vm::ivec3 chunkMax = chunkMin + chunkSize * baseLod;
 
         for (int x = chunkMin.x; x < chunkMax.x; x += lod)
             for (int y = chunkMin.y; y < chunkMax.y; y += lod)
@@ -364,19 +364,13 @@ public:
         seamNodes.insert(std::end(seamNodes), std::begin(rootChunkSeamNodes), std::end(rootChunkSeamNodes));
 
         // creating the seam nodes of the neighbouring chunks
-        std::set<uint64_t> seenHashes;
         std::vector<OctreeNode *> neighbourNodes;
         for (int i = 1; i < 8; i++)
         {
             const vm::ivec3 offsetMin = NEIGHBOUR_CHUNKS_OFFSETS[i] * chunkSize * lodArray[0];
-            const vm::ivec3 chunkMin = chunkMinForPosition(baseChunkMin + offsetMin, lodArray[i]);
-            uint64_t minHash = hashOctreeMin(chunkMin);
-            if (seenHashes.find(minHash) == seenHashes.end())
-            {
-                seenHashes.insert(minHash);
-                std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[i], chunkMin, selectionFuncs[i]);
-                neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
-            }
+            const vm::ivec3 chunkMin = baseChunkMin + offsetMin;
+            std::vector<OctreeNode *> chunkSeamNodes = constructChunkSeamNodes(inst, lodArray[0], lodArray[i], chunkMin, selectionFuncs[i]);
+            neighbourNodes.insert(std::end(neighbourNodes), std::begin(chunkSeamNodes), std::end(chunkSeamNodes));
         }
 
         seamNodes.insert(std::end(seamNodes), std::begin(neighbourNodes), std::end(neighbourNodes));
