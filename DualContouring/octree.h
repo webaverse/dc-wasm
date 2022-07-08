@@ -126,7 +126,7 @@ vm::vec3 calculateSurfaceNormal(const vm::vec3 &p, const int lod, DCInstance *in
 void clampPositionToMassPoint(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &vertexPosition);
 
 template <typename DCContextType>
-int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, const int &minVoxelSize, DCInstance *inst)
+int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &averageNormal, int &corners, DCInstance *inst)
 {
     const int MAX_CROSSINGS = 6;
     int edgeCount = 0;
@@ -141,12 +141,12 @@ int findEdgeIntersection(OctreeNode *voxelNode, svd::QefSolver &qef, vm::vec3 &a
         {
             continue;
         }
-        const vm::ivec3 ip1 = voxelNode->min + CHILD_MIN_OFFSETS[c1] * minVoxelSize;
-        const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * minVoxelSize;
+        const vm::ivec3 ip1 = voxelNode->min + CHILD_MIN_OFFSETS[c1] * voxelNode->size;
+        const vm::ivec3 ip2 = voxelNode->min + CHILD_MIN_OFFSETS[c2] * voxelNode->size;
         const vm::vec3 p1 = vm::vec3{(float)ip1.x, (float)ip1.y, (float)ip1.z};
         const vm::vec3 p2 = vm::vec3{(float)ip2.x, (float)ip2.y, (float)ip2.z};
-        const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, minVoxelSize, inst);
-        const vm::vec3 n = calculateSurfaceNormal<DCContextType>(p, minVoxelSize, inst);
+        const vm::vec3 p = approximateZeroCrossingPosition<DCContextType>(p1, p2, voxelNode->size, inst);
+        const vm::vec3 n = calculateSurfaceNormal<DCContextType>(p, voxelNode->size, inst);
         qef.add(p.x, p.y, p.z, n.x, n.y, n.z);
         averageNormal += n;
         edgeCount++;
@@ -217,7 +217,7 @@ public:
     {
         svd::QefSolver qef;
         vm::vec3 averageNormal{0.f, 0.f, 0.f};
-        int edgeCount = findEdgeIntersection<DCContextType>(voxelNode, qef, averageNormal, corners, minVoxelSize, inst);
+        int edgeCount = findEdgeIntersection<DCContextType>(voxelNode, qef, averageNormal, corners, inst);
         svd::Vec3 qefPosition;
         qef.solve(qefPosition, QEF_ERROR, QEF_SWEEPS, QEF_ERROR);
         vm::vec3 vertexPosition = vm::vec3{qefPosition.x, qefPosition.y, qefPosition.z};
