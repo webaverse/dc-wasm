@@ -171,7 +171,7 @@ public:
     // constructors
     ChunkOctree(DCInstance *inst, const vm::ivec3 &min, const int lodArray[8]) : min(min), minVoxelSize(lodArray[0])
     {
-        const int maxNodeCount = 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
+        const int maxNodeCount = 64 * 1024; // 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
         chunkNodes.resize(maxNodeCount);
         const int size = chunkSize * minVoxelSize;
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
