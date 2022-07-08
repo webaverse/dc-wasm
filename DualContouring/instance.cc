@@ -1124,22 +1124,28 @@ Heightfield DCInstance::initHeightField(DCInstance *inst, int x, int z) {
                 }
             }
 
-            std::array<unsigned char, numBiomes> biomes;
-            int index = 0;
+            std::vector<unsigned char> seenBiomes;
             for (auto kv : biomeCounts)
             {
-                biomes[index++] = kv.first;
+                unsigned char b = kv.first;
+                seenBiomes.push_back(b);
             }
+            
             // sort by increasing occurence count of the biome
-            std::sort(biomes.begin(), biomes.end(), [&biomeCounts](unsigned char b1, unsigned char b2)
-                      { return biomeCounts[b1] > biomeCounts[b2]; });
+            std::sort(
+                seenBiomes.begin(),
+                seenBiomes.end(),
+                [&](unsigned char b1, unsigned char b2) -> bool {
+                    return biomeCounts[b1] > biomeCounts[b2];
+                }
+            );
 
             for (size_t i = 0; i < 4; i++)
             {
-                if (i < biomes.size())
+                if (i < seenBiomes.size())
                 {
-                    heightfield.biomesVectorField[i] = biomes[i];
-                    heightfield.biomesWeightsVectorField[i] = (float)biomeCounts[biomes[i]] / (float)numSamples * 255.0f;
+                    heightfield.biomesVectorField[i] = seenBiomes[i];
+                    heightfield.biomesWeightsVectorField[i] = (float)biomeCounts[seenBiomes[i]] / (float)numSamples * 255.0f;
                 }
                 else
                 {
