@@ -1340,11 +1340,11 @@ float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
 
                 // height
                 float heightValue = (float)y - height;
-                heightValue = std::min(
+                /* heightValue = std::min(
                     std::max(
                         heightValue,
                         (float)-1),
-                    (float)1);
+                    (float)1); */
 
                 float caveValue = inst->cachedCaveField.get(x, y, z);
                 float f = heightValue + caveValue * 1.1f;
