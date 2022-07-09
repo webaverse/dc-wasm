@@ -49,6 +49,8 @@ extern const int processEdgeMask[3][4];
 
 extern const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[8];
 
+extern const vm::ivec3 EDGE_OFFSETS[12];
+
 //
 
 typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
@@ -243,6 +245,7 @@ public:
     OctreeNode *constructLeaf(OctreeNode *voxelNode, DCInstance *inst)
     {
         int corners = 0;
+        
         for (int i = 0; i < 8; i++)
         {
             const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * voxelNode->size;
@@ -252,8 +255,50 @@ public:
         }
         if (corners == 0 || corners == 255)
         {
-            // delete voxelNode;
-            voxelNode = nullptr;
+            vm::ivec3 faces = voxelNode->min - chunkSize * voxelNode->size;
+            if ((faces.x != 0 || faces.y != 0 || faces.z != 0) && voxelNode->size != 1)
+            {
+                for (int i = 0; i < 12; i++)
+                {
+                    if (!((faces.x != 0 && faces.x + 1 == EDGE_OFFSETS[i].x) ||
+                          (faces.y != 0 && faces.y + 1 == EDGE_OFFSETS[i].y) ||
+                          (faces.z != 0 && faces.z + 1 == EDGE_OFFSETS[i].z)))
+                    {
+                        continue;
+                    }
+
+                    // node size at LOD 0 = 1, LOD 1 = 2, LOD 2 = 4, LOD 3 = 8
+                    const vm::ivec3 ip = voxelNode->min + EDGE_OFFSETS[i] * voxelNode->size / 2;
+                    const vm::vec3 p = vm::vec3{(float)ip.x, (float)ip.y, (float)ip.z};
+                    // const float density = DCContextType::densityFn(p, voxelNode->size / 2, inst);
+
+                    // if ((density < 0 && corners == 0) || (density >= 0 && corners == 255))
+                    // {
+                        std::cout << "Hello There" << std::endl;
+                        VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
+                        vertexData->index = -1;
+                        const vm::ivec3 someThing = chunkMinForPosition(ip, voxelNode->size / 2) * chunkSize * voxelNode->size / 2;
+                        vertexData->position = p + chunkSize * voxelNode->size / 2;
+                        vertexData->normal = calculateSurfaceNormal<DCContextType>(p, voxelNode->size / 2, inst);
+                        vertexData->corners = corners;
+                        inst->getCachedInterpolatedBiome3D(
+                            vertexData->position,
+                            vertexData->biomes,
+                            vertexData->biomesWeights,
+                            vertexData->biomeUvs1,
+                            vertexData->biomeUvs2);
+                        inst->getCachedInterpolatedLight(
+                            vertexData->position,
+                            vertexData->skylight,
+                            vertexData->ao);
+                    // }
+                }
+            }
+            else
+            {
+                // delete voxelNode;
+                voxelNode = nullptr;
+            }
         }
         else
         {
@@ -537,7 +582,7 @@ void contourProcessEdge(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
     }
 }
 template <bool isSeam>
-void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, const int &lod)
+void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 {
     if (!node[0] || !node[1] || !node[2] || !node[3])
     {
@@ -555,13 +600,13 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, con
     if (!isBranch[0] && !isBranch[1] && !isBranch[2] && !isBranch[3])
     {
         // prevents seams geometry from overlapping with the chunk geometry
-        if (isSeam &&
-            chunkMinForPosition(node[0]->min, lod) == chunkMinForPosition(node[1]->min, lod) &&
-            chunkMinForPosition(node[1]->min, lod) == chunkMinForPosition(node[2]->min, lod) &&
-            chunkMinForPosition(node[2]->min, lod) == chunkMinForPosition(node[3]->min, lod))
-        {
-            return;
-        }
+        // if (isSeam &&
+        //     chunkMinForPosition(node[0]->min, node[0]->size) == chunkMinForPosition(node[1]->min, node[1]->size) &&
+        //     chunkMinForPosition(node[1]->min, node[1]->size) == chunkMinForPosition(node[2]->min, node[2]->size) &&
+        //     chunkMinForPosition(node[2]->min, node[2]->size) == chunkMinForPosition(node[3]->min, node[3]->size))
+        // {
+        //     return;
+        // }
         contourProcessEdge<isSeam>(node, dir, indexBuffer);
     }
     else
@@ -589,12 +634,12 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer, con
                 }
             }
 
-            contourEdgeProc<isSeam>(edgeNodes, edgeProcEdgeMask[dir][i][4], indexBuffer, lod);
+            contourEdgeProc<isSeam>(edgeNodes, edgeProcEdgeMask[dir][i][4], indexBuffer);
         }
     }
 }
 template <bool isSeam>
-void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, const int &lod)
+void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer)
 {
     if (!node[0] || !node[1])
     {
@@ -609,11 +654,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, con
 
     if (isBranch[0] || isBranch[1])
     {
-        // prevents seams geometry from overlapping with the chunk geometry
-        if (isSeam && chunkMinForPosition(node[0]->min, lod) == chunkMinForPosition(node[1]->min, lod))
-        {
-            return;
-        }
+
         for (int i = 0; i < 4; i++)
         {
             OctreeNode *faceNodes[2];
@@ -628,6 +669,11 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, con
                 if (!isBranch[j])
                 {
                     faceNodes[j] = node[j];
+                    // prevents seams geometry from overlapping with the chunk geometry
+                    // if (isSeam && chunkMinForPosition(node[0]->min, 1) == chunkMinForPosition(node[1]->min, node[1]->size))
+                    // {
+                    //     return;
+                    // }
                 }
                 else
                 {
@@ -635,7 +681,7 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, con
                 }
             }
 
-            contourFaceProc<isSeam>(faceNodes, faceProcFaceMask[dir][i][2], indexBuffer, lod);
+            contourFaceProc<isSeam>(faceNodes, faceProcFaceMask[dir][i][2], indexBuffer);
         }
 
         const int orders[2][4] =
@@ -667,12 +713,12 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer, con
                 }
             }
 
-            contourEdgeProc<isSeam>(edgeNodes, faceProcEdgeMask[dir][i][5], indexBuffer, lod);
+            contourEdgeProc<isSeam>(edgeNodes, faceProcEdgeMask[dir][i][5], indexBuffer);
         }
     }
 }
 template <bool isSeam>
-void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, const int &lod)
+void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer)
 {
     if (!node || node->type == Node_Leaf)
     {
@@ -681,7 +727,7 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, const int &lod)
 
     for (int i = 0; i < 8; i++)
     {
-        contourCellProc<isSeam>(node->children[i], indexBuffer, lod);
+        contourCellProc<isSeam>(node->children[i], indexBuffer);
     }
 
     for (int i = 0; i < 12; i++)
@@ -692,7 +738,7 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, const int &lod)
         faceNodes[0] = node->children[c[0]];
         faceNodes[1] = node->children[c[1]];
 
-        contourFaceProc<isSeam>(faceNodes, cellProcFaceMask[i][2], indexBuffer, lod);
+        contourFaceProc<isSeam>(faceNodes, cellProcFaceMask[i][2], indexBuffer);
     }
 
     for (int i = 0; i < 6; i++)
@@ -711,17 +757,17 @@ void contourCellProc(OctreeNode *node, IndexBuffer &indexBuffer, const int &lod)
             edgeNodes[j] = node->children[c[j]];
         }
 
-        contourEdgeProc<isSeam>(edgeNodes, cellProcEdgeMask[i][4], indexBuffer, lod);
+        contourEdgeProc<isSeam>(edgeNodes, cellProcEdgeMask[i][4], indexBuffer);
     }
 }
 
 //
 
 template <typename DCContextType, bool isSeam>
-void generateMeshFromOctree(OctreeNode *node, DCContextType &dcContext, const int &lod)
+void generateMeshFromOctree(OctreeNode *node, DCContextType &dcContext)
 {
     generateVertexIndices(node, dcContext);
-    contourCellProc<isSeam>(node, dcContext.vertexBuffer.indices, lod);
+    contourCellProc<isSeam>(node, dcContext.vertexBuffer.indices);
 }
 template <typename DCContextType>
 void generateVertexIndices(OctreeNode *node, DCContextType &dcContext)

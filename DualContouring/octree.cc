@@ -19,14 +19,8 @@ const vm::ivec3 CHILD_MIN_OFFSETS[] =
 const int edgevmap[12][2] =
     {
         {0, 4}, {1, 5}, {2, 6}, {3, 7}, // x-axis
-        {0, 2},
-        {1, 3},
-        {4, 6},
-        {5, 7}, // y-axis
-        {0, 1},
-        {2, 3},
-        {4, 5},
-        {6, 7} // z-axis
+        {0, 2}, {1, 3}, {4, 6}, {5, 7}, // y-axis
+        {0, 1}, {2, 3}, {4, 5}, {6, 7} // z-axis
 };
 
 const int edgemask[3] = {5, 3, 6};
@@ -74,6 +68,22 @@ const vm::ivec3 NEIGHBOUR_CHUNKS_OFFSETS[8] =
         vm::ivec3{1, 1, 0},
         vm::ivec3{0, 1, 1},
         vm::ivec3{1, 1, 1},
+};
+
+const vm::ivec3 EDGE_OFFSETS[12] =
+    {
+        vm::ivec3{1, 2, 0},
+        vm::ivec3{1, 0, 2},
+        vm::ivec3{2, 1, 0},
+        vm::ivec3{0, 1, 2},
+        vm::ivec3{2, 0, 1},
+        vm::ivec3{0, 2, 1},
+        vm::ivec3{1, 0, 0},
+        vm::ivec3{0, 1, 0},
+        vm::ivec3{0, 0, 1},
+        vm::ivec3{1, 2, 2},
+        vm::ivec3{2, 2, 1},
+        vm::ivec3{2, 1, 2},
 };
 
 typedef std::function<bool(const vm::ivec3 &, const vm::ivec3 &)> FilterNodesFunc;
