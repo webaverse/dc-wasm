@@ -225,10 +225,16 @@ public:
         vm::vec3 vertexPosition = vm::vec3{qefPosition.x, qefPosition.y, qefPosition.z};
         // if the generated position is outside of the voxel bounding box :
         clampPositionToMassPoint(voxelNode, qef, vertexPosition);
+        vm::vec3 vertexNormal = vm::normalize(averageNormal / (float)edgeCount);
+        setVertexData(inst, voxelNode, vertexPosition, vertexNormal, corners);
+    }
+
+    void setVertexData(DCInstance *inst, OctreeNode *voxelNode, const vm::vec3 &vertexPosition, const vm::vec3 &vertexNormal, const int &corners )
+    {
         VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
         vertexData->index = -1;
         vertexData->position = vertexPosition;
-        vertexData->normal = vm::normalize(averageNormal / (float)edgeCount);
+        vertexData->normal = vertexNormal;
         vertexData->corners = corners;
         inst->getCachedInterpolatedBiome3D(
             vertexData->position,
@@ -255,7 +261,7 @@ public:
         }
         if (corners == 0 || corners == 255)
         {
-
+            // prevents holes in the seams when the lod switches
             if (voxelNode->size != 1)
             {
                 const vm::ivec3 maxPos = voxelNode->min + voxelNode->size;
@@ -265,33 +271,21 @@ public:
                 {
                     for (int i = 0; i < 12; i++)
                     {
-                        const vm::ivec3 isamplePos = voxelNode->min + EDGE_OFFSETS[i] * voxelNode->size / 2;
-                        if (!(isamplePos.x == maxChunkPos.x || isamplePos.y == maxChunkPos.y || isamplePos.z == maxChunkPos.z))
+                        const vm::ivec3 iSamplePos = voxelNode->min + EDGE_OFFSETS[i] * voxelNode->size / 2;
+                        if (!(iSamplePos.x == maxChunkPos.x || iSamplePos.y == maxChunkPos.y || iSamplePos.z == maxChunkPos.z))
                         {
                             continue;
                         }
-                        const vm::vec3 samplePos{(float)isamplePos.x, (float)isamplePos.y, (float)isamplePos.z};
+                        const vm::vec3 samplePos{(float)iSamplePos.x, (float)iSamplePos.y, (float)iSamplePos.z};
                         const float density = DCContextType::densityFn(samplePos, voxelNode->size / 2, inst);
 
                         if ((density < 0 && corners == 0) || (density >= 0 && corners == 255))
                         {
                             // std::cout << "Missing Polygon" << std::endl;
                             addedNode = true;
-                            VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
-                            vertexData->index = -1;
-                            vertexData->position = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z} + voxelNode->size / 2;
-                            vertexData->normal = calculateSurfaceNormal<DCContextType>(vertexData->position, voxelNode->size, inst);
-                            vertexData->corners = corners;
-                            inst->getCachedInterpolatedBiome3D(
-                                vertexData->position,
-                                vertexData->biomes,
-                                vertexData->biomesWeights,
-                                vertexData->biomeUvs1,
-                                vertexData->biomeUvs2);
-                            inst->getCachedInterpolatedLight(
-                                vertexData->position,
-                                vertexData->skylight,
-                                vertexData->ao);
+                            const vm::vec3 vertexPosition = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z} + voxelNode->size / 2; 
+                            const vm::vec3 vertexNormal = calculateSurfaceNormal<DCContextType>(vertexPosition, voxelNode->size, inst);
+                            setVertexData(inst, voxelNode, vertexPosition, vertexNormal, corners);
                         }
                     }
                 }
