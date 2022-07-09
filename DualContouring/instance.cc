@@ -1318,7 +1318,13 @@ uint8_t DCInstance::initAoField(DCInstance *inst, int x, int y, int z) {
     return numOpens;
 }
 float DCInstance::initCaveField(DCInstance *inst, int x, int y, int z) {
-    return DualContouring::getComputedCaveNoise(x, y, z);;
+    return DualContouring::getComputedCaveNoise(x, y, z);
+}
+float randomFromPoint(int x, int y, int z) {
+    uint64_t hash = hashOctreeMin(vm::ivec3{x, y, z});
+    uint32_t hash32 = (uint32_t)hash ^ (uint32_t)(hash >> 32);
+    float f = (float)hash32 / (float)UINT32_MAX;
+    return f;
 }
 float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
     // const int &gridPoints = DualContouring::gridPoints;
@@ -1340,14 +1346,14 @@ float DCInstance::initSdf(DCInstance *inst, int x, int y, int z) {
 
                 // height
                 float heightValue = (float)y - height;
-                /* heightValue = std::min(
+                heightValue = std::min(
                     std::max(
                         heightValue,
                         (float)-1),
-                    (float)1); */
+                    (float)1);
 
                 float caveValue = inst->cachedCaveField.get(x, y, z);
-                float f = heightValue + caveValue * 1.1f;
+                float f = heightValue + caveValue * 1.1f + randomFromPoint(x, y, z) * 0.0001f;
                 /* f = std::min( // XXX does not fix
                     std::max(
                         f,
