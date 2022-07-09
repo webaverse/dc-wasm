@@ -245,7 +245,7 @@ public:
     OctreeNode *constructLeaf(OctreeNode *voxelNode, DCInstance *inst)
     {
         int corners = 0;
-        
+
         for (int i = 0; i < 8; i++)
         {
             const vm::ivec3 cornerPos = voxelNode->min + CHILD_MIN_OFFSETS[i] * voxelNode->size;
@@ -255,43 +255,49 @@ public:
         }
         if (corners == 0 || corners == 255)
         {
-            vm::ivec3 faces = voxelNode->min - chunkSize * voxelNode->size;
-            if ((faces.x != 0 || faces.y != 0 || faces.z != 0) && voxelNode->size != 1)
+
+            if (voxelNode->size != 1)
             {
-                for (int i = 0; i < 12; i++)
+                const vm::ivec3 maxPos = voxelNode->min + voxelNode->size;
+                const vm::ivec3 maxChunkPos = chunkMinForPosition(voxelNode->min, voxelNode->size) + chunkSize * voxelNode->size;
+                bool addedNode = false;
+                if (maxPos.x == maxChunkPos.x || maxPos.y == maxChunkPos.y || maxPos.z == maxChunkPos.z)
                 {
-                    if (!((faces.x != 0 && faces.x + 1 == EDGE_OFFSETS[i].x) ||
-                          (faces.y != 0 && faces.y + 1 == EDGE_OFFSETS[i].y) ||
-                          (faces.z != 0 && faces.z + 1 == EDGE_OFFSETS[i].z)))
+                    for (int i = 0; i < 12; i++)
                     {
-                        continue;
+                        const vm::ivec3 isamplePos = voxelNode->min + EDGE_OFFSETS[i] * voxelNode->size / 2;
+                        if (!(isamplePos.x == maxChunkPos.x || isamplePos.y == maxChunkPos.y || isamplePos.z == maxChunkPos.z))
+                        {
+                            continue;
+                        }
+                        const vm::vec3 samplePos{(float)isamplePos.x, (float)isamplePos.y, (float)isamplePos.z};
+                        const float density = DCContextType::densityFn(samplePos, voxelNode->size / 2, inst);
+
+                        if ((density < 0 && corners == 0) || (density >= 0 && corners == 255))
+                        {
+                            // std::cout << "Missing Polygon" << std::endl;
+                            addedNode = true;
+                            VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
+                            vertexData->index = -1;
+                            vertexData->position = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z} + voxelNode->size / 2;
+                            vertexData->normal = calculateSurfaceNormal<DCContextType>(vertexData->position, voxelNode->size, inst);
+                            vertexData->corners = corners;
+                            inst->getCachedInterpolatedBiome3D(
+                                vertexData->position,
+                                vertexData->biomes,
+                                vertexData->biomesWeights,
+                                vertexData->biomeUvs1,
+                                vertexData->biomeUvs2);
+                            inst->getCachedInterpolatedLight(
+                                vertexData->position,
+                                vertexData->skylight,
+                                vertexData->ao);
+                        }
                     }
-
-                    // node size at LOD 0 = 1, LOD 1 = 2, LOD 2 = 4, LOD 3 = 8
-                    const vm::ivec3 ip = voxelNode->min + EDGE_OFFSETS[i] * voxelNode->size / 2;
-                    const vm::vec3 p = vm::vec3{(float)ip.x, (float)ip.y, (float)ip.z};
-                    // const float density = DCContextType::densityFn(p, voxelNode->size / 2, inst);
-
-                    // if ((density < 0 && corners == 0) || (density >= 0 && corners == 255))
-                    // {
-                        std::cout << "Hello There" << std::endl;
-                        VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
-                        vertexData->index = -1;
-                        const vm::ivec3 someThing = chunkMinForPosition(ip, voxelNode->size / 2) * chunkSize * voxelNode->size / 2;
-                        vertexData->position = p + chunkSize * voxelNode->size / 2;
-                        vertexData->normal = calculateSurfaceNormal<DCContextType>(p, voxelNode->size / 2, inst);
-                        vertexData->corners = corners;
-                        inst->getCachedInterpolatedBiome3D(
-                            vertexData->position,
-                            vertexData->biomes,
-                            vertexData->biomesWeights,
-                            vertexData->biomeUvs1,
-                            vertexData->biomeUvs2);
-                        inst->getCachedInterpolatedLight(
-                            vertexData->position,
-                            vertexData->skylight,
-                            vertexData->ao);
-                    // }
+                }
+                if (!addedNode)
+                {
+                    voxelNode = nullptr;
                 }
             }
             else
