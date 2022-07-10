@@ -32,11 +32,11 @@ std::array<vm::ivec3, 8> lodOffsets = {
     vm::ivec3{0, 1, 1},
     vm::ivec3{1, 1, 1}
 };
-OctreeNodeAllocator octreeNodeAllocator;
+// OctreeNodeAllocator octreeNodeAllocator;
 
 //
 
-OctreeNodeAllocator::OctreeNodeAllocator() {
+/* OctreeNodeAllocator::OctreeNodeAllocator() {
   for (int i = 0; i < rawNodes.size(); i++) {
     OctreeNode *node = &rawNodes[i];
     nodes.push_back(node);
@@ -44,27 +44,16 @@ OctreeNodeAllocator::OctreeNodeAllocator() {
   this->deleter = [this](void *ptr) -> void {
     this->nodes.push_back((OctreeNode *)ptr);
   };
-}
-OctreeNodePtr OctreeNodeAllocator::alloc() {
-  OctreeNodePtr node;
-  if (nodes.size() > 0) {
-    OctreeNode *octreeNode = nodes.front();
-    nodes.pop_front();
-
-    octreeNode->clear();
-
-    node = std::shared_ptr<OctreeNode>(octreeNode, this->deleter);
-  } else {
-    // node = nullptr;
-  }
-  return node;
+} */
+OctreeNodePtr OctreeNodeAllocator::alloc(const vm::ivec3 &min, int lod, bool isLeaf) {
+  OctreeNode *octreeNode = new OctreeNode();
+  octreeNode->min = min;
+  octreeNode->size = lod;
+  octreeNode->type = isLeaf ? Node_Leaf : Node_Internal;
+  return std::shared_ptr<OctreeNode>(octreeNode);
 }
 
-//
-
-OctreeContext::OctreeContext(OctreeNodeAllocator &octreeNodeAllocator) :
-  octreeNodeAllocator(octreeNodeAllocator)
-{}
+OctreeContext::OctreeContext() {}
 
 //
 
@@ -91,7 +80,7 @@ OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lo
 OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf) {
     auto &nodeMap = octreeContext.nodeMap;
 
-    auto node = octreeContext.alloc(min, lod, isLeaf);
+    auto node = OctreeNodeAllocator::alloc(min, lod, isLeaf);
     // node->min = min;
     // node->size = lod;
     // node->type = isLeaf ? Node_Leaf : Node_Internal;
@@ -167,7 +156,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
 }
 
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod) {
-  OctreeContext octreeContext(octreeNodeAllocator);
+  OctreeContext octreeContext;
   auto &nodeMap = octreeContext.nodeMap;
 
   // sample base leaf nodes to generate octree upwards
@@ -283,21 +272,24 @@ OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, cons
       return nullptr;
     }
 }
-std::vector<TrackerTask *> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes) {
+std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes) {
   // map from min lod hash to task containing new nodes and old nodes
-  std::unordered_map<uint64_t, TrackerTask *> taskMap;
+  std::unordered_map<uint64_t, TrackerTaskPtr> taskMap;
 
   for (auto &newNode : newLeafNodes) {
     OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, newNode->min);
     const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
     
-    TrackerTask *task;
+    TrackerTaskPtr task;
     const auto &iter = taskMap.find(hash);
     if (iter != taskMap.end()) {
       task = iter->second;
     } else {
-      task = new TrackerTask();
-      task->maxLodNode = maxLodNode;
+      TrackerTask *trackerTask = new TrackerTask();
+      trackerTask->maxLodNode = maxLodNode;
+      
+      task = std::shared_ptr<TrackerTask>(trackerTask);
+      
       taskMap[hash] = task;
     }
     task->newNodes.push_back(newNode);
@@ -306,30 +298,33 @@ std::vector<TrackerTask *> diffLeafNodes(const std::vector<OctreeNodePtr> &newLe
     OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, oldNode->min);
     const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
     
-    TrackerTask *task;
+    TrackerTaskPtr task;
     const auto &iter = taskMap.find(hash);
     if (iter != taskMap.end()) {
       task = iter->second;
     } else {
-      task = new TrackerTask();
-      task->maxLodNode = maxLodNode;
+      TrackerTask *trackerTask = new TrackerTask();
+      trackerTask->maxLodNode = maxLodNode;
+      
+      task = std::shared_ptr<TrackerTask>(trackerTask);
+      
       taskMap[hash] = task;
     }
     task->oldNodes.push_back(oldNode);
   }
 
-  std::vector<TrackerTask *> tasks;
+  std::vector<TrackerTaskPtr> tasks;
   for (const auto &iter : taskMap) {
     tasks.push_back(iter.second);
   }
   return tasks;
 }
 // sort tasks by distance to world position of the central max lod node
-std::vector<TrackerTask *> sortTasks(const std::vector<TrackerTask *> &tasks, const vm::vec3 &worldPosition) {
-  std::vector<std::pair<TrackerTask *, float>> taskDistances;
+std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTask *> &tasks, const vm::vec3 &worldPosition) {
+  std::vector<std::pair<TrackerTaskPtr, float>> taskDistances;
   taskDistances.reserve(tasks.size());
 
-  for (TrackerTask *task : tasks) {
+  for (const auto &task : tasks) {
     const vm::ivec3 &min = task->maxLodNode->min;
     const int &lod = task->maxLodNode->size;
 
@@ -338,27 +333,27 @@ std::vector<TrackerTask *> sortTasks(const std::vector<TrackerTask *> &tasks, co
     vm::vec3 delta = worldPosition - center;
     float distance = vm::lengthSq(delta);
 
-    taskDistances.push_back(std::make_pair(task, distance));
+    taskDistances.push_back(std::pair<TrackerTaskPtr, float>(task, distance));
   }
 
   std::sort(
     taskDistances.begin(),
     taskDistances.end(),
-    [](const std::pair<TrackerTask *, float> &a, const std::pair<TrackerTask *, float> &b) {
+    [](const std::pair<TrackerTaskPtr, float> &a, const std::pair<TrackerTaskPtr, float> &b) {
       return a.second < b.second;
     }
   );
 
-  std::vector<TrackerTask *> sortedTasks;
+  std::vector<TrackerTaskPtr> sortedTasks;
   for (const auto &iter : taskDistances) {
     sortedTasks.push_back(iter.first);
   }
   return sortedTasks;
 }
-std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTask *>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTask *> &tasks) {
+std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTask *> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
-  for (TrackerTask *task : tasks) {
+  for (const auto &task : tasks) {
     if (!task->isNop()) {
       const std::vector<OctreeNodePtr> &newNodes = task->newNodes;
       const std::vector<OctreeNodePtr> &oldNodes = task->oldNodes;
@@ -393,15 +388,21 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTask *>> updateChunks(c
       removedChunks.push_back(oldChunk);
     }
   }
-  std::vector<TrackerTask *> extraTasks;
+  std::vector<TrackerTaskPtr> extraTasks;
   for (OctreeNodePtr chunk : removedChunks) {
-    TrackerTask *task = new TrackerTask();
-    task->maxLodNode = chunk;
-    task->oldNodes.push_back(chunk);
+    TrackerTask *trackerTask = new TrackerTask();
+    trackerTask->maxLodNode = chunk;
+    trackerTask->oldNodes.push_back(chunk);
+
+    TrackerTaskPtr task = std::shared_ptr<TrackerTask>(trackerTask);
+
     extraTasks.push_back(task);
   }
 
-  return std::make_pair(std::move(newChunks), std::move(extraTasks));
+  return std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>>(
+    std::move(newChunks),
+    std::move(extraTasks)
+  );
 }
 
 //
@@ -427,17 +428,17 @@ vm::ivec3 Tracker::getCurrentCoord(const vm::vec3 &position) {
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
-  std::vector<TrackerTask *> tasks = diffLeafNodes(
+  std::vector<TrackerTaskPtr> tasks = diffLeafNodes(
     octreeLeafNodes,
     this->lastOctreeLeafNodes
   );
 
   {
-    std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTask *>> chunksUpdate = updateChunks(this->chunks, tasks);
+    std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
     std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
-    std::vector<TrackerTask *> &newTasks = chunksUpdate.second;
+    std::vector<TrackerTaskPtr> &newTasks = chunksUpdate.second;
     this->chunks = std::move(newChunks);
-    for (TrackerTask *task : newTasks) {
+    for (const auto &task : newTasks) {
       tasks.push_back(task);
     }
   }
@@ -449,18 +450,18 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
   tasks = sortTasks(tasks, worldPosition);
 
-  std::vector<TrackerTask *> oldTasks;
+  std::vector<TrackerTaskPtr> oldTasks;
   for (size_t i = 0; i < tasks.size(); i++) {
-    TrackerTask *task = tasks[i];
+    auto &task = tasks[i];
     if (!task->isNop()) {
-      std::vector<TrackerTask *> overlappingTasks;
-      for (TrackerTask *lastTask : this->liveTasks) {
+      std::vector<TrackerTaskPtr> overlappingTasks;
+      for (const auto &lastTask : this->liveTasks) {
           if (containsNode(*task->maxLodNode, *lastTask->maxLodNode)) {
             overlappingTasks.push_back(task);
           }
       }
       
-      for (TrackerTask *oldTask : overlappingTasks) {
+      for (TrackerTaskPtr oldTask : overlappingTasks) {
         oldTasks.push_back(oldTask);
         
         const auto &iter = std::find(

@@ -20,23 +20,22 @@ typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
 
 class OctreeNodeAllocator {
 public:
-  std::array<OctreeNode, numCachedOctreeNodes> rawNodes;
-  std::deque<OctreeNode *> nodes;
-  std::function<void (void *)> deleter;
+//   std::array<OctreeNode, numCachedOctreeNodes> rawNodes;
+//   std::deque<OctreeNode *> nodes;
+//   std::function<void (void *)> deleter;
 
-  OctreeNodeAllocator();
-  OctreeNodePtr alloc();
+  // OctreeNodeAllocator();
+  static OctreeNodePtr alloc(const vm::ivec3 &min, int lod, bool isLeaf);
 };
 
 class OctreeContext {
 public:
-  OctreeNodeAllocator &octreeNodeAllocator;
   std::unordered_map<uint64_t, std::shared_ptr<OctreeNode>> nodeMap;
 
-  OctreeContext(OctreeNodeAllocator &octreeNodeAllocator);
+  OctreeContext();
 
   OctreeNodePtr alloc(const vm::ivec3 &min, int lod, bool isLeaf) {
-    auto node = this->octreeNodeAllocator.alloc();
+    auto node = OctreeNodeAllocator::alloc(min, lod, isLeaf);
     if (node) {
       node->min = min;
       node->size = lod;
@@ -62,16 +61,15 @@ public:
 
   bool isNop() const;
 };
+typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
 class TrackerUpdate {
 public:
-  std::vector<TrackerTask *> oldTasks;
-  std::vector<TrackerTask *> newTasks;
+  std::vector<TrackerTaskPtr> oldTasks;
+  std::vector<TrackerTaskPtr> newTasks;
 
   void *getBuffer();
 };
-
-typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
 //
 
@@ -97,9 +95,9 @@ void constructTreeUpwards(std::unordered_map<uint64_t, OctreeNodePtr> &nodeMap, 
 
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod);
 OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min);
-std::vector<TrackerTask *> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes);
-std::vector<TrackerTask *> sortTasks(const std::vector<TrackerTask *> &tasks, const vm::vec3 &worldPosition);
-std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTask *>> updateChunks(const std::vector<OctreeNode *> &oldChunks, const std::vector<TrackerTask *> &tasks);
+std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes);
+std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition);
+std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks);
 
 //
 
@@ -112,7 +110,7 @@ public:
   vm::ivec3 lastCoord;
   std::vector<OctreeNodePtr> chunks;
   std::vector<OctreeNodePtr> lastOctreeLeafNodes;
-  std::vector<TrackerTask *> liveTasks;
+  std::vector<TrackerTaskPtr> liveTasks;
 
   Tracker(int lods, int minLodRange, bool trackY);
 
