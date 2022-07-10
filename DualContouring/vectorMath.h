@@ -163,6 +163,8 @@ namespace vm
     float length(const ivec3 v);
     float length(const ivec4 v);
     float length(const float v);
+    float lengthSq(const ivec3 &v);
+    float lengthSq(const vec3 &v);
 
     float distance(const vm::vec2 &v, const vm::vec2 &o);
     float distance(const vm::vec2 &v, const vm::ivec2 &o);
