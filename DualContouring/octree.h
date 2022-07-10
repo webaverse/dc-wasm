@@ -286,6 +286,7 @@ public:
                             const vm::vec3 vertexPosition = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z} + voxelNode->size / 2; 
                             const vm::vec3 vertexNormal = calculateSurfaceNormal<DCContextType>(vertexPosition, voxelNode->size, inst);
                             setVertexData(inst, voxelNode, vertexPosition, vertexNormal, corners);
+                            break;
                         }
                     }
                 }
