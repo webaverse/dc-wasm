@@ -5,34 +5,6 @@
 #include <iostream>
 #include <emscripten/atomic.h>
 
-// import * as THREE from 'three';
-// import {scene, camera} from './renderer.js';
-// import {defaultChunkSize} from './constants.js';
-// import {abortError} from './lock-manager.js';
-// import {makePromise} from './util.js';
-
-// const localVector = new THREE.Vector3();
-// const localVector2 = new THREE.Vector3();
-// const localVector3 = new THREE.Vector3();
-// const localVector4 = new THREE.Vector3();
-// const localVector5 = new THREE.Vector3();
-// const localQuaternion = new THREE.Quaternion();
-// const localMatrix = new THREE.Matrix4();
-
-// const onesLodsArray = new Array(8).fill(1);
-
-/* class OctreeNode {
-public:
-    union
-    {
-        OctreeNode *children[8]; // only internal nodes have children
-        VertexData vertexData;   // only leaf nodes (our voxels) have vertex data
-    };
-    vm::ivec3 min;
-    int size;
-    OctreeNodeType type;
-}; */
-
 bool containsPoint(const OctreeNode &node, const vm::ivec3 &p) {
   return p.x >= node.min.x && p.x < node.min.x + node.size &&
     p.y >= node.min.y && p.y < node.min.y + node.size &&
