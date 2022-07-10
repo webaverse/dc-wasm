@@ -81,7 +81,8 @@ public:
     union
     {
         OctreeNode *children[8]; // only internal nodes have children
-        VertexData vertexData;   // only leaf nodes (our voxels) have vertex data
+        VertexData vertexData;   // only mesh generation leaf nodes (voxels) have vertex data
+        std::array<int, 8> lodArray; // only tracker octree nodes have lod data
     };
     vm::ivec3 min;
     int size;
