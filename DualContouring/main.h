@@ -12,6 +12,7 @@
 #include "instance.h"
 #include "noises.h"
 #include "result.h"
+#include "tracker.h"
 #include "vectorMath.h"
 #include "constants.h"
 

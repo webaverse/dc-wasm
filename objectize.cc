@@ -133,6 +133,16 @@ EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
 
 //
 
+EMSCRIPTEN_KEEPALIVE Tracker *createTracker(int lod, int minLodRange, bool trackY) {
+    return new Tracker(lod, minLodRange, trackY);
+}
+
+EMSCRIPTEN_KEEPALIVE void destroyTracker(Tracker *tracker) {
+    delete tracker;
+}
+
+//
+
 EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {
     return malloc(size);
 }
