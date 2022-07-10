@@ -87,6 +87,16 @@ public:
     vm::ivec3 min;
     int size;
     OctreeNodeType type;
+
+    void clear() {
+        for (size_t i = 0; i < numOctreeChildren; i++) {
+          children[i] = nullptr;
+        }
+
+        min = vm::ivec3{0, 0, 0};
+        size = -1;
+        type = Node_Internal;
+    }
 };
 
 //
