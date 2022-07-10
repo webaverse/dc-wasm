@@ -80,8 +80,8 @@ class OctreeNode
 public:
     union
     {
-        OctreeNode *children[8]; // only internal nodes have children
-        VertexData vertexData;   // only mesh generation leaf nodes (voxels) have vertex data
+        OctreeNode *children[8];     // only internal nodes have children
+        VertexData vertexData;       // only mesh generation leaf nodes (voxels) have vertex data
         std::array<int, 8> lodArray; // only tracker octree nodes have lod data
     };
     vm::ivec3 min;
@@ -230,7 +230,7 @@ public:
         setVertexData(inst, voxelNode, vertexPosition, vertexNormal, corners);
     }
 
-    void setVertexData(DCInstance *inst, OctreeNode *voxelNode, const vm::vec3 &vertexPosition, const vm::vec3 &vertexNormal, const int &corners )
+    void setVertexData(DCInstance *inst, OctreeNode *voxelNode, const vm::vec3 &vertexPosition, const vm::vec3 &vertexNormal, const int &corners)
     {
         VertexData *vertexData = &voxelNode->vertexData; // new VertexData();
         vertexData->index = -1;
@@ -284,7 +284,7 @@ public:
                         {
                             // std::cout << "Missing Polygon" << std::endl;
                             addedNode = true;
-                            const vm::vec3 vertexPosition = vm::vec3{(float)voxelNode->min.x, (float)voxelNode->min.y, (float)voxelNode->min.z} + voxelNode->size / 2; 
+                            const vm::vec3 vertexPosition = samplePos;
                             const vm::vec3 vertexNormal = calculateSurfaceNormal<DCContextType>(vertexPosition, voxelNode->size, inst);
                             setVertexData(inst, voxelNode, vertexPosition, vertexNormal, corners);
                             break;
@@ -602,13 +602,13 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
     if (!isBranch[0] && !isBranch[1] && !isBranch[2] && !isBranch[3])
     {
         // prevents seams geometry from overlapping with the chunk geometry
-        // if (isSeam &&
-        //     chunkMinForPosition(node[0]->min, node[0]->size) == chunkMinForPosition(node[1]->min, node[1]->size) &&
-        //     chunkMinForPosition(node[1]->min, node[1]->size) == chunkMinForPosition(node[2]->min, node[2]->size) &&
-        //     chunkMinForPosition(node[2]->min, node[2]->size) == chunkMinForPosition(node[3]->min, node[3]->size))
-        // {
-        //     return;
-        // }
+        if (isSeam &&
+            chunkMinForPosition(node[0]->min, node[0]->size) == chunkMinForPosition(node[1]->min, node[1]->size) &&
+            chunkMinForPosition(node[1]->min, node[1]->size) == chunkMinForPosition(node[2]->min, node[2]->size) &&
+            chunkMinForPosition(node[2]->min, node[2]->size) == chunkMinForPosition(node[3]->min, node[3]->size))
+        {
+            return;
+        }
         contourProcessEdge<isSeam>(node, dir, indexBuffer);
     }
     else
@@ -671,11 +671,6 @@ void contourFaceProc(OctreeNode *node[2], int dir, IndexBuffer &indexBuffer)
                 if (!isBranch[j])
                 {
                     faceNodes[j] = node[j];
-                    // prevents seams geometry from overlapping with the chunk geometry
-                    // if (isSeam && chunkMinForPosition(node[0]->min, 1) == chunkMinForPosition(node[1]->min, node[1]->size))
-                    // {
-                    //     return;
-                    // }
                 }
                 else
                 {
