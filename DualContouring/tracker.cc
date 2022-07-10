@@ -32,19 +32,54 @@ std::array<vm::ivec3, 8> lodOffsets = {
     vm::ivec3{0, 1, 1},
     vm::ivec3{1, 1, 1}
 };
+OctreeNodeAllocator octreeNodeAllocator;
 
 //
 
-OctreeNode *getLeafNodeFromPoint(const std::vector<OctreeNode *> &leafNodes, const vm::ivec3 &p) {
+OctreeNodeAllocator::OctreeNodeAllocator() {
+  for (int i = 0; i < rawNodes.size(); i++) {
+    OctreeNode *node = &rawNodes[i];
+    nodes.push_back(node);
+  }
+  this->deleter = [this](void *ptr) -> void {
+    this->nodes.push_back((OctreeNode *)ptr);
+  };
+}
+OctreeNodePtr OctreeNodeAllocator::alloc() {
+  OctreeNodePtr node;
+  if (nodes.size() > 0) {
+    OctreeNode *octreeNode = nodes.front();
+    nodes.pop_front();
+
+    octreeNode->clear();
+
+    node = std::shared_ptr<OctreeNode>(octreeNode, this->deleter);
+  } else {
+    // node = nullptr;
+  }
+  return node;
+}
+
+//
+
+OctreeContext::OctreeContext(OctreeNodeAllocator &octreeNodeAllocator) :
+  octreeNodeAllocator(octreeNodeAllocator)
+{}
+
+//
+
+OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNodePtr> &leafNodes, const vm::ivec3 &p) {
     for (size_t i = 0; i < leafNodes.size(); i++) {
-        OctreeNode *leafNode = leafNodes[i];
+        auto leafNode = leafNodes[i];
         if (containsPoint(*leafNode, p)) {
             return leafNode;
         }
     }
     return nullptr;
 }
-OctreeNode *getNode(const std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod) {
+OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod) {
+    auto &nodeMap = octreeContext.nodeMap;
+
     uint64_t hash = hashOctreeMinLod(min, lod);
     auto iter = nodeMap.find(hash);
     if (iter != nodeMap.end()) {
@@ -53,11 +88,13 @@ OctreeNode *getNode(const std::unordered_map<uint64_t, OctreeNode *> &nodeMap, c
       return nullptr;
     }
 }
-OctreeNode *createNode(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod, bool isLeaf) {
-    OctreeNode *node = new OctreeNode();
-    node->min = min;
-    node->size = lod;
-    node->type = isLeaf ? Node_Leaf : Node_Internal;
+OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf) {
+    auto &nodeMap = octreeContext.nodeMap;
+
+    auto node = octreeContext.alloc(min, lod, isLeaf);
+    // node->min = min;
+    // node->size = lod;
+    // node->type = isLeaf ? Node_Leaf : Node_Internal;
     uint64_t hash = hashOctreeMinLod(min, lod);
     if (nodeMap.find(hash) != nodeMap.end()) {
       // throw new Error(`Node already exists: ${hash}`);
@@ -69,17 +106,19 @@ OctreeNode *createNode(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, cons
     nodeMap[hash] = node;
     return node;
 }
-OctreeNode *createNode(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod) {
-    return createNode(nodeMap, min, lod, lod == 1);
+OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod) {
+    return createNode(octreeContext, min, lod, lod == 1);
 }
-OctreeNode *getOrCreateNode(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod) {
-    OctreeNode *node = getNode(nodeMap, min, lod);
+OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod) {
+    OctreeNodePtr node = getNode(octreeContext, min, lod);
     if (!node) {
-        node = createNode(nodeMap, min, lod);
+        node = createNode(octreeContext, min, lod);
     }
     return node;
 }
-void ensureChildren(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, OctreeNode *parentNode) {
+void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode) {
+    auto &nodeMap = octreeContext.nodeMap;
+
     const vm::ivec3 &lodMin = parentNode->min;
     const int &lod = parentNode->size;
 
@@ -89,19 +128,21 @@ void ensureChildren(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, OctreeN
            int childIndex = dx + 2 * (dy + 2 * dz);
            if (parentNode->children[childIndex] == nullptr) {
               parentNode->children[childIndex] = createNode(
-                nodeMap,
+                octreeContext,
                 lodMin + vm::ivec3{dx, dy, dz} * (lod / 2),
                 lod / 2,
                 true
-              );
+              ).get();
             //   parentNode->children[childIndex].parent = parentNode;
            }
         }
       }
     }
 }
-void constructTreeUpwards(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &leafPosition, int maxLod) {
-    OctreeNode *rootNode = getOrCreateNode(nodeMap, leafPosition, 1);
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int maxLod) {
+    auto &nodeMap = octreeContext.nodeMap;
+
+    OctreeNodePtr rootNode = getOrCreateNode(octreeContext, leafPosition, 1);
     for (int lod = 2; lod <= maxLod; lod *= 2) {
       vm::ivec3 lodMin = rootNode->min;
       lodMin.x = (lodMin.x / lod) * lod;
@@ -113,20 +154,21 @@ void constructTreeUpwards(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, c
         (rootNode->min.y < lodCenter.y ? 0 : 2) +
         (rootNode->min.z < lodCenter.z ? 0 : 4);
 
-      OctreeNode *parentNode = getOrCreateNode(nodeMap, lodMin, lod);
+      OctreeNodePtr parentNode = getOrCreateNode(octreeContext, lodMin, lod);
       // parentNode.isLeaf = false;
       parentNode->type = Node_Internal;
       if (parentNode->children[childIndex] == nullptr) { // children not set yet
-        parentNode->children[childIndex] = rootNode;
-        ensureChildren(nodeMap, parentNode);
+        parentNode->children[childIndex] = rootNode.get();
+        ensureChildren(nodeMap, parentNode.get());
       }
       rootNode = parentNode;
     }
     // return rootNode;
 }
 
-std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod) {
-  std::unordered_map<uint64_t, OctreeNode *> nodeMap;
+std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod) {
+  OctreeContext octreeContext(octreeNodeAllocator);
+  auto &nodeMap = octreeContext.nodeMap;
 
   // sample base leaf nodes to generate octree upwards
   const vm::ivec3 &rangeMin = position - vm::ivec3{lod1Range, lod1Range, lod1Range};
@@ -135,22 +177,22 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
     for (int dy = rangeMin.y; dy <= rangeMax.y; dy++) {
       for (int dz = rangeMin.z; dz <= rangeMax.z; dz++) {
         vm::ivec3 leafPosition = vm::ivec3{dx, dy, dz};
-        constructTreeUpwards(nodeMap, leafPosition, maxLod);
+        constructTreeUpwards(octreeContext, leafPosition, maxLod);
       }
     }
   }
 
-  std::vector<OctreeNode *> rootNodes;
+  std::vector<std::shared_ptr<OctreeNode>> rootNodes;
   for (const auto &iter : nodeMap) {
-    OctreeNode *node = iter.second;
+    auto node = iter.second;
     if (node->size == maxLod) {
       rootNodes.push_back(node);
     }
   }
 
-  std::vector<OctreeNode *> lod1Nodes;
+  std::vector<std::shared_ptr<OctreeNode>> lod1Nodes;
   for (const auto &iter : nodeMap) {
-    OctreeNode *node = iter.second;
+    auto node = iter.second;
     if (node->size == 1) {
       lod1Nodes.push_back(node);
     }
@@ -158,8 +200,8 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
 
   // sanity check lod1Nodes for duplicates
   {
-    std::unordered_map<uint64_t, OctreeNode *> lod1NodeMap;
-    for (OctreeNode *node : lod1Nodes) {
+    std::unordered_map<uint64_t, OctreeNodePtr> lod1NodeMap;
+    for (auto node : lod1Nodes) {
       uint64_t hash = hashOctreeMinLod(node->min, node->size);
       if (lod1NodeMap.find(hash) != lod1NodeMap.end()) {
         // throw new Error(`Duplicate lod1 node: ${hash}`);
@@ -172,17 +214,17 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
     }
   }
 
-  std::vector<OctreeNode *> leafNodes;
+  std::vector<OctreeNodePtr> leafNodes;
   for (const auto &iter : nodeMap) {
-    OctreeNode *node = iter.second;
+    auto node = iter.second;
     if (node->type == Node_Leaf) {
       leafNodes.push_back(node);
     }
   }
 
   // sanity check that no leaf node contains another leaf node
-  for (OctreeNode *leafNode : leafNodes) {
-    for (OctreeNode *childNode : leafNode->children) {
+  for (auto leafNode : leafNodes) {
+    for (auto childNode : leafNode->children) {
       if (childNode != nullptr && childNode->type == Node_Leaf) {
         // throw new Error(`Leaf node contains another leaf node 1: ${leafNode.min.toArray().join(',')}`);
         EM_ASM({
@@ -190,7 +232,7 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
         }, leafNode->min.x, leafNode->min.y, leafNode->min.z);
       }
     }
-    for (OctreeNode *leafNode2 : leafNodes) {
+    for (auto leafNode2 : leafNodes) {
       if (leafNode != leafNode2 && containsNode(*leafNode, *leafNode2)) {
         EM_ASM({
             console.log('Leaf node contains another leaf node 2:', $0, $1, $2);
@@ -209,7 +251,7 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
   // vm::ivec3(0, 1, 1),
   // vm::ivec3(1, 1, 1),
   for (const auto &iter : nodeMap) {
-    OctreeNode *node = iter.second;
+    auto node = iter.second;
 
     std::array<int, 8> lodArray;
     for (int i = 0; i < 8; i++) {
@@ -217,7 +259,7 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
       int &lod = lodArray[i]; // output
       
       const vm::ivec3 &p = node->min + offset * node->size;
-      OctreeNode *containingLeafNode = getLeafNodeFromPoint(leafNodes, p);
+      OctreeNodePtr containingLeafNode = getLeafNodeFromPoint(leafNodes, p);
       if (containingLeafNode) {
         lod = containingLeafNode->size;
       } else {
@@ -228,9 +270,9 @@ std::vector<OctreeNode *> constructOctreeForLeaf(const vm::ivec3 &position, int 
 
   return leafNodes;
 }
-OctreeNode *getMaxLodNode(const std::vector<OctreeNode *> &newLeafNodes, const std::vector<OctreeNode *> &oldLeafNodes, const vm::ivec3 &min) {
-    OctreeNode *newLeafNode = getLeafNodeFromPoint(newLeafNodes, min);
-    OctreeNode *oldLeafNode = getLeafNodeFromPoint(oldLeafNodes, min);
+OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min) {
+    auto newLeafNode = getLeafNodeFromPoint(newLeafNodes, min);
+    auto oldLeafNode = getLeafNodeFromPoint(oldLeafNodes, min);
     if (newLeafNode != nullptr && oldLeafNode != nullptr) {
       return newLeafNode->size > oldLeafNode->size ? newLeafNode : oldLeafNode;
     } else if (newLeafNode != nullptr) {
@@ -241,12 +283,12 @@ OctreeNode *getMaxLodNode(const std::vector<OctreeNode *> &newLeafNodes, const s
       return nullptr;
     }
 }
-std::vector<TrackerTask *> diffLeafNodes(const std::vector<OctreeNode *> &newLeafNodes, const std::vector<OctreeNode *> &oldLeafNodes) {
+std::vector<TrackerTask *> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes) {
   // map from min lod hash to task containing new nodes and old nodes
   std::unordered_map<uint64_t, TrackerTask *> taskMap;
 
-  for (OctreeNode *newNode : newLeafNodes) {
-    OctreeNode *maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, newNode->min);
+  for (auto &newNode : newLeafNodes) {
+    OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, newNode->min);
     const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
     
     TrackerTask *task;
@@ -260,8 +302,8 @@ std::vector<TrackerTask *> diffLeafNodes(const std::vector<OctreeNode *> &newLea
     }
     task->newNodes.push_back(newNode);
   }
-  for (OctreeNode *oldNode : oldLeafNodes) {
-    OctreeNode *maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, oldNode->min);
+  for (auto &oldNode : oldLeafNodes) {
+    OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, oldNode->min);
     const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
     
     TrackerTask *task;
@@ -313,19 +355,19 @@ std::vector<TrackerTask *> sortTasks(const std::vector<TrackerTask *> &tasks, co
   }
   return sortedTasks;
 }
-std::pair<std::vector<OctreeNode *>, std::vector<TrackerTask *>> updateChunks(const std::vector<OctreeNode *> &oldChunks, const std::vector<TrackerTask *> &tasks) {
-  std::vector<OctreeNode *> newChunks = oldChunks;
+std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTask *>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTask *> &tasks) {
+  std::vector<OctreeNodePtr> newChunks = oldChunks;
   
   for (TrackerTask *task : tasks) {
     if (!task->isNop()) {
-      const std::vector<OctreeNode *> &newNodes = task->newNodes;
-      const std::vector<OctreeNode *> &oldNodes = task->oldNodes;
+      const std::vector<OctreeNodePtr> &newNodes = task->newNodes;
+      const std::vector<OctreeNodePtr> &oldNodes = task->oldNodes;
 
-      for (OctreeNode *oldNode : oldNodes) {
+      for (OctreeNodePtr oldNode : oldNodes) {
         const auto &iter = std::find_if(
             newChunks.begin(),
             newChunks.end(),
-            [&](OctreeNode *chunk) -> bool {
+            [&](auto &chunk) -> bool {
                 return equalsNode(*chunk, *oldNode);
             }
         );
@@ -337,22 +379,22 @@ std::pair<std::vector<OctreeNode *>, std::vector<TrackerTask *>> updateChunks(co
           abort();
         }
       }
-      for (OctreeNode *newNode : newNodes) {
+      for (OctreeNodePtr newNode : newNodes) {
         newChunks.push_back(newNode);
       }
     }
   }
 
-  std::vector<OctreeNode *> removedChunks;
-  for (OctreeNode *oldChunk : oldChunks) {
-    if (std::any_of(newChunks.begin(), newChunks.end(), [&](OctreeNode *newChunk) {
+  std::vector<OctreeNodePtr> removedChunks;
+  for (auto &oldChunk : oldChunks) {
+    if (std::any_of(newChunks.begin(), newChunks.end(), [&](auto &newChunk) {
       return newChunk->min == oldChunk->min;
     })) {
       removedChunks.push_back(oldChunk);
     }
   }
   std::vector<TrackerTask *> extraTasks;
-  for (OctreeNode *chunk : removedChunks) {
+  for (OctreeNodePtr chunk : removedChunks) {
     TrackerTask *task = new TrackerTask();
     task->maxLodNode = chunk;
     task->oldNodes.push_back(chunk);
@@ -383,7 +425,7 @@ vm::ivec3 Tracker::getCurrentCoord(const vm::vec3 &position) {
 }
 // dynamic methods
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
-  std::vector<OctreeNode *> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
+  std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
   std::vector<TrackerTask *> tasks = diffLeafNodes(
     octreeLeafNodes,
@@ -391,8 +433,8 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   );
 
   {
-    std::pair<std::vector<OctreeNode *>, std::vector<TrackerTask *>> chunksUpdate = updateChunks(this->chunks, tasks);
-    std::vector<OctreeNode *> &newChunks = chunksUpdate.first;
+    std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTask *>> chunksUpdate = updateChunks(this->chunks, tasks);
+    std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
     std::vector<TrackerTask *> &newTasks = chunksUpdate.second;
     this->chunks = std::move(newChunks);
     for (TrackerTask *task : newTasks) {

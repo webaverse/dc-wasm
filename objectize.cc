@@ -1,4 +1,5 @@
 #include <emscripten.h>
+#include "DualContouring/tracker.h"
 #include "DualContouring/main.h"
 
 extern "C" {
