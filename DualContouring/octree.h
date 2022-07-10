@@ -75,12 +75,13 @@ enum OctreeNodeType
 
 //
 
+constexpr size_t numOctreeChildren = 8;
 class OctreeNode
 {
 public:
     union
     {
-        OctreeNode *children[8]; // only internal nodes have children
+        OctreeNode *children[numOctreeChildren]; // only internal nodes have children
         VertexData vertexData;   // only mesh generation leaf nodes (voxels) have vertex data
         std::array<int, 8> lodArray; // only tracker octree nodes have lod data
     };
