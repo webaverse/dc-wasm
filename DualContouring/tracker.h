@@ -60,6 +60,8 @@ public:
   std::vector<OctreeNodePtr> newNodes;
 
   bool isNop() const;
+
+  std::vector<uint8_t> getBuffer();
 };
 typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
@@ -68,7 +70,7 @@ public:
   std::vector<TrackerTaskPtr> oldTasks;
   std::vector<TrackerTaskPtr> newTasks;
 
-  void *getBuffer();
+  uint8_t *getBuffer();
 };
 
 //

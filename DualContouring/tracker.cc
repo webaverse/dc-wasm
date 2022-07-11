@@ -2,6 +2,63 @@
 #include "octree.h"
 #include <iostream>
 
+//
+
+std::vector<uint8_t> TrackerTask::getBuffer() {
+  size_t size = 0;
+  size += sizeof(vm::ivec3); // min
+  size += sizeof(int); // lod
+  size += sizeof(int); // isLeaf
+  size += sizeof(int[8]); // lodArray
+
+  std::vector<uint8_t> result(size);
+  int index = 0;
+  std::memcpy(result.data() + index, &maxLodNode->min, sizeof(vm::ivec3));
+  index += sizeof(vm::ivec3);
+  *((int *)(result.data() + index)) = maxLodNode->size;
+  index += sizeof(int);
+  *((int *)(result.data() + index)) = (maxLodNode->type == Node_Leaf) ? 1 : 0;
+  index += sizeof(int);
+  std::memcpy(result.data() + index, &maxLodNode->lodArray, sizeof(int[8]));
+  index += sizeof(int[8]);
+  return result;
+}
+uint8_t *TrackerUpdate::getBuffer() {
+  std::vector<std::vector<uint8_t>> oldTaskBuffers;
+  for (const auto &task : oldTasks) {
+    oldTaskBuffers.push_back(task->getBuffer());
+  }
+
+  std::vector<std::vector<uint8_t>> newTaskBuffers;
+  for (const auto &task : newTasks) {
+    newTaskBuffers.push_back(task->getBuffer());
+  }
+
+  size_t size = 0;
+  size += sizeof(uint32_t); // numOldTasks
+  size += sizeof(uint32_t); // numNewTasks
+  for (auto &buffer : oldTaskBuffers) {
+    size += buffer.size();
+  }
+  for (auto &buffer : newTaskBuffers) {
+    size += buffer.size();
+  }
+
+  uint8_t *ptr = (uint8_t *)malloc(size);
+  int index = 0;
+  *((uint32_t *)(ptr + index)) = oldTasks.size();
+  index += sizeof(uint32_t);
+  *((uint32_t *)(ptr + index)) = newTasks.size();
+  index += sizeof(uint32_t);
+  memcpy(ptr + index, &oldTaskBuffers[0], oldTaskBuffers.size() * sizeof(oldTaskBuffers[0]));
+  index += oldTaskBuffers.size() * sizeof(oldTaskBuffers[0]);
+  memcpy(ptr + index, &newTaskBuffers[0], newTaskBuffers.size() * sizeof(newTaskBuffers[0]));
+  index += newTaskBuffers.size() * sizeof(newTaskBuffers[0]);
+  return ptr;
+}
+
+//
+
 bool containsPoint(const OctreeNode &node, const vm::ivec3 &p) {
   return p.x >= node.min.x && p.x < node.min.x + node.size &&
     p.y >= node.min.y && p.y < node.min.y + node.size &&
