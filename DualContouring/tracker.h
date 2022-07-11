@@ -61,7 +61,7 @@ public:
 
   bool isNop() const;
 
-  std::vector<uint8_t> getBuffer();
+  std::vector<uint8_t> getBuffer() const;
 };
 typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
@@ -70,7 +70,7 @@ public:
   std::vector<TrackerTaskPtr> oldTasks;
   std::vector<TrackerTaskPtr> newTasks;
 
-  uint8_t *getBuffer();
+  uint8_t *getBuffer() const;
 };
 
 //
@@ -88,12 +88,12 @@ extern OctreeNodeAllocator octreeNodeAllocator;
 //
 
 OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNode *> &leafNodes, const vm::ivec3 &p);
-OctreeNodePtr getNode(const std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod);
-OctreeNodePtr createNode(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod, bool isLeaf);
-OctreeNodePtr createNode(std::unordered_map<uint64_t, OctreeNode *> &nodeMap, const vm::ivec3 &min, int lod);
-OctreeNodePtr getOrCreateNode(std::unordered_map<uint64_t, OctreeNodePtr> &nodeMap, const vm::ivec3 &min, int lod);
-void ensureChildren(std::unordered_map<uint64_t, OctreeNodePtr> &nodeMap, OctreeNode *parentNode);
-void constructTreeUpwards(std::unordered_map<uint64_t, OctreeNodePtr> &nodeMap, const vm::ivec3 &leafPosition, int maxLod);
+OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
+OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf);
+OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
+OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
+void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode);
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int maxLod);
 
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod);
 OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min);

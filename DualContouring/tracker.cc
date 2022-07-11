@@ -4,7 +4,16 @@
 
 //
 
-std::vector<uint8_t> TrackerTask::getBuffer() {
+bool TrackerTask::isNop() const {
+  auto task = this;
+  return task->newNodes.size() == task->oldNodes.size() &&
+    std::all_of(task->newNodes.begin(), task->newNodes.end(), [&](OctreeNodePtr newNode) -> bool {
+      return std::any_of(task->oldNodes.begin(), task->oldNodes.end(), [&](OctreeNodePtr oldNode) -> bool {
+        return equalsNode(*oldNode, *newNode);
+      });
+    });
+}
+std::vector<uint8_t> TrackerTask::getBuffer() const {
   size_t size = 0;
   size += sizeof(vm::ivec3); // min
   size += sizeof(int); // lod
@@ -23,7 +32,7 @@ std::vector<uint8_t> TrackerTask::getBuffer() {
   index += sizeof(int[8]);
   return result;
 }
-uint8_t *TrackerUpdate::getBuffer() {
+uint8_t *TrackerUpdate::getBuffer() const {
   std::vector<std::vector<uint8_t>> oldTaskBuffers;
   for (const auto &task : oldTasks) {
     oldTaskBuffers.push_back(task->getBuffer());
@@ -107,9 +116,17 @@ OctreeNodePtr OctreeNodeAllocator::alloc(const vm::ivec3 &min, int lod, bool isL
   octreeNode->min = min;
   octreeNode->size = lod;
   octreeNode->type = isLeaf ? Node_Leaf : Node_Internal;
+  if (isLeaf) {
+    for (size_t i = 0; i < 8; i++) {
+      octreeNode->lodArray[i] = -1;
+    }
+  } else {
+    for (size_t i = 0; i < 8; i++) {
+      octreeNode->children[i] = nullptr;
+    }
+  }
   return std::shared_ptr<OctreeNode>(octreeNode);
 }
-
 OctreeContext::OctreeContext() {}
 
 //
@@ -205,7 +222,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
       parentNode->type = Node_Internal;
       if (parentNode->children[childIndex] == nullptr) { // children not set yet
         parentNode->children[childIndex] = rootNode.get();
-        ensureChildren(nodeMap, parentNode.get());
+        ensureChildren(octreeContext, parentNode.get());
       }
       rootNode = parentNode;
     }
@@ -377,7 +394,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
   return tasks;
 }
 // sort tasks by distance to world position of the central max lod node
-std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTask *> &tasks, const vm::vec3 &worldPosition) {
+std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition) {
   std::vector<std::pair<TrackerTaskPtr, float>> taskDistances;
   taskDistances.reserve(tasks.size());
 
@@ -396,7 +413,7 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTask *> &tasks, c
   std::sort(
     taskDistances.begin(),
     taskDistances.end(),
-    [](const std::pair<TrackerTaskPtr, float> &a, const std::pair<TrackerTaskPtr, float> &b) {
+    [](const std::pair<TrackerTaskPtr, float> &a, const std::pair<TrackerTaskPtr, float> &b) -> bool {
       return a.second < b.second;
     }
   );
@@ -407,7 +424,7 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTask *> &tasks, c
   }
   return sortedTasks;
 }
-std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTask *> &tasks) {
+std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
   for (const auto &task : tasks) {

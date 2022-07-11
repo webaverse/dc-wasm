@@ -138,6 +138,12 @@ EMSCRIPTEN_KEEPALIVE Tracker *createTracker(int lod, int minLodRange, bool track
     return new Tracker(lod, minLodRange, trackY);
 }
 
+EMSCRIPTEN_KEEPALIVE void *trackerUpdate(Tracker *tracker, const vm::vec3 &position) {
+    const TrackerUpdate &trackerUpdate = tracker->update(position);
+    uint8_t *buffer = trackerUpdate.getBuffer();
+    return buffer;
+}
+
 EMSCRIPTEN_KEEPALIVE void destroyTracker(Tracker *tracker) {
     delete tracker;
 }

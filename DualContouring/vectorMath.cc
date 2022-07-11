@@ -184,10 +184,10 @@ float vm::length(const float v)
 {
     return std::sqrt(v * v);
 };
-float lengthSq(const vm::ivec3 &v) {
+float vm::lengthSq(const vm::ivec3 &v) {
     return v.x * v.x + v.y * v.y + v.z * v.z;
 }
-float lengthSq(const vm::vec3 &v) {
+float vm::lengthSq(const vm::vec3 &v) {
     return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
