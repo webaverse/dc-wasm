@@ -73,29 +73,27 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
             for (float dx = sphereBoundingBoxMin.x; dx <= sphereBoundingBoxMax.x; dx += diameter)
             {
                 vm::ivec3 min = chunkMinForPosition(vm::vec3{dx, dy, dz}, lod);
-                uint64_t minHash = hashOctreeMin(min);
-                if (seenHashes.find(minHash) == seenHashes.end())
-                {
-                    seenHashes.insert(minHash);
-                    auto iter = chunkRefsCopy.find(minHash);
-                    if (iter == end(chunkRefsCopy))
-                    {
-                        // chunk damage buffer doesn't exist already so create a new one
-                        std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(min);
-                        // modify damage
-                        // std::cout << "DAMAGED : Created" << std::endl;
-                        editedChunkCopy->drawSphereDamage(drew, worldPos, min, radius, outPositions, outPositionsCount);
-                        chunkRefsCopy[minHash] = editedChunkCopy;
-                    }
-                    else
-                    {
-                        // chunk damage buffer already exists so replace it with a new one
-                        // modify damage
-                        // std::cout << "DAMAGED : Modified" << std::endl;
-                        std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(*iter->second);
-                        editedChunkCopy->drawSphereDamage(drew, worldPos, min, radius, outPositions, outPositionsCount);
-                        chunkRefsCopy[minHash] = editedChunkCopy;
-                    }
+                addChunkDamageBuffer(chunkRefsCopy, min, seenHashes, drew, worldPos, radius, outPositions, outPositionsCount, lod);
+
+                // increase the scan range to account for possible seam geo change in other chunks
+                vm::vec3 localCornerPos = vm::vec3{dx, dy, dz} - vm::vec3{(float)min.x, (float)min.y, (float)min.z};
+                if(localCornerPos.x < lod){
+                    const float shiftedX = localCornerPos.x - lod;
+                    const vm::vec3 shiftedWorldPos = vm::vec3{shiftedX, localCornerPos.y, localCornerPos.z} + vm::vec3{(float)min.x, (float)min.y, (float)min.z};
+                    const vm::ivec3 damagedSeamChunkMin = chunkMinForPosition(shiftedWorldPos, lod);
+                    addChunkDamageBuffer(chunkRefsCopy, damagedSeamChunkMin, seenHashes, drew, worldPos, radius, outPositions, outPositionsCount, lod);
+                }
+                if(localCornerPos.y < lod){
+                    const float shiftedY = localCornerPos.y - lod;
+                    const vm::vec3 shiftedWorldPos = vm::vec3{localCornerPos.x, shiftedY, localCornerPos.z} + vm::vec3{(float)min.x, (float)min.y, (float)min.z};
+                    const vm::ivec3 damagedSeamChunkMin = chunkMinForPosition(shiftedWorldPos, lod);
+                    addChunkDamageBuffer(chunkRefsCopy, damagedSeamChunkMin, seenHashes, drew, worldPos, radius, outPositions, outPositionsCount, lod);
+                }
+                if(localCornerPos.z < lod){
+                    const float shiftedZ = localCornerPos.z - lod;
+                    const vm::vec3 shiftedWorldPos = vm::vec3{localCornerPos.x, localCornerPos.y, shiftedZ} + vm::vec3{(float)min.x, (float)min.y, (float)min.z};
+                    const vm::ivec3 damagedSeamChunkMin = chunkMinForPosition(shiftedWorldPos, lod);
+                    addChunkDamageBuffer(chunkRefsCopy, damagedSeamChunkMin, seenHashes, drew, worldPos, radius, outPositions, outPositionsCount, lod);
                 }
             }
 
@@ -104,4 +102,32 @@ bool DamageBuffers::damage(const vm::vec3 &worldPos, const float &radius, float 
         chunks = chunkRefsCopy;
     }
     return drew;
+}
+
+void DamageBuffers::addChunkDamageBuffer(DamageBuffersMap &chunkRefsCopy, const vm::ivec3 &chunkMin,std::set<uint64_t> &seenHashes, bool &drew, const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, const int &lod)
+{
+    uint64_t minHash = hashOctreeMin(chunkMin);
+    if (seenHashes.find(minHash) == seenHashes.end())
+    {
+        seenHashes.insert(minHash);
+        auto iter = chunkRefsCopy.find(minHash);
+        if (iter == end(chunkRefsCopy))
+        {
+            // chunk damage buffer doesn't exist already so create a new one
+            std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(chunkMin);
+            // modify damage
+            // std::cout << "DAMAGED : Created" << std::endl;
+            editedChunkCopy->drawSphereDamage(drew, worldPos, chunkMin, radius, outPositions, outPositionsCount);
+            chunkRefsCopy[minHash] = editedChunkCopy;
+        }
+        else
+        {
+            // chunk damage buffer already exists so replace it with a new one
+            // modify damage
+            // std::cout << "DAMAGED : Modified" << std::endl;
+            std::shared_ptr<ChunkDamageBuffer> editedChunkCopy = std::make_shared<ChunkDamageBuffer>(*iter->second);
+            editedChunkCopy->drawSphereDamage(drew, worldPos, chunkMin, radius, outPositions, outPositionsCount);
+            chunkRefsCopy[minHash] = editedChunkCopy;
+        }
+    }
 }
