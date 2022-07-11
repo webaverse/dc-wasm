@@ -30,39 +30,18 @@ TaskQueue::~TaskQueue() {
 }
 
 void TaskQueue::pushTask(Task *task) {
-  /* EM_ASM({
-      // console.time('push task ' + $0);
-
-      const now = performance.now();
-      if (globalThis.lastPushTime) {
-        const timeDiff = now - globalThis.lastPushTime;
-        console.log('time since push', timeDiff);
-      }
-      globalThis.lastPushTime = now;
-  }, pthread_self()); */
   {
     std::unique_lock<Mutex> lock(taskMutex);
-    /* EM_ASM({
-      console.log('push task start', SharedArrayBuffer, $0, $1);
-    }, tasks.size(), (void *)this); */
     tasks.push_back(task);
-
-    /* EM_ASM({
-      console.log('push task', $0);
-    }, tasks.size()); */
-
-    // numTasks++;
-    /* EM_ASM({
-      console.log('push task end', $0);
-    }, tasks.size()); */
   }
   taskSemaphore.signal();
-  // flushTasks();
-
-  /* EM_ASM({
-      console.timeEnd('push task ' + $0);
-      console.log('num ready tasks', $1);
-  }, pthread_self(), tasks.size()); */
+}
+void TaskQueue::pushTaskPre(Task *task) {
+  {
+    std::unique_lock<Mutex> lock(taskMutex);
+    tasks.push_front(task);
+  }
+  taskSemaphore.signal();
 }
 // std::atomic<int> numActiveThreads(NUM_THREADS);
 Task *TaskQueue::popLockTask() {

@@ -47,6 +47,7 @@ public:
     ~TaskQueue();
     
     void pushTask(Task *task);
+    void pushTaskPre(Task *task);
     Task *popLockTask();
     void runLoop();
     void cancelTask(uint32_t taskId);

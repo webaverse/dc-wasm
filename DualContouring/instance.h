@@ -16,6 +16,12 @@
 // #include "result.h"
 #include "../vector.h"
 
+//
+
+class Tracker;
+
+//
+
 class DCInstance {
 public:
     Mutex locksMutex;
@@ -211,6 +217,10 @@ public:
         const float &qx, const float &qy, const float &qz, const float &qw,
         const float &sx, const float &sy, const float &sz
     );
+    
+    //
+    
+    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position);
 };
 
 #endif // _INSTANCE_H_

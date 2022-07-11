@@ -563,7 +563,6 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
 
   // this.dispatchEvent(new MessageEvent('update'));
 
-  // XXX return old tasks and new tasks
   TrackerUpdate result;
   result.oldTasks = std::move(oldTasks);
   result.newTasks = std::move(tasks);

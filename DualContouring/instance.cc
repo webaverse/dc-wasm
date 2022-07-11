@@ -3,6 +3,7 @@
 #include "octree.h"
 #include "lock.h"
 #include "biomes.h"
+#include "tracker.h"
 #include "../vector.h"
 #include "../util.h"
 #include <emscripten.h>
@@ -1815,4 +1816,22 @@ bool DCInstance::removeCubeDamage(
     }
 
     return drew; */
+}
+
+void DCInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position) {
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
+
+    Task *trackerUpdateTask = new Task(id, [
+        this,
+        promise,
+        tracker,
+        position
+    ]() -> void {
+        const TrackerUpdate &trackerUpdate = tracker->update(position);
+        uint8_t *buffer = trackerUpdate.getBuffer();
+        if (!promise->resolve(buffer)) {
+          // XXX clean up
+        }
+    });
+    DualContouring::taskQueue.pushTaskPre(trackerUpdateTask);
 }

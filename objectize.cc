@@ -134,17 +134,20 @@ EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
 
 //
 
-EMSCRIPTEN_KEEPALIVE Tracker *createTracker(int lod, int minLodRange, bool trackY) {
+EMSCRIPTEN_KEEPALIVE Tracker *createTracker(DCInstance *inst, int lod, int minLodRange, bool trackY) {
     return new Tracker(lod, minLodRange, trackY);
 }
 
-EMSCRIPTEN_KEEPALIVE void *trackerUpdate(Tracker *tracker, const vm::vec3 &position) {
-    const TrackerUpdate &trackerUpdate = tracker->update(position);
-    uint8_t *buffer = trackerUpdate.getBuffer();
-    return buffer;
+EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(DCInstance *inst, uint32_t taskId, Tracker *tracker, float *position) {
+    vm::vec3 p{
+        position[0],
+        position[1],
+        position[2]
+    };
+    inst->trackerUpdateAsync(taskId, tracker, p);
 }
 
-EMSCRIPTEN_KEEPALIVE void destroyTracker(Tracker *tracker) {
+EMSCRIPTEN_KEEPALIVE void destroyTracker(DCInstance *inst, Tracker *tracker) {
     delete tracker;
 }
 
