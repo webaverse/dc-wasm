@@ -63,10 +63,16 @@ uint8_t *TrackerUpdate::getBuffer() const {
   index += sizeof(uint32_t);
   *((uint32_t *)(ptr + index)) = newTasks.size();
   index += sizeof(uint32_t);
-  memcpy(ptr + index, &oldTaskBuffers[0], oldTaskBuffers.size() * sizeof(oldTaskBuffers[0]));
-  index += oldTaskBuffers.size() * sizeof(oldTaskBuffers[0]);
-  memcpy(ptr + index, &newTaskBuffers[0], newTaskBuffers.size() * sizeof(newTaskBuffers[0]));
-  index += newTaskBuffers.size() * sizeof(newTaskBuffers[0]);
+  for (size_t i = 0; i < oldTaskBuffers.size(); i++) {
+    auto &buffer = oldTaskBuffers[i];
+    memcpy(ptr + index, buffer.data(), buffer.size() * sizeof(buffer[0]));
+    index += buffer.size() * sizeof(buffer[0]);
+  }
+  for (size_t i = 0; i < newTaskBuffers.size(); i++) {
+    auto &buffer = newTaskBuffers[i];
+    memcpy(ptr + index, buffer.data(), buffer.size() * sizeof(buffer[0]));
+    index += buffer.size() * sizeof(buffer[0]);
+  }
   return ptr;
 }
 
