@@ -7,6 +7,7 @@
 #include "../vector.h"
 #include "../util.h"
 #include <emscripten.h>
+#include "peek.h"
 
 constexpr int CHUNK_RANGE = 1;
 
@@ -587,6 +588,15 @@ uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, cons
             // printf("Generated Mesh Is Not Valid\n");
             return nullptr;
         }
+
+        unsigned char *peeks = new unsigned char(0);
+        const vm::ivec3 chunkMax = worldPosition + chunkSize * lod;
+
+        setPeeks<TerrainDCContext>(this, worldPosition, chunkMax, lod, peeks);
+
+        // std::cout << peeks[392] << std::endl;
+
+        // delete peeks;
 
         return vertexBuffer.getBuffer();
     }
