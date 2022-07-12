@@ -297,14 +297,14 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
 
   // sanity check that no leaf node contains another leaf node
   for (auto leafNode : leafNodes) {
-    for (auto childNode : leafNode->children) {
+    /* for (auto childNode : leafNode->children) {
       if (childNode != nullptr && childNode->type == Node_Leaf) {
         // throw new Error(`Leaf node contains another leaf node 1: ${leafNode.min.toArray().join(',')}`);
         EM_ASM({
             console.log('Leaf node contains another leaf node 1:', $0, $1, $2);
         }, leafNode->min.x, leafNode->min.y, leafNode->min.z);
       }
-    }
+    } */
     for (auto leafNode2 : leafNodes) {
       if (leafNode != leafNode2 && containsNode(*leafNode, *leafNode2)) {
         EM_ASM({
