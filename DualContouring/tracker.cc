@@ -222,7 +222,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
       lodMin.y = (lodMin.y / lod) * lod;
       lodMin.z = (lodMin.z / lod) * lod;
 
-      const vm::ivec3 &lodCenter = lodMin * (lod / 2);
+      const vm::ivec3 &lodCenter = lodMin + (lod / 2);
       const int childIndex = (rootNode->min.x < lodCenter.x ? 0 : 1) +
         (rootNode->min.y < lodCenter.y ? 0 : 2) +
         (rootNode->min.z < lodCenter.z ? 0 : 4);
