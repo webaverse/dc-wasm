@@ -2,6 +2,10 @@
 #include "octree.h"
 #include <iostream>
 
+/*
+tracker = await dcWorkerManager.createTracker(3, 2, true); trackerUpdate = await dcWorkerManager.trackerUpdate(tracker, new THREE.Vector3(1, 2, 3));
+*/
+
 //
 
 bool TrackerTask::isNop() const {
