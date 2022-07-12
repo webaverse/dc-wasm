@@ -190,7 +190,7 @@ OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min
     return node;
 }
 void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode) {
-    auto &nodeMap = octreeContext.nodeMap;
+    // auto &nodeMap = octreeContext.nodeMap;
 
     const vm::ivec3 &lodMin = parentNode->min;
     const int &lod = parentNode->size;
