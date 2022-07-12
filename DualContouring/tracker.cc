@@ -326,7 +326,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
   for (const auto &iter : nodeMap) {
     auto node = iter.second;
 
-    std::array<int, 8> lodArray;
+    std::array<int, 8> &lodArray = node->lodArray;
     for (int i = 0; i < 8; i++) {
       const vm::ivec3 &offset = lodOffsets[i];
       int &lod = lodArray[i]; // output
