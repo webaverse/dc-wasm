@@ -32,7 +32,7 @@ std::vector<uint8_t> TrackerTask::getBuffer() const {
   index += sizeof(int);
   *((int *)(result.data() + index)) = (maxLodNode->type == Node_Leaf) ? 1 : 0;
   index += sizeof(int);
-  std::memcpy(result.data() + index, &maxLodNode->lodArray, sizeof(int[8]));
+  std::memcpy(result.data() + index, &maxLodNode->lodArray[0], sizeof(int[8]));
   index += sizeof(int[8]);
   return result;
 }
