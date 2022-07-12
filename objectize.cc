@@ -135,7 +135,8 @@ EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
 //
 
 EMSCRIPTEN_KEEPALIVE Tracker *createTracker(DCInstance *inst, int lod, int minLodRange, bool trackY) {
-    return new Tracker(lod, minLodRange, trackY);
+    Tracker *tracker = new Tracker(lod, minLodRange, trackY);
+    return tracker;
 }
 
 EMSCRIPTEN_KEEPALIVE void trackerUpdateAsync(DCInstance *inst, uint32_t taskId, Tracker *tracker, float *position) {
