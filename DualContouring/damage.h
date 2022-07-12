@@ -8,6 +8,7 @@
 #include "sync.h"
 #include "cache.h"
 #include <unordered_map>
+#include <set>
 
 constexpr int bakedDamageSize = chunkSize * chunkSize * chunkSize;
 
@@ -68,6 +69,7 @@ public:
         chunks = other.chunks;
     }
     bool damage(const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, const int &lod);
+    void addChunkDamageBuffer(DamageBuffersMap &chunkRefsCopy, const vm::ivec3 &chunkMin,std::set<uint64_t> &seenHashes, bool &drew, const vm::vec3 &worldPos, const float &radius, float *outPositions, unsigned int *outPositionsCount, const int &lod);
 };
 
 #endif // DAMAGE_H
