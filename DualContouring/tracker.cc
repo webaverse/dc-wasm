@@ -8,6 +8,10 @@ tracker = await dcWorkerManager.createTracker(3, 2, true); trackerUpdate = await
 
 //
 
+std::atomic<int> nextTrackerId(0);
+
+//
+
 bool TrackerTask::isNop() const {
   auto task = this;
   return task->newNodes.size() == task->oldNodes.size() &&
@@ -19,13 +23,33 @@ bool TrackerTask::isNop() const {
 }
 std::vector<uint8_t> TrackerTask::getBuffer() const {
   size_t size = 0;
+  // id
+  size += sizeof(int);
+  // max lod node
   size += sizeof(vm::ivec3); // min
   size += sizeof(int); // lod
   size += sizeof(int); // isLeaf
   size += sizeof(int[8]); // lodArray
+  // old nodes
+  size += sizeof(uint32_t); // numOldNodes
+  size += sizeof(vm::ivec3) * oldNodes.size(); // min
+  size += sizeof(int) * oldNodes.size(); // lod
+  size += sizeof(int) * oldNodes.size(); // isLeaf
+  size += sizeof(int[8]) * oldNodes.size(); // lodArray
+  // new nodes
+  size += sizeof(uint32_t); // numNewNodes
+  size += sizeof(vm::ivec3) * newNodes.size(); // min
+  size += sizeof(int) * newNodes.size(); // lod
+  size += sizeof(int) * newNodes.size(); // isLeaf
+  size += sizeof(int[8]) * newNodes.size(); // lodArray
 
   std::vector<uint8_t> result(size);
   int index = 0;
+  // id
+  *((int *)(result.data() + index)) = id;
+  std::cout << "get buffer id " << id << std::endl;
+  index += sizeof(int);
+  // max lod node
   std::memcpy(result.data() + index, &maxLodNode->min, sizeof(vm::ivec3));
   index += sizeof(vm::ivec3);
   *((int *)(result.data() + index)) = maxLodNode->size;
@@ -34,6 +58,33 @@ std::vector<uint8_t> TrackerTask::getBuffer() const {
   index += sizeof(int);
   std::memcpy(result.data() + index, &maxLodNode->lodArray[0], sizeof(int[8]));
   index += sizeof(int[8]);
+  // old nodes
+  *((uint32_t *)(result.data() + index)) = oldNodes.size();
+  index += sizeof(uint32_t);
+  for (auto oldNode : oldNodes) {
+    std::memcpy(result.data() + index, &oldNode->min, sizeof(vm::ivec3));
+    index += sizeof(vm::ivec3);
+    *((int *)(result.data() + index)) = oldNode->size;
+    index += sizeof(int);
+    *((int *)(result.data() + index)) = (oldNode->type == Node_Leaf) ? 1 : 0;
+    index += sizeof(int);
+    std::memcpy(result.data() + index, &oldNode->lodArray[0], sizeof(int[8]));
+    index += sizeof(int[8]);
+  }
+  // new nodes
+  *((uint32_t *)(result.data() + index)) = newNodes.size();
+  index += sizeof(uint32_t);
+  for (auto newNode : newNodes) {
+    std::memcpy(result.data() + index, &newNode->min, sizeof(vm::ivec3));
+    index += sizeof(vm::ivec3);
+    *((int *)(result.data() + index)) = newNode->size;
+    index += sizeof(int);
+    *((int *)(result.data() + index)) = (newNode->type == Node_Leaf) ? 1 : 0;
+    index += sizeof(int);
+    std::memcpy(result.data() + index, &newNode->lodArray[0], sizeof(int[8]));
+    index += sizeof(int[8]);
+  }
+
   return result;
 }
 uint8_t *TrackerUpdate::getBuffer() const {
@@ -48,6 +99,7 @@ uint8_t *TrackerUpdate::getBuffer() const {
   }
 
   size_t size = 0;
+  size += sizeof(vm::ivec3); // currentCoord
   size += sizeof(uint32_t); // numOldTasks
   size += sizeof(uint32_t); // numNewTasks
   for (auto &buffer : oldTaskBuffers) {
@@ -59,6 +111,8 @@ uint8_t *TrackerUpdate::getBuffer() const {
 
   uint8_t *ptr = (uint8_t *)malloc(size);
   int index = 0;
+  memcpy(ptr + index, &currentCoord, sizeof(vm::ivec3));
+  index += sizeof(vm::ivec3);
   *((uint32_t *)(ptr + index)) = oldTasks.size();
   index += sizeof(uint32_t);
   *((uint32_t *)(ptr + index)) = newTasks.size();
@@ -360,7 +414,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
   // map from min lod hash to task containing new nodes and old nodes
   std::unordered_map<uint64_t, TrackerTaskPtr> taskMap;
 
-  for (auto &newNode : newLeafNodes) {
+  for (OctreeNodePtr newNode : newLeafNodes) {
     OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, newNode->min);
     const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
     
@@ -370,6 +424,8 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
       task = iter->second;
     } else {
       TrackerTask *trackerTask = new TrackerTask();
+      trackerTask->id = ++nextTrackerId;
+      std::cout << "increment 1 " << trackerTask->id << std::endl;
       trackerTask->maxLodNode = maxLodNode;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
@@ -378,7 +434,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
     }
     task->newNodes.push_back(newNode);
   }
-  for (auto &oldNode : oldLeafNodes) {
+  for (OctreeNodePtr oldNode : oldLeafNodes) {
     OctreeNodePtr maxLodNode = getMaxLodNode(newLeafNodes, oldLeafNodes, oldNode->min);
     const uint64_t hash = hashOctreeMinLod(maxLodNode->min, maxLodNode->size);
     
@@ -388,6 +444,8 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
       task = iter->second;
     } else {
       TrackerTask *trackerTask = new TrackerTask();
+      trackerTask->id = ++nextTrackerId;
+      std::cout << "increment 2 " << trackerTask->id << std::endl;
       trackerTask->maxLodNode = maxLodNode;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
@@ -475,6 +533,8 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
   std::vector<TrackerTaskPtr> extraTasks;
   for (OctreeNodePtr chunk : removedChunks) {
     TrackerTask *trackerTask = new TrackerTask();
+    trackerTask->id = ++nextTrackerId;
+    std::cout << "increment 3 " << trackerTask->id << std::endl;
     trackerTask->maxLodNode = chunk;
     trackerTask->oldNodes.push_back(chunk);
 
@@ -534,38 +594,78 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
   tasks = sortTasks(tasks, worldPosition);
 
+  // JS version. Below it is ported to C++.
+  /* for (size_t i = 0; i < tasks.size(); i++) {
+    auto &task = tasks[i];
+    if (!task->isNop()) {
+      const overlappingTasks = this.liveTasks.filter(lastTask => task.maxLodNode.containsNode(lastTask.maxLodNode));
+      for (const oldTask of overlappingTasks) {
+        oldTask.cancel();
+        this.liveTasks.splice(this.liveTasks.indexOf(oldTask), 1);
+      }
+      this.liveTasks.push(task);
+    }
+  }
+
+  for (const task of tasks) {
+    if (!task.isNop()) {
+      this.dispatchEvent(new MessageEvent('chunkrelod', {
+        data: {
+          task,
+        },
+      }));
+    }
+  } */
+
   std::vector<TrackerTaskPtr> oldTasks;
   for (size_t i = 0; i < tasks.size(); i++) {
     auto &task = tasks[i];
     if (!task->isNop()) {
       std::vector<TrackerTaskPtr> overlappingTasks;
       for (TrackerTaskPtr liveTask : this->liveTasks) {
-          if (containsNode(*task->maxLodNode, *liveTask->maxLodNode)) {
-            overlappingTasks.push_back(liveTask);
-          }
+        if (containsNode(*task->maxLodNode, *liveTask->maxLodNode)) {
+          overlappingTasks.push_back(liveTask);
+        }
       }
 
       for (TrackerTaskPtr oldTask : overlappingTasks) {
-        oldTasks.push_back(oldTask);
-        
         const auto &iter = std::find(
           this->liveTasks.begin(),
           this->liveTasks.end(),
           oldTask
         );
+        if (iter == this->liveTasks.end()) {
+          std::cout << "bad live task to remove" << std::endl;
+          abort();
+        }
         this->liveTasks.erase(iter);
-      }
-      this->liveTasks.push_back(task);
 
+        std::cout << "wasm old task " <<
+          task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
+          task->maxLodNode->size << " " <<
+          task->oldNodes.size() << " " << task->newNodes.size() << " " <<
+          (void *)task.get() << " " <<
+          oldTask->id << std::endl;
+
+        oldTasks.push_back(oldTask);
+      }
+
+      std::cout << "wasm new task " <<
+        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
+        task->maxLodNode->size << " " <<
+        task->oldNodes.size() << " " << task->newNodes.size() << " " <<
+        (void *)task.get() << " " <<
+        task->id << std::endl;
+      this->liveTasks.push_back(task);
     }
   }
 
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
+  result.currentCoord = currentCoord;
   result.oldTasks = std::move(oldTasks);
   result.newTasks = std::move(tasks);
-
   return result;
 }
 TrackerUpdate Tracker::update(const vm::vec3 &position) {

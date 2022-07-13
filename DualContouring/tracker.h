@@ -53,8 +53,11 @@ public:
 
 //
 
+extern std::atomic<int> nextTrackerId;
+
 class TrackerTask {
 public:
+  int id;
   OctreeNodePtr maxLodNode;
   std::vector<OctreeNodePtr> oldNodes;
   std::vector<OctreeNodePtr> newNodes;
@@ -67,6 +70,7 @@ typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
 class TrackerUpdate {
 public:
+  vm::ivec3 currentCoord;
   std::vector<TrackerTaskPtr> oldTasks;
   std::vector<TrackerTaskPtr> newTasks;
 
