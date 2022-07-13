@@ -539,12 +539,12 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     auto &task = tasks[i];
     if (!task->isNop()) {
       std::vector<TrackerTaskPtr> overlappingTasks;
-      for (const auto &lastTask : this->liveTasks) {
-          if (containsNode(*task->maxLodNode, *lastTask->maxLodNode)) {
-            overlappingTasks.push_back(task);
+      for (TrackerTaskPtr liveTask : this->liveTasks) {
+          if (containsNode(*task->maxLodNode, *liveTask->maxLodNode)) {
+            overlappingTasks.push_back(liveTask);
           }
       }
-      
+
       for (TrackerTaskPtr oldTask : overlappingTasks) {
         oldTasks.push_back(oldTask);
         
@@ -556,26 +556,16 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
         this->liveTasks.erase(iter);
       }
       this->liveTasks.push_back(task);
+
     }
   }
 
-  /* for (const task of tasks) {
-    if (!task.isNop()) {
-      this.dispatchEvent(new MessageEvent('chunkrelod', {
-        data: {
-          task,
-        },
-      }));
-    }
-  } */
-
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
-
-  // this.dispatchEvent(new MessageEvent('update'));
 
   TrackerUpdate result;
   result.oldTasks = std::move(oldTasks);
   result.newTasks = std::move(tasks);
+
   return result;
 }
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
