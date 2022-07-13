@@ -6,21 +6,21 @@
 
 int getIndex(const int &x, const int &y, const int &z, const int &size)
 {
-    return x + z * size + y * size * size;
+    return x + y * size + z * size * size;
 }
 
 template <typename DCContextType>
 void floodFill(DCInstance *inst,
                int x, int y, int z,
                int startFace,
-               int minX, int maxX, int minY, int maxY, int minZ, int maxZ,
+               const vm::ivec3 &chunkMin, const vm::ivec3 &chunkMax,
                unsigned char *peeks, unsigned char *seenPeeks, int *PEEK_FACE_INDICES,
                const int &lod, const int &size)
 {
     std::unique_ptr<int[]> queue(new int[size * size * size * 4]);
     unsigned int queueEnd = 0;
 
-    const int index = getIndex(x, y, z, size);
+    const int index = getIndex(x - chunkMin.x, y - chunkMin.y, z - chunkMin.z, size);
     queue[queueEnd * 4 + 0] = x;
     queue[queueEnd * 4 + 1] = y;
     queue[queueEnd * 4 + 2] = z;
@@ -39,62 +39,62 @@ void floodFill(DCInstance *inst,
 
         if (sdf >= 0)
         { // if empty space
-            if (z == minZ && startFace != (int)PEEK_FACES::BACK)
+            if (z == chunkMin.z && startFace != (int)PEEK_FACES::BACK)
             {
                 peeks[PEEK_FACE_INDICES[startFace << 3 | (int)PEEK_FACES::BACK]] = 1;
             }
-            if (z == maxZ && startFace != (int)PEEK_FACES::FRONT)
+            if (z == chunkMax.z && startFace != (int)PEEK_FACES::FRONT)
             {
                 peeks[PEEK_FACE_INDICES[startFace << 3 | (int)PEEK_FACES::FRONT]] = 1;
             }
-            if (x == minX && startFace != (int)PEEK_FACES::LEFT)
+            if (x == chunkMin.x && startFace != (int)PEEK_FACES::LEFT)
             {
                 peeks[PEEK_FACE_INDICES[startFace << 3 | (int)PEEK_FACES::LEFT]] = 1;
             }
-            if (x == maxX && startFace != (int)PEEK_FACES::RIGHT)
+            if (x == chunkMax.x && startFace != (int)PEEK_FACES::RIGHT)
             {
                 peeks[PEEK_FACE_INDICES[startFace << 3 | (int)PEEK_FACES::RIGHT]] = 1;
             }
-            if (y == maxY && startFace != (int)PEEK_FACES::TOP)
+            if (y == chunkMax.y && startFace != (int)PEEK_FACES::TOP)
             {
                 peeks[PEEK_FACE_INDICES[startFace << 3 | (int)PEEK_FACES::TOP]] = 1;
             }
-            if (y == minY && startFace != (int)PEEK_FACES::BOTTOM)
+            if (y == chunkMin.y && startFace != (int)PEEK_FACES::BOTTOM)
             {
                 peeks[PEEK_FACE_INDICES[startFace << 3 | (int)PEEK_FACES::BOTTOM]] = 1;
             }
 
-            // for (int dx = -lod; dx <= lod; dx += lod)
-            // {
-            //     const int ax = x + dx;
-            //     if (ax >= minX && ax <= maxX)
-            //     {
-            //         for (int dz = -lod; dz <= lod; dz += lod)
-            //         {
-            //             const int az = z + dz;
-            //             if (az >= minZ && az <= maxZ)
-            //             {
-            //                 for (int dy = -lod; dy <= lod; dy += lod)
-            //                 {
-            //                     const int ay = y + dy;
-            //                     if (ay >= minY && ay <= maxY)
-            //                     {
-            //                         const int index = getIndex(ax, ay, az, size);
-            //                         if (!seenPeeks[index])
-            //                         {
-            //                             queue[queueEnd * 4 + 0] = ax;
-            //                             queue[queueEnd * 4 + 1] = ay;
-            //                             queue[queueEnd * 4 + 2] = az;
-            //                             queue[queueEnd * 4 + 3] = index;
-            //                             queueEnd++;
-            //                             seenPeeks[index] = 1;
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
+            for (int dx = -lod; dx <= lod; dx += lod)
+            {
+                const int ax = x + dx;
+                if (ax >= chunkMin.x && ax <= chunkMax.x)
+                {
+                    for (int dy = -lod; dy <= lod; dy += lod)
+                    {
+                        const int ay = y + dy;
+                        if (ay >= chunkMin.y && ay <= chunkMax.y)
+                        {
+                            for (int dz = -lod; dz <= lod; dz += lod)
+                            {
+                                const int az = z + dz;
+                                if (az >= chunkMin.z && az <= chunkMax.z)
+                                {
+                                    const int index = getIndex(ax - chunkMin.x, ay - chunkMin.y, az - chunkMin.z, size);
+                                    if (!seenPeeks[index])
+                                    {
+                                        queue[queueEnd * 4 + 0] = ax;
+                                        queue[queueEnd * 4 + 1] = ay;
+                                        queue[queueEnd * 4 + 2] = az;
+                                        queue[queueEnd * 4 + 3] = index;
+                                        queueEnd++;
+                                        seenPeeks[index] = 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -122,75 +122,51 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
         }
     }
 
-    const int minX = chunkMin.x;
-    const int maxX = chunkMax.x;
-
-    const int minY = chunkMin.y;
-    const int maxY = chunkMax.y;
-
-    const int minZ = chunkMin.z;
-    const int maxZ = chunkMax.z;
-
-    const int csize = (chunkSize * lod);
-    const int size = csize + lod;
-
-    // EM_ASM({
-    //     console.log("Error 1\n");
-    // });
-
-    // std::cout << "limits " << minX << ":" << maxX << ":" << minY << ":" << maxY << ":" << minZ << ":" << maxZ << "\n";
-
-    // const geometry = geometries[i];
-    // const peeks = new Uint8Array(16);
+    const int size = (chunkSize * lod) + lod;
     unsigned char seenPeeks[size * size * size];
-    // const minY = i * NUM_CELLS;
-    // const maxY = (i + 1) * NUM_CELLS;
-    for (int x = minX; x <= maxX; x += lod)
+
+    for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     {
-        for (int y = minY; y <= maxY; y += lod)
+        for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
         {
-            floodFill<DCContextType>(inst, x, y, maxZ, (int)PEEK_FACES::FRONT, minX, maxX, minY, maxY, minZ, maxZ, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+            floodFill<DCContextType>(inst, x, y, chunkMax.z, (int)PEEK_FACES::FRONT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
         }
     }
-    // for (int x = minX; x <= maxX; x+=lod)
+    for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
+    {
+        for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
+        {
+            floodFill<DCContextType>(inst, x, y, chunkMin.z, (int)PEEK_FACES::BACK, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+        }
+    }
+    for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
+    {
+        for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
+        {
+            floodFill<DCContextType>(inst, chunkMin.x, y, z, (int)PEEK_FACES::LEFT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+        }
+    }
+    for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
+    {
+        for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
+        {
+            floodFill<DCContextType>(inst, chunkMax.x, y, z, (int)PEEK_FACES::RIGHT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+        }
+    }
+    // for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     // {
-    //     for (int y = minY; y <= maxY; y+=lod)
+    //     for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
     //     {
-    //         floodFill<DCContextType>(inst, x, y, minZ, (int)PEEK_FACES::BACK, minX, maxX, minY, maxY, minZ, maxZ, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+    //         floodFill<DCContextType>(inst, x, chunkMax.y, z, (int)PEEK_FACES::TOP, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
     //     }
     // }
-    // for (int z = minZ; z <= maxZ; z+=lod)
+    // for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     // {
-    //     for (int y = minY; y <= maxY; y+=lod)
+    //     for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
     //     {
-    //         floodFill<DCContextType>(inst, minX, y, z, (int)PEEK_FACES::LEFT, minX, maxX, minY, maxY, minZ, maxZ, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+    //         floodFill<DCContextType>(inst, x, chunkMin.y, z, (int)PEEK_FACES::BOTTOM, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
     //     }
     // }
-    // for (int z = minZ; z <= maxZ; z+=lod)
-    // {
-    //     for (int y = minY; y <= maxY; y+=lod)
-    //     {
-    //         floodFill<DCContextType>(inst, maxX, y, z, (int)PEEK_FACES::RIGHT, minX, maxX, minY, maxY, minZ, maxZ, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-    //     }
-    // }
-    // for (int x = minX; x <= maxX; x++)
-    // {
-    //     for (int z = minZ; z <= maxZ; z+=lod)
-    //     {
-    //         floodFill<DCContextType>(inst, x, maxY, z, (int)PEEK_FACES::TOP, minX, maxX, minY, maxY, minZ, maxZ, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-    //     }
-    // }
-    // for (int x = minX; x <= maxX; x++)
-    // {
-    //     for (int z = minZ; z <= maxZ; z+=lod)
-    //     {
-    //         floodFill<DCContextType>(inst, x, minY, z, (int)PEEK_FACES::BOTTOM, minX, maxX, minY, maxY, minZ, maxZ, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-    //     }
-    // }
-
-    // EM_ASM({
-    //     console.log("Error 2\n");
-    // });
 
     // for (int startFace = 0; startFace < 6; startFace++)
     // {
