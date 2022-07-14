@@ -433,7 +433,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
     } else {
       TrackerTask *trackerTask = new TrackerTask();
       trackerTask->id = ++nextTrackerId;
-      std::cout << "increment 1 " << trackerTask->id << std::endl;
+      // std::cout << "increment 1 " << trackerTask->id << std::endl;
       trackerTask->maxLodNode = maxLodNode;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
@@ -453,7 +453,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
     } else {
       TrackerTask *trackerTask = new TrackerTask();
       trackerTask->id = ++nextTrackerId;
-      std::cout << "increment 2 " << trackerTask->id << std::endl;
+      // std::cout << "increment 2 " << trackerTask->id << std::endl;
       trackerTask->maxLodNode = maxLodNode;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
@@ -521,6 +521,7 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
           newChunks.erase(iter);
         } else {
           // debugger;
+          std::cout << "failed to erase new chunk" << std::endl;
           abort();
         }
       }
