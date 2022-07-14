@@ -80,6 +80,7 @@ public:
   vm::ivec3 currentCoord;
   std::vector<TrackerTaskPtr> oldTasks;
   std::vector<TrackerTaskPtr> newTasks;
+  std::vector<OctreeNodePtr> leafNodes;
 
   uint8_t *getBuffer() const;
 };

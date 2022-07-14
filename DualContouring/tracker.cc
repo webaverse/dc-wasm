@@ -105,30 +105,55 @@ uint8_t *TrackerUpdate::getBuffer() const {
   size += sizeof(vm::ivec3); // currentCoord
   size += sizeof(uint32_t); // numOldTasks
   size += sizeof(uint32_t); // numNewTasks
+  size += sizeof(uint32_t); // numLeafNodes
   for (auto &buffer : oldTaskBuffers) {
     size += buffer.size();
   }
   for (auto &buffer : newTaskBuffers) {
     size += buffer.size();
   }
+  // leaf nodes
+  size += sizeof(vm::ivec3) * leafNodes.size(); // min
+  size += sizeof(int) * leafNodes.size(); // lod
+  size += sizeof(int) * leafNodes.size(); // isLeaf
+  size += sizeof(int[8]) * leafNodes.size(); // lodArray
 
   uint8_t *ptr = (uint8_t *)malloc(size);
   int index = 0;
+  // currentCoord
   memcpy(ptr + index, &currentCoord, sizeof(vm::ivec3));
   index += sizeof(vm::ivec3);
+  // numOldTasks
   *((uint32_t *)(ptr + index)) = oldTasks.size();
   index += sizeof(uint32_t);
+  // numNewTasks
   *((uint32_t *)(ptr + index)) = newTasks.size();
   index += sizeof(uint32_t);
+  // numLeafNodes
+  *((uint32_t *)(ptr + index)) = leafNodes.size();
+  index += sizeof(uint32_t);
+  // newTasks
   for (size_t i = 0; i < oldTaskBuffers.size(); i++) {
     auto &buffer = oldTaskBuffers[i];
     memcpy(ptr + index, buffer.data(), buffer.size() * sizeof(buffer[0]));
     index += buffer.size() * sizeof(buffer[0]);
   }
+  // oldTasks
   for (size_t i = 0; i < newTaskBuffers.size(); i++) {
     auto &buffer = newTaskBuffers[i];
     memcpy(ptr + index, buffer.data(), buffer.size() * sizeof(buffer[0]));
     index += buffer.size() * sizeof(buffer[0]);
+  }
+  // leaf nodes
+  for (auto leafNode : leafNodes) {
+    std::memcpy(ptr + index, &leafNode->min, sizeof(vm::ivec3));
+    index += sizeof(vm::ivec3);
+    *((int *)(ptr + index)) = leafNode->size;
+    index += sizeof(int);
+    *((int *)(ptr + index)) = (leafNode->type == Node_Leaf) ? 1 : 0;
+    index += sizeof(int);
+    std::memcpy(ptr + index, &leafNode->lodArray[0], sizeof(int[8]));
+    index += sizeof(int[8]);
   }
   return ptr;
 }
@@ -727,12 +752,6 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   for (size_t i = 0; i < tasks.size(); i++) {
     TrackerTaskPtr task = tasks[i];
     if (!task->isNop() && task->type != TrackerTaskType::OUTRANGE) {
-      /* std::cout << "wasm new task " <<
-        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
-        task->maxLodNode->size << " " <<
-        task->oldNodes.size() << " " << task->newNodes.size() << " " <<
-        (void *)task.get() << " " <<
-        task->id << std::endl; */
       this->liveTasks.push_back(task);
     }
   }
@@ -742,24 +761,13 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     tasks.push_back(purgeTask);
   }
 
-  {
-    // std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
-    // std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
-    /* std::vector<TrackerTaskPtr> &extraTasks = chunksUpdate.second;
-    this->chunks = std::move(newChunks);
-    for (TrackerTaskPtr extraTask : extraTasks) {
-      tasks.push_back(extraTask);
-    } */
-  }
-
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
   result.currentCoord = currentCoord;
   result.oldTasks = std::move(cancelOldTasks);
   result.newTasks = std::move(tasks);
-  // std::cout << "check abort 3" << std::endl;
-  // duplicateTask(result.oldTasks, result.newTasks);
+  result.leafNodes = this->lastOctreeLeafNodes;
   return result;
 }
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
