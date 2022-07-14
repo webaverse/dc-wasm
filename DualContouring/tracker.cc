@@ -645,12 +645,12 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
         }
 
         for (TrackerTaskPtr oldTask : overlappingTasks) {
-          /* const auto &iter = std::find(
+          const auto &iter = std::find(
             this->liveTasks.begin(),
             this->liveTasks.end(),
             oldTask
           );
-          if (iter == this->liveTasks.end()) {
+          /* if (iter == this->liveTasks.end()) {
             std::cout << "bad live task to remove" << std::endl;
             abort();
           } */
