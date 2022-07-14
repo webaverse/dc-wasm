@@ -534,10 +534,12 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
     }
   }
 
+  // compute extra tasks for outdated chunks
   std::vector<OctreeNodePtr> removedChunks;
-  for (auto &oldChunk : oldChunks) {
-    if (std::any_of(newChunks.begin(), newChunks.end(), [&](auto &newChunk) {
-      return newChunk->min == oldChunk->min;
+  for (OctreeNodePtr oldChunk : oldChunks) {
+    if (!std::any_of(newChunks.begin(), newChunks.end(), [&](const auto &newChunk) -> bool {
+      // return newChunk->min == oldChunk->min;
+      return containsNode(*newChunk, *oldChunk);
     })) {
       removedChunks.push_back(oldChunk);
     }
