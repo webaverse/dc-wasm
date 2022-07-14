@@ -589,7 +589,7 @@ uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, cons
             return nullptr;
         }
 
-        unsigned char *peeks = new unsigned char(0);
+        unsigned char peeks[16];
         const vm::ivec3 chunkMax = worldPosition + (chunkSize * lod);
 
         setPeeks<TerrainDCContext>(this, worldPosition, chunkMax, lod, peeks);

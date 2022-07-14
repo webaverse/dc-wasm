@@ -4,23 +4,24 @@
 #include "instance.h"
 #include <memory>
 
-int getIndex(const int &x, const int &y, const int &z, const int &size)
+int getIndex(const vm::ivec3 &pos, const int &size)
 {
-    return x + y * size + z * size * size;
+    return pos.x + pos.y * size + pos.z * size * size;
 }
 
 template <typename DCContextType>
-void floodFill(DCInstance *inst,
-               int x, int y, int z,
-               int startFace,
-               const vm::ivec3 &chunkMin, const vm::ivec3 &chunkMax,
-               unsigned char *peeks, unsigned char *seenPeeks, int *PEEK_FACE_INDICES,
-               const int &lod, const int &size)
+inline void floodFill(DCInstance *inst,
+                      int x, int y, int z,
+                      int startFace,
+                      const vm::ivec3 &chunkMin, const vm::ivec3 &chunkMax,
+                      unsigned char *peeks, unsigned char *seenPeeks, int *PEEK_FACE_INDICES,
+                      const int &lod, const int &size)
 {
     std::unique_ptr<int[]> queue(new int[size * size * size * 4]);
     unsigned int queueEnd = 0;
 
-    const int index = getIndex(x - chunkMin.x, y - chunkMin.y, z - chunkMin.z, size);
+    const vm::ivec3 localPos = vm::ivec3{x, y, z} - chunkMin;
+    const int index = getIndex(localPos, size);
     queue[queueEnd * 4 + 0] = x;
     queue[queueEnd * 4 + 1] = y;
     queue[queueEnd * 4 + 2] = z;
@@ -79,7 +80,14 @@ void floodFill(DCInstance *inst,
                                 const int az = z + dz;
                                 if (az >= chunkMin.z && az <= chunkMax.z)
                                 {
-                                    const int index = getIndex(ax - chunkMin.x, ay - chunkMin.y, az - chunkMin.z, size);
+                                    const vm::ivec3 localPos = vm::ivec3{ax, ay, az} - chunkMin;
+                                    const int index = getIndex(localPos, size);
+                                    // if (index > 5219 || index < 0)
+                                    // {
+                                    //     EM_ASM({
+                                    //         console.log("Wrong\n");
+                                    //     });
+                                    // }
                                     if (!seenPeeks[index])
                                     {
                                         queue[queueEnd * 4 + 0] = ax;
@@ -122,7 +130,7 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
         }
     }
 
-    const int size = (chunkSize * lod) + lod;
+    const int size = (chunkSize * lod);
     unsigned char seenPeeks[size * size * size];
 
     for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
@@ -150,23 +158,37 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
     {
         for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
         {
+            // EM_ASM({
+            //     console.log("CHUNK > X : ", $0, ", Y : ", $1, ", Z : ", $2);
+            //     console.log("Z : ", $3, ", Y : ", $4);
+            // },
+            //        chunkMin.x , chunkMin.y, chunkMin.z, z, y);
             floodFill<DCContextType>(inst, chunkMax.x, y, z, (int)PEEK_FACES::RIGHT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
         }
     }
-    // for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
-    // {
-    //     for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
-    //     {
-    //         floodFill<DCContextType>(inst, x, chunkMax.y, z, (int)PEEK_FACES::TOP, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-    //     }
-    // }
-    // for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
-    // {
-    //     for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
-    //     {
-    //         floodFill<DCContextType>(inst, x, chunkMin.y, z, (int)PEEK_FACES::BOTTOM, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-    //     }
-    // }
+
+    /* const vm::ivec3 eChunkMin = vm::ivec3{-16, 48, -16};
+    const vm::ivec3 eChunkMax = eChunkMin + chunkSize * lod; // 1, 64, 1
+    floodFill<DCContextType>(inst, eChunkMax.x, 49, 16, (int)PEEK_FACES::RIGHT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+    // EM_ASM({
+    //     console.log("HMMM :/ \n");
+    // }); */
+
+
+    for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
+    {
+        for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
+        {
+            floodFill<DCContextType>(inst, x, chunkMax.y, z, (int)PEEK_FACES::TOP, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+        }
+    }
+    for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
+    {
+        for (int z = chunkMin.z; z <= chunkMax.z; z += lod)
+        {
+            floodFill<DCContextType>(inst, x, chunkMin.y, z, (int)PEEK_FACES::BOTTOM, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
+        }
+    }
 
     // for (int startFace = 0; startFace < 6; startFace++)
     // {
