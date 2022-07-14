@@ -87,6 +87,25 @@ public:
 
 //
 
+class DataRequest {
+public:
+  OctreeNodePtr node;
+
+  std::vector<uint8_t> getBuffer() const;
+};
+
+//
+
+class TransformRequest {
+public:
+  std::vector<OctreeNodePtr> fromNodes;
+  std::vector<OctreeNodePtr> toNodes;
+
+  std::vector<uint8_t> getBuffer() const;
+};
+
+//
+
 bool containsPoint(const OctreeNode &node, const vm::ivec3 &p);
 bool containsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNode(const OctreeNode &node, const OctreeNode &other);
