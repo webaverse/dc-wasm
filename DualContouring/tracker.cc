@@ -583,6 +583,23 @@ vm::ivec3 Tracker::getCurrentCoord(const vm::vec3 &position) {
   const int cz = std::floor(position.z / (float)chunkSize);
   return vm::ivec3{cx, cy, cz};
 }
+bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
+  std::unordered_map<uint64_t, bool> seen;
+
+  for (TrackerTaskPtr task : tasks) {
+    const uint64_t hash = hashOctreeMinLod(task->maxLodNode->min, task->maxLodNode->size);
+    if (seen.find(hash) == seen.end()) {
+      seen[hash] = true;
+    } else {
+      std::cout << "duplicate task: " <<
+        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " " <<
+        hash << std::endl;
+      abort();
+      return true;
+    }
+  }
+  return false;
+}
 // dynamic methods
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
@@ -592,79 +609,70 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     this->lastOctreeLeafNodes
   );
 
+  // std::cout << "check abort 1" << std::endl;
+  duplicateTask(tasks);
+
   {
     std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
     std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
-    std::vector<TrackerTaskPtr> &newTasks = chunksUpdate.second;
+    std::vector<TrackerTaskPtr> &extraTasks = chunksUpdate.second;
     this->chunks = std::move(newChunks);
-    for (const auto &task : newTasks) {
-      tasks.push_back(task);
+    for (TrackerTaskPtr extraTask : extraTasks) {
+      tasks.push_back(extraTask);
     }
   }
 
+  // std::cout << "check abort 2" << std::endl;
+  // duplicateTask(tasks);
+
   vm::vec3 worldPosition = vm::vec3{
-      (float)currentCoord.x,
-      (float)currentCoord.y,
-      (float)currentCoord.z
+    (float)currentCoord.x,
+    (float)currentCoord.y,
+    (float)currentCoord.z
   } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
   tasks = sortTasks(tasks, worldPosition);
 
-  // JS version. Below it is ported to C++.
-  /* for (size_t i = 0; i < tasks.size(); i++) {
-    auto &task = tasks[i];
+  std::vector<TrackerTaskPtr> oldTasks;
+  for (size_t i = 0; i < tasks.size(); i++) {
+    TrackerTaskPtr task = tasks[i];
     if (!task->isNop()) {
-      const overlappingTasks = this.liveTasks.filter(lastTask => task.maxLodNode.containsNode(lastTask.maxLodNode));
-      for (const oldTask of overlappingTasks) {
-        oldTask.cancel();
-        this.liveTasks.splice(this.liveTasks.indexOf(oldTask), 1);
+      {
+        std::vector<TrackerTaskPtr> overlappingTasks;
+        for (TrackerTaskPtr liveTask : this->liveTasks) {
+          if (containsNode(*task->maxLodNode, *liveTask->maxLodNode)) {
+            overlappingTasks.push_back(liveTask);
+          }
+        }
+
+        for (TrackerTaskPtr oldTask : overlappingTasks) {
+          /* const auto &iter = std::find(
+            this->liveTasks.begin(),
+            this->liveTasks.end(),
+            oldTask
+          );
+          if (iter == this->liveTasks.end()) {
+            std::cout << "bad live task to remove" << std::endl;
+            abort();
+          } */
+          oldTasks.push_back(oldTask);
+          this->liveTasks.erase(iter);
+        }
       }
-      this.liveTasks.push(task);
+
+      /* std::cout << "wasm old task " <<
+        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
+        task->maxLodNode->size << " " <<
+        task->oldNodes.size() << " " << task->newNodes.size() << " " <<
+        (void *)task.get() << " " <<
+        std::endl; */
+
+        this->liveTasks.push_back(task);
     }
   }
 
-  for (const task of tasks) {
-    if (!task.isNop()) {
-      this.dispatchEvent(new MessageEvent('chunkrelod', {
-        data: {
-          task,
-        },
-      }));
-    }
-  } */
-
-  std::vector<TrackerTaskPtr> oldTasks;
-  for (size_t i = 0; i < tasks.size(); i++) {
+  /* for (size_t i = 0; i < tasks.size(); i++) {
     auto &task = tasks[i];
     if (!task->isNop()) {
-      std::vector<TrackerTaskPtr> overlappingTasks;
-      for (TrackerTaskPtr liveTask : this->liveTasks) {
-        if (containsNode(*task->maxLodNode, *liveTask->maxLodNode)) {
-          overlappingTasks.push_back(liveTask);
-        }
-      }
-
-      for (TrackerTaskPtr oldTask : overlappingTasks) {
-        const auto &iter = std::find(
-          this->liveTasks.begin(),
-          this->liveTasks.end(),
-          oldTask
-        );
-        if (iter == this->liveTasks.end()) {
-          std::cout << "bad live task to remove" << std::endl;
-          abort();
-        }
-        this->liveTasks.erase(iter);
-
-        std::cout << "wasm old task " <<
-          task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
-          task->maxLodNode->size << " " <<
-          task->oldNodes.size() << " " << task->newNodes.size() << " " <<
-          (void *)task.get() << " " <<
-          oldTask->id << std::endl;
-
-        oldTasks.push_back(oldTask);
-      }
-
       std::cout << "wasm new task " <<
         task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
         task->maxLodNode->size << " " <<
@@ -673,7 +681,7 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
         task->id << std::endl;
       this->liveTasks.push_back(task);
     }
-  }
+  } */
 
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
