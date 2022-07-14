@@ -17,7 +17,7 @@ bool TrackerTask::isNop() const {
   return task->newNodes.size() == task->oldNodes.size() &&
     std::all_of(task->newNodes.begin(), task->newNodes.end(), [&](OctreeNodePtr newNode) -> bool {
       return std::any_of(task->oldNodes.begin(), task->oldNodes.end(), [&](OctreeNodePtr oldNode) -> bool {
-        return equalsNode(*oldNode, *newNode);
+        return equalsNodeLod(*oldNode, *newNode);
       });
     });
 }
@@ -144,7 +144,14 @@ bool containsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsPoint(node, other.min);
 }
 bool equalsNode(const OctreeNode &node, const OctreeNode &other) {
-  if (node.min == other.min) {
+  if (node.min == other.min && node.size == other.size) {
+    return true;
+  } else {
+    return false;
+  }
+}
+bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other) {
+  if (equalsNode(node, other)) {
     for (size_t i = 0; i < node.lodArray.size(); i++) {
       if (node.lodArray[i] != other.lodArray[i]) {
         return false;
@@ -155,9 +162,9 @@ bool equalsNode(const OctreeNode &node, const OctreeNode &other) {
     return false;
   }
 }
-bool intersectsNode(const OctreeNode &node, const OctreeNode &other) {
+/* bool intersectsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsNode(node, other) || containsNode(other, node);
-}
+} */
 
 //
 
@@ -505,7 +512,7 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
 std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
-  // swap chunks from tasks
+  // swap old chunks for new chunks
   for (TrackerTaskPtr task : tasks) {
     if (!task->isNop()) {
       const std::vector<OctreeNodePtr> &newNodes = task->newNodes;
@@ -513,18 +520,16 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
 
       for (OctreeNodePtr oldNode : oldNodes) {
         const auto &iter = std::find_if(
-            newChunks.begin(),
-            newChunks.end(),
-            [&](auto &chunk) -> bool {
-                return equalsNode(*chunk, *oldNode);
-            }
+          newChunks.begin(),
+          newChunks.end(),
+          [&](auto &chunk) -> bool {
+            return equalsNode(*chunk, *oldNode);
+          }
         );
         if (iter != newChunks.end()) {
-          // newChunks.splice(index, 1);
           newChunks.erase(iter);
         } else {
-          // debugger;
-          std::cout << "failed to erase new chunk" << std::endl;
+          std::cout << "failed to erase old node" << std::endl;
           abort();
         }
       }
@@ -649,80 +654,106 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
   tasks = sortTasks(tasks, worldPosition);
 
-  std::vector<TrackerTaskPtr> oldTasks;
-  for (size_t i = 0; i < tasks.size(); i++) {
-    TrackerTaskPtr task = tasks[i];
-    if (!task->isNop()) {
-      {
-        std::vector<TrackerTaskPtr> overlappingTasks;
-        for (TrackerTaskPtr liveTask : this->liveTasks) {
-          if (containsNode(*task->maxLodNode, *liveTask->maxLodNode)) {
-            overlappingTasks.push_back(liveTask);
-          }
-        }
-
-        for (TrackerTaskPtr oldTask : overlappingTasks) {
-          const auto &iter = std::find(
-            this->liveTasks.begin(),
-            this->liveTasks.end(),
-            oldTask
-          );
-          if (iter == this->liveTasks.end()) {
-            std::cout << "bad live task to remove" << std::endl;
-            abort();
-          }
-          oldTasks.push_back(oldTask);
-          this->liveTasks.erase(iter);
-        }
+  // cancel tasks that do not have a matching nop task now.
+  // that means the task is no longer in range or has been superseded.
+  std::vector<TrackerTaskPtr> cancelTasks;
+  std::vector<TrackerTaskPtr> purgeTasks;
+  for (TrackerTaskPtr liveTask : this->liveTasks) {
+    // find new task that contains this one and is a nop
+    const auto &matchingIter = std::find_if(
+      tasks.begin(),
+      tasks.end(),
+      [&](auto &task) -> bool {
+        if (
+          containsNode(*task->maxLodNode, *liveTask->maxLodNode)
+        ) {
+          return true;
+        } else {
+          return false;
+        }        
       }
+    );
+    if (matchingIter != tasks.end()) { // if new task match
+      TrackerTaskPtr matchingTask = *matchingIter;
+      if (matchingTask->isNop()) { // if matching task was a nop
+        // nothing; keep the old task
+      } else { // else if matching task not a nop
+        // cancel the old task softly but do not purge its chunk
+        cancelTasks.push_back(liveTask);
+      }
+    } else { // else if no new task match
+      // cancel the old task
+      cancelTasks.push_back(liveTask);
 
-      /* std::cout << "wasm old task " <<
-        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
-        task->maxLodNode->size << " " <<
-        task->oldNodes.size() << " " << task->newNodes.size() << " " <<
-        (void *)task.get() << " " <<
-        std::endl; */
+      // add a purge chunk task
+      {
+        TrackerTask *purgeTask = new TrackerTask();
+        purgeTask->id = ++nextTrackerId;
+        // std::cout << "increment 0 " << purgeTask->id << std::endl;
+        purgeTask->maxLodNode = liveTask->maxLodNode;
+        purgeTask->type = TrackerTaskType::OUTRANGE;
+        purgeTask->oldNodes = liveTask->newNodes;
 
-        this->liveTasks.push_back(task);
+        TrackerTaskPtr task = std::shared_ptr<TrackerTask>(purgeTask);
+
+        purgeTasks.push_back(task);
+      }
     }
   }
-
-  {
-    std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
-    std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
-    std::vector<TrackerTaskPtr> &extraTasks = chunksUpdate.second;
-    this->chunks = std::move(newChunks);
-    for (TrackerTaskPtr extraTask : extraTasks) {
-      tasks.push_back(extraTask);
+  // remove old tasks from the live set
+  for (TrackerTaskPtr cancelTask : cancelTasks) {
+    const auto &matchingIter = std::find(
+      this->liveTasks.begin(),
+      this->liveTasks.end(),
+      cancelTask
+    );
+    if (matchingIter == this->liveTasks.end()) {
+      std::cout << "could not remove task" << std::endl;
+      abort();
     }
+    this->liveTasks.erase(matchingIter);
   }
 
   std::cout << "check abort 2" << std::endl;
   duplicateTask(tasks);
 
-  /* for (size_t i = 0; i < tasks.size(); i++) {
-    auto &task = tasks[i];
-    if (!task->isNop()) {
-      std::cout << "wasm new task " <<
+  // add new tasks to the live set
+  for (size_t i = 0; i < tasks.size(); i++) {
+    TrackerTaskPtr task = tasks[i];
+    if (!task->isNop() && task->type != TrackerTaskType::OUTRANGE) {
+      /* std::cout << "wasm new task " <<
         task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " : " <<
         task->maxLodNode->size << " " <<
         task->oldNodes.size() << " " << task->newNodes.size() << " " <<
         (void *)task.get() << " " <<
-        task->id << std::endl;
+        task->id << std::endl; */
       this->liveTasks.push_back(task);
     }
-  } */
+  }
+
+  // add purged tasks to the new task set
+  for (TrackerTaskPtr purgeTask : purgeTasks) {
+    tasks.push_back(purgeTask);
+  }
+
+  {
+    // std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
+    // std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
+    /* std::vector<TrackerTaskPtr> &extraTasks = chunksUpdate.second;
+    this->chunks = std::move(newChunks);
+    for (TrackerTaskPtr extraTask : extraTasks) {
+      tasks.push_back(extraTask);
+    } */
+  }
 
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
   result.currentCoord = currentCoord;
-  result.oldTasks = std::move(oldTasks);
+  result.oldTasks = std::move(cancelTasks);
   result.newTasks = std::move(tasks);
-
-  std::cout << "check abort 3" << std::endl;
-  duplicateTask(result.oldTasks, result.newTasks);
-
+  // std::cout << "check abort 3" << std::endl;
+  // duplicateTask(result.oldTasks, result.newTasks);
   return result;
 }
 TrackerUpdate Tracker::update(const vm::vec3 &position) {

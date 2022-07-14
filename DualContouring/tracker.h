@@ -89,7 +89,8 @@ public:
 bool containsPoint(const OctreeNode &node, const vm::ivec3 &p);
 bool containsNode(const OctreeNode &node, const OctreeNode &other);
 bool equalsNode(const OctreeNode &node, const OctreeNode &other);
-bool intersectsNode(const OctreeNode &node, const OctreeNode &other);
+bool equalsNodeLod(const OctreeNode &node, const OctreeNode &other);
+// bool intersectsNode(const OctreeNode &node, const OctreeNode &other);
 
 //
 
