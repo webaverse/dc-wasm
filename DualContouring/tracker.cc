@@ -583,23 +583,53 @@ vm::ivec3 Tracker::getCurrentCoord(const vm::vec3 &position) {
   const int cz = std::floor(position.z / (float)chunkSize);
   return vm::ivec3{cx, cy, cz};
 }
-/* bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
-  std::unordered_map<uint64_t, bool> seen;
+bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
+  std::unordered_map<int, bool> seen;
 
   for (TrackerTaskPtr task : tasks) {
-    const uint64_t hash = hashOctreeMinLod(task->maxLodNode->min, task->maxLodNode->size);
-    if (seen.find(hash) == seen.end()) {
-      seen[hash] = true;
+    // const uint64_t hash = hashOctreeMinLod(task->maxLodNode->min, task->maxLodNode->size);
+    int id = task->id;
+    if (seen.find(id) == seen.end()) {
+      seen[id] = true;
     } else {
       std::cout << "duplicate task: " <<
         task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " " <<
-        hash << std::endl;
+        id << std::endl;
       abort();
       return true;
     }
   }
   return false;
-} */
+}
+bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<TrackerTaskPtr> &tasks2) {
+  std::unordered_map<int, bool> seen;
+
+  for (TrackerTaskPtr task : tasks) {
+    int id = task->id;
+    if (seen.find(id) == seen.end()) {
+      seen[id] = true;
+    } else {
+      std::cout << "duplicate task: " <<
+        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " " <<
+        id << std::endl;
+      abort();
+      return true;
+    }
+  }
+  for (TrackerTaskPtr task : tasks2) {
+    int id = task->id;
+    if (seen.find(id) == seen.end()) {
+      seen[id] = true;
+    } else {
+      std::cout << "duplicate task: " <<
+        task->maxLodNode->min.x << " " << task->maxLodNode->min.y << " " << task->maxLodNode->min.z << " " <<
+        id << std::endl;
+      abort();
+      return true;
+    }
+  }
+  return false;
+}
 // dynamic methods
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
@@ -609,21 +639,8 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     this->lastOctreeLeafNodes
   );
 
-  // std::cout << "check abort 1" << std::endl;
-  // duplicateTask(tasks);
-
-  {
-    std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
-    std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
-    std::vector<TrackerTaskPtr> &extraTasks = chunksUpdate.second;
-    this->chunks = std::move(newChunks);
-    for (TrackerTaskPtr extraTask : extraTasks) {
-      tasks.push_back(extraTask);
-    }
-  }
-
-  // std::cout << "check abort 2" << std::endl;
-  // duplicateTask(tasks);
+  std::cout << "check abort 1" << std::endl;
+  duplicateTask(tasks);
 
   vm::vec3 worldPosition = vm::vec3{
     (float)currentCoord.x,
@@ -650,10 +667,10 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
             this->liveTasks.end(),
             oldTask
           );
-          /* if (iter == this->liveTasks.end()) {
+          if (iter == this->liveTasks.end()) {
             std::cout << "bad live task to remove" << std::endl;
             abort();
-          } */
+          }
           oldTasks.push_back(oldTask);
           this->liveTasks.erase(iter);
         }
@@ -669,6 +686,19 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
         this->liveTasks.push_back(task);
     }
   }
+
+  {
+    std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
+    std::vector<OctreeNodePtr> &newChunks = chunksUpdate.first;
+    std::vector<TrackerTaskPtr> &extraTasks = chunksUpdate.second;
+    this->chunks = std::move(newChunks);
+    for (TrackerTaskPtr extraTask : extraTasks) {
+      tasks.push_back(extraTask);
+    }
+  }
+
+  std::cout << "check abort 2" << std::endl;
+  duplicateTask(tasks);
 
   /* for (size_t i = 0; i < tasks.size(); i++) {
     auto &task = tasks[i];
@@ -689,6 +719,10 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   result.currentCoord = currentCoord;
   result.oldTasks = std::move(oldTasks);
   result.newTasks = std::move(tasks);
+
+  std::cout << "check abort 3" << std::endl;
+  duplicateTask(result.oldTasks, result.newTasks);
+
   return result;
 }
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
