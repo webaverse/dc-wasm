@@ -14,23 +14,7 @@ inline void floodFill(DCInstance *inst,
                       int x, int y, int z,
                       int startFace,
                       const vm::ivec3 &chunkMin, const vm::ivec3 &chunkMax,
-                      unsigned char *peeks, unsigned char *seenPeeks, int *PEEK_FACE_INDICES,
-                      const int &lod, const int &size)
-{
-    std::unique_ptr<int[]> queue(new int[size * size * size * 4]);
-    unsigned int queueEnd = 0;
-
-    const vm::ivec3 localPos = vm::ivec3{x, y, z} - chunkMin;
-    const int index = getIndex(localPos, size);
-    queue[queueEnd * 4 + 0] = x;
-    queue[queueEnd * 4 + 1] = y;
-    queue[queueEnd * 4 + 2] = z;
-    queue[queueEnd * 4 + 3] = index;
-    queueEnd++;
-    seenPeeks[index] = 1;
-
-    for (unsigned int queueStart = 0; queueStart < queueEnd; queueStart++)
-    {
+                      unsigned char *peeks, unsigned char *seenPeeks, int *PEEK_FACE_INDICES, const int &lod, const int &size) { std::unique_ptr<int[]> queue(new int[size * size * size * 4]); unsigned int queueEnd = 0; const vm::ivec3 localPos = vm::ivec3{x, y, z} - chunkMin; const int index = getIndex(localPos, size); queue[queueEnd * 4 + 0] = x; queue[queueEnd * 4 + 1] = y; queue[queueEnd * 4 + 2] = z; queue[queueEnd * 4 + 3] = index; queueEnd++; seenPeeks[index] = 1; for (unsigned int queueStart = 0; queueStart < queueEnd; queueStart++) {
         const int x = queue[queueStart * 4 + 0];
         const int y = queue[queueStart * 4 + 1];
         const int z = queue[queueStart * 4 + 2];
@@ -86,8 +70,8 @@ inline void floodFill(DCInstance *inst,
                                     {
                                         EM_ASM({
                                             console.log("Index out of range :", $0);
-                                        }, index);
-                                        abort();
+                                        },
+                                              );
                                     }
                                     if (!seenPeeks[index])
                                     {
@@ -133,7 +117,7 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
 
     const int size = (chunkSize * lod);
     unsigned char seenPeeks[(size+lod) * (size+lod) * (size+lod)];
-
+      
     for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     {
         for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
@@ -159,22 +143,9 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
     {
         for (int y = chunkMin.y; y <= chunkMax.y; y += lod)
         {
-            // EM_ASM({
-            //     console.log("CHUNK > X : ", $0, ", Y : ", $1, ", Z : ", $2);
-            //     console.log("Z : ", $3, ", Y : ", $4);
-            // },
-            //        chunkMin.x , chunkMin.y, chunkMin.z, z, y);
             floodFill<DCContextType>(inst, chunkMax.x, y, z, (int)PEEK_FACES::RIGHT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-        }
+        }   
     }
-
-    /* const vm::ivec3 eChunkMin = vm::ivec3{-16, 48, -16};
-    const vm::ivec3 eChunkMax = eChunkMin + chunkSize * lod; // 1, 64, 1
-    floodFill<DCContextType>(inst, eChunkMax.x, 49, 16, (int)PEEK_FACES::RIGHT, chunkMin, chunkMax, peeks, seenPeeks, PEEK_FACE_INDICES, lod, size);
-    // EM_ASM({
-    //     console.log("HMMM :/ \n");
-    // }); */
-
 
     for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     {
