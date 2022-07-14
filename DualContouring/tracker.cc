@@ -160,6 +160,103 @@ uint8_t *TrackerUpdate::getBuffer() const {
 
 //
 
+/* class DataRequest {
+public:
+  OctreeNodePtr node;
+
+  std::vector<uint8_t> getBuffer() const;
+}; */
+std::vector<uint8_t> DataRequest::getBuffer() const {
+  size_t size = 0;
+  size += sizeof(vm::ivec3); // min
+  size += sizeof(int); // size
+  size += sizeof(int); // isLeaf
+  size += sizeof(int[8]); // lodArray
+
+  std::vector<uint8_t> result(size);
+  int index = 0;
+  // min
+  std::memcpy(result.data() + index, &node->min, sizeof(vm::ivec3));
+  index += sizeof(vm::ivec3);
+  // size
+  *((int *)(result.data() + index)) = node->size;
+  index += sizeof(int);
+  // isLeaf
+  *((int *)(result.data() + index)) = (node->type == Node_Leaf) ? 1 : 0;
+  index += sizeof(int);
+  // lodArray
+  std::memcpy(result.data() + index, &node->lodArray[0], sizeof(int[8]));
+  index += sizeof(int[8]);
+  return result;
+}
+
+//
+
+/* class TransformRequest {
+public:
+  std::vector<OctreeNodePtr> fromNodes;
+  std::vector<OctreeNodePtr> toNodes;
+
+  std::vector<uint8_t> getBuffer() const;
+}; */
+std::vector<uint8_t> TransformRequest::getBuffer() const {
+  size_t size = 0;
+  size += sizeof(uint32_t); // numFromNodes
+  size += sizeof(uint32_t); // numToNodes
+  size += sizeof(uint32_t) * fromNodes.size(); // fromMin
+  size += sizeof(uint32_t) * fromNodes.size(); // fromSize
+  size += sizeof(uint32_t) * fromNodes.size(); // fromIsLeaf
+  size += sizeof(uint32_t) * fromNodes.size(); // fromLodArray
+  size += sizeof(uint32_t) * toNodes.size(); // toMin
+  size += sizeof(uint32_t) * toNodes.size(); // toSize
+  size += sizeof(uint32_t) * toNodes.size(); // toIsLeaf
+  size += sizeof(uint32_t) * toNodes.size(); // toLodArray
+
+  std::vector<uint8_t> result(size);
+  int index = 0;
+  // numFromNodes
+  *((uint32_t *)(result.data() + index)) = fromNodes.size();
+  index += sizeof(uint32_t);
+  // numToNodes
+  *((uint32_t *)(result.data() + index)) = toNodes.size();
+  index += sizeof(uint32_t);
+  // fromNodes
+  for (size_t i = 0; i < fromNodes.size(); i++) {
+    OctreeNodePtr node = fromNodes[i];
+    // min
+    std::memcpy(result.data() + index, &node->min, sizeof(vm::ivec3));
+    index += sizeof(vm::ivec3);
+    // size
+    *((int *)(result.data() + index)) = node->size;
+    index += sizeof(int);
+    // isLeaf
+    *((int *)(result.data() + index)) = (node->type == Node_Leaf) ? 1 : 0;
+    index += sizeof(int);
+    // lodArray
+    std::memcpy(result.data() + index, &node->lodArray[0], sizeof(int[8]));
+    index += sizeof(int[8]);
+  }
+  // toNodes
+  for (size_t i = 0; i < toNodes.size(); i++) {
+    OctreeNodePtr node = toNodes[i];
+    // min
+    std::memcpy(result.data() + index, &node->min, sizeof(vm::ivec3));
+    index += sizeof(vm::ivec3);
+    // size
+    *((int *)(result.data() + index)) = node->size;
+    index += sizeof(int);
+    // isLeaf
+    *((int *)(result.data() + index)) = (node->type == Node_Leaf) ? 1 : 0;
+    index += sizeof(int);
+    // lodArray
+    std::memcpy(result.data() + index, &node->lodArray[0], sizeof(int[8]));
+    index += sizeof(int[8]);
+  }
+  return result;
+}
+
+//
+
 bool containsPoint(const OctreeNode &node, const vm::ivec3 &p) {
   return p.x >= node.min.x && p.x < node.min.x + node.size &&
     p.y >= node.min.y && p.y < node.min.y + node.size &&
