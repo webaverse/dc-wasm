@@ -535,7 +535,8 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
   }
 
   // compute extra tasks for outdated chunks
-  std::vector<OctreeNodePtr> removedChunks;
+  std::vector<TrackerTaskPtr> extraTasks;
+  /* std::vector<OctreeNodePtr> removedChunks;
   for (OctreeNodePtr oldChunk : oldChunks) {
     if (!std::any_of(newChunks.begin(), newChunks.end(), [&](const auto &newChunk) -> bool {
       // return newChunk->min == oldChunk->min;
@@ -544,7 +545,6 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
       removedChunks.push_back(oldChunk);
     }
   }
-  std::vector<TrackerTaskPtr> extraTasks;
   for (OctreeNodePtr chunk : removedChunks) {
     TrackerTask *trackerTask = new TrackerTask();
     trackerTask->id = ++nextTrackerId;
@@ -556,7 +556,7 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
     TrackerTaskPtr task = std::shared_ptr<TrackerTask>(trackerTask);
 
     extraTasks.push_back(task);
-  }
+  } */
 
   return std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>>(
     std::move(newChunks),
