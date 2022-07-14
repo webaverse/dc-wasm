@@ -23,8 +23,9 @@ bool TrackerTask::isNop() const {
 }
 std::vector<uint8_t> TrackerTask::getBuffer() const {
   size_t size = 0;
-  // id
-  size += sizeof(int);
+  // header
+  size += sizeof(int); // id
+  size += sizeof(int); // type
   // max lod node
   size += sizeof(vm::ivec3); // min
   size += sizeof(int); // lod
@@ -47,7 +48,9 @@ std::vector<uint8_t> TrackerTask::getBuffer() const {
   int index = 0;
   // id
   *((int *)(result.data() + index)) = id;
-  std::cout << "get buffer id " << id << std::endl;
+  index += sizeof(int);
+  // type
+  *((int *)(result.data() + index)) = type;
   index += sizeof(int);
   // max lod node
   std::memcpy(result.data() + index, &maxLodNode->min, sizeof(vm::ivec3));
