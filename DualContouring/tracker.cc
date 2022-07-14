@@ -505,7 +505,8 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
 std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
-  for (const auto &task : tasks) {
+  // swap chunks from tasks
+  for (TrackerTaskPtr task : tasks) {
     if (!task->isNop()) {
       const std::vector<OctreeNodePtr> &newNodes = task->newNodes;
       const std::vector<OctreeNodePtr> &oldNodes = task->oldNodes;
