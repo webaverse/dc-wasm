@@ -144,10 +144,16 @@ bool containsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsPoint(node, other.min);
 }
 bool equalsNode(const OctreeNode &node, const OctreeNode &other) {
-  return node.min == other.min &&
-    std::all_of(node.lodArray.begin(), node.lodArray.end(), [&](int lod) -> bool {
-      return node.lodArray[lod] == other.lodArray[lod];
-    });
+  if (node.min == other.min) {
+    for (size_t i = 0; i < node.lodArray.size(); i++) {
+      if (node.lodArray[i] != other.lodArray[i]) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
 }
 bool intersectsNode(const OctreeNode &node, const OctreeNode &other) {
   return containsNode(node, other) || containsNode(other, node);
