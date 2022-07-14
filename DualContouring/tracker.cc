@@ -435,6 +435,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
       trackerTask->id = ++nextTrackerId;
       // std::cout << "increment 1 " << trackerTask->id << std::endl;
       trackerTask->maxLodNode = maxLodNode;
+      trackerTask->type = TrackerTaskType::ADD;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
       
@@ -455,6 +456,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
       trackerTask->id = ++nextTrackerId;
       // std::cout << "increment 2 " << trackerTask->id << std::endl;
       trackerTask->maxLodNode = maxLodNode;
+      trackerTask->type = TrackerTaskType::REMOVE;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
       
@@ -543,8 +545,9 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
   for (OctreeNodePtr chunk : removedChunks) {
     TrackerTask *trackerTask = new TrackerTask();
     trackerTask->id = ++nextTrackerId;
-    std::cout << "increment 3 " << trackerTask->id << std::endl;
+    // std::cout << "increment 3 " << trackerTask->id << std::endl;
     trackerTask->maxLodNode = chunk;
+    trackerTask->type = TrackerTaskType::OUTRANGE;
     trackerTask->oldNodes.push_back(chunk);
 
     TrackerTaskPtr task = std::shared_ptr<TrackerTask>(trackerTask);
