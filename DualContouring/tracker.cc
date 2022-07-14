@@ -656,7 +656,8 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
 
   // cancel tasks that do not have a matching nop task now.
   // that means the task is no longer in range or has been superseded.
-  std::vector<TrackerTaskPtr> cancelTasks;
+  std::vector<TrackerTaskPtr> cancelOldTasks;
+  // std::vector<TrackerTaskPtr> forgetNewTasks;
   std::vector<TrackerTaskPtr> purgeTasks;
   for (TrackerTaskPtr liveTask : this->liveTasks) {
     // find new task that contains this one and is a nop
@@ -679,11 +680,11 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
         // nothing; keep the old task
       } else { // else if matching task not a nop
         // cancel the old task softly but do not purge its chunk
-        cancelTasks.push_back(liveTask);
+        cancelOldTasks.push_back(liveTask);
       }
     } else { // else if no new task match
       // cancel the old task
-      cancelTasks.push_back(liveTask);
+      cancelOldTasks.push_back(liveTask);
 
       // add a purge chunk task
       {
@@ -692,7 +693,12 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
         // std::cout << "increment 0 " << purgeTask->id << std::endl;
         purgeTask->maxLodNode = liveTask->maxLodNode;
         purgeTask->type = TrackerTaskType::OUTRANGE;
-        purgeTask->oldNodes = liveTask->newNodes;
+        for (OctreeNodePtr oldNode : liveTask->oldNodes) {
+          purgeTask->oldNodes.push_back(oldNode);
+        }
+        for (OctreeNodePtr newNode : liveTask->newNodes) {
+          purgeTask->oldNodes.push_back(newNode);
+        }
 
         TrackerTaskPtr task = std::shared_ptr<TrackerTask>(purgeTask);
 
@@ -701,7 +707,7 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     }
   }
   // remove old tasks from the live set
-  for (TrackerTaskPtr cancelTask : cancelTasks) {
+  for (TrackerTaskPtr cancelTask : cancelOldTasks) {
     const auto &matchingIter = std::find(
       this->liveTasks.begin(),
       this->liveTasks.end(),
@@ -750,7 +756,7 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
 
   TrackerUpdate result;
   result.currentCoord = currentCoord;
-  result.oldTasks = std::move(cancelTasks);
+  result.oldTasks = std::move(cancelOldTasks);
   result.newTasks = std::move(tasks);
   // std::cout << "check abort 3" << std::endl;
   // duplicateTask(result.oldTasks, result.newTasks);
