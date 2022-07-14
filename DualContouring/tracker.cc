@@ -583,7 +583,7 @@ vm::ivec3 Tracker::getCurrentCoord(const vm::vec3 &position) {
   const int cz = std::floor(position.z / (float)chunkSize);
   return vm::ivec3{cx, cy, cz};
 }
-bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
+/* bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
   std::unordered_map<uint64_t, bool> seen;
 
   for (TrackerTaskPtr task : tasks) {
@@ -599,7 +599,7 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks) {
     }
   }
   return false;
-}
+} */
 // dynamic methods
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
@@ -610,7 +610,7 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   );
 
   // std::cout << "check abort 1" << std::endl;
-  duplicateTask(tasks);
+  // duplicateTask(tasks);
 
   {
     std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> chunksUpdate = updateChunks(this->chunks, tasks);
