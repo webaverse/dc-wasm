@@ -82,12 +82,13 @@ inline void floodFill(DCInstance *inst,
                                 {
                                     const vm::ivec3 localPos = vm::ivec3{ax, ay, az} - chunkMin;
                                     const int index = getIndex(localPos, size);
-                                    // if (index > 5219 || index < 0)
-                                    // {
-                                    //     EM_ASM({
-                                    //         console.log("Wrong\n");
-                                    //     });
-                                    // }
+                                    if (index > 5219 || index < 0)
+                                    {
+                                        EM_ASM({
+                                            console.log("Index out of range :", $0);
+                                        }, index);
+                                        abort();
+                                    }
                                     if (!seenPeeks[index])
                                     {
                                         queue[queueEnd * 4 + 0] = ax;
@@ -131,7 +132,7 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
     }
 
     const int size = (chunkSize * lod);
-    unsigned char seenPeeks[size * size * size];
+    unsigned char seenPeeks[(size+lod) * (size+lod) * (size+lod)];
 
     for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     {
@@ -190,38 +191,38 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
         }
     }
 
-    // for (int startFace = 0; startFace < 6; startFace++)
-    // {
-    //     for (int endFace = 0; endFace < 6; endFace++)
-    //     {
-    //         if (endFace != startFace)
-    //         {
-    //             if (peeks[PEEK_FACE_INDICES[startFace << 3 | endFace]] == 1)
-    //             {
-    //                 peeks[PEEK_FACE_INDICES[endFace << 3 | startFace]] = 1;
+    for (int startFace = 0; startFace < 6; startFace++)
+    {
+        for (int endFace = 0; endFace < 6; endFace++)
+        {
+            if (endFace != startFace)
+            {
+                if (peeks[PEEK_FACE_INDICES[startFace << 3 | endFace]] == 1)
+                {
+                    peeks[PEEK_FACE_INDICES[endFace << 3 | startFace]] = 1;
 
-    //                 for (int crossFace = 0; crossFace < 6; crossFace++)
-    //                 {
-    //                     if (crossFace != startFace && crossFace != endFace)
-    //                     {
-    //                         if (peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] == 1)
-    //                         {
-    //                             peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
-    //                             peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
-    //                             peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] = 1;
-    //                         }
-    //                         else if (peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] == 1)
-    //                         {
-    //                             peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
-    //                             peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
-    //                             peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] = 1;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                    for (int crossFace = 0; crossFace < 6; crossFace++)
+                    {
+                        if (crossFace != startFace && crossFace != endFace)
+                        {
+                            if (peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] == 1)
+                            {
+                                peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
+                                peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
+                                peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] = 1;
+                            }
+                            else if (peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] == 1)
+                            {
+                                peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
+                                peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
+                                peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #endif
