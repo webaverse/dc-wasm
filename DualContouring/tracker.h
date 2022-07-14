@@ -55,9 +55,16 @@ public:
 
 extern std::atomic<int> nextTrackerId;
 
+enum TrackerTaskType {
+  ADD = 1,
+  REMOVE = 2,
+  OUTRANGE = 3
+};
+
 class TrackerTask {
 public:
   int id;
+  TrackerTaskType type;
   OctreeNodePtr maxLodNode;
   std::vector<OctreeNodePtr> oldNodes;
   std::vector<OctreeNodePtr> newNodes;
