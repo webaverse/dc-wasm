@@ -77,9 +77,9 @@ typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
 class TrackerUpdate {
 public:
-  vm::ivec3 currentCoord;
-  std::vector<TrackerTaskPtr> oldTasks;
-  std::vector<TrackerTaskPtr> newTasks;
+  // vm::ivec3 currentCoord;
+  // std::vector<TrackerTaskPtr> oldTasks;
+  // std::vector<TrackerTaskPtr> newTasks;
   std::vector<OctreeNodePtr> leafNodes;
 
   uint8_t *getBuffer() const;
@@ -160,7 +160,7 @@ public:
 
   // dynamic methods
 
-  TrackerUpdate updateCoord(const vm::ivec3 &currentCoord);
+  TrackerUpdate updateCoord(const vm::vec3 &position, const vm::ivec3 &currentCoord);
   TrackerUpdate update(const vm::vec3 &position);
 };
 

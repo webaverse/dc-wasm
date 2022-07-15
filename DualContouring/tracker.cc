@@ -91,27 +91,27 @@ std::vector<uint8_t> TrackerTask::getBuffer() const {
   return result;
 }
 uint8_t *TrackerUpdate::getBuffer() const {
-  std::vector<std::vector<uint8_t>> oldTaskBuffers;
-  for (const auto &task : oldTasks) {
+  // std::vector<std::vector<uint8_t>> oldTaskBuffers;
+  /* for (const auto &task : oldTasks) {
     oldTaskBuffers.push_back(task->getBuffer());
-  }
+  } */
 
-  std::vector<std::vector<uint8_t>> newTaskBuffers;
+  /* std::vector<std::vector<uint8_t>> newTaskBuffers;
   for (const auto &task : newTasks) {
     newTaskBuffers.push_back(task->getBuffer());
-  }
+  } */
 
   size_t size = 0;
-  size += sizeof(vm::ivec3); // currentCoord
-  size += sizeof(uint32_t); // numOldTasks
-  size += sizeof(uint32_t); // numNewTasks
-  size += sizeof(uint32_t); // numLeafNodes
-  for (auto &buffer : oldTaskBuffers) {
+  // size += sizeof(vm::ivec3); // currentCoord
+  // size += sizeof(uint32_t); // numOldTasks
+  // size += sizeof(uint32_t); // numNewTasks
+  size += sizeof(int32_t); // numLeafNodes
+  /* for (auto &buffer : oldTaskBuffers) {
     size += buffer.size();
   }
   for (auto &buffer : newTaskBuffers) {
     size += buffer.size();
-  }
+  } */
   // leaf nodes
   size += sizeof(vm::ivec3) * leafNodes.size(); // min
   size += sizeof(int) * leafNodes.size(); // lod
@@ -120,30 +120,10 @@ uint8_t *TrackerUpdate::getBuffer() const {
 
   uint8_t *ptr = (uint8_t *)malloc(size);
   int index = 0;
-  // currentCoord
-  memcpy(ptr + index, &currentCoord, sizeof(vm::ivec3));
-  index += sizeof(vm::ivec3);
-  // numOldTasks
-  *((uint32_t *)(ptr + index)) = oldTasks.size();
-  index += sizeof(uint32_t);
-  // numNewTasks
-  *((uint32_t *)(ptr + index)) = newTasks.size();
-  index += sizeof(uint32_t);
   // numLeafNodes
-  *((uint32_t *)(ptr + index)) = leafNodes.size();
-  index += sizeof(uint32_t);
-  // newTasks
-  for (size_t i = 0; i < oldTaskBuffers.size(); i++) {
-    auto &buffer = oldTaskBuffers[i];
-    memcpy(ptr + index, buffer.data(), buffer.size() * sizeof(buffer[0]));
-    index += buffer.size() * sizeof(buffer[0]);
-  }
-  // oldTasks
-  for (size_t i = 0; i < newTaskBuffers.size(); i++) {
-    auto &buffer = newTaskBuffers[i];
-    memcpy(ptr + index, buffer.data(), buffer.size() * sizeof(buffer[0]));
-    index += buffer.size() * sizeof(buffer[0]);
-  }
+  *((int32_t *)(ptr + index)) = leafNodes.size();
+  
+  index += sizeof(int32_t);
   // leaf nodes
   for (auto leafNode : leafNodes) {
     std::memcpy(ptr + index, &leafNode->min, sizeof(vm::ivec3));
@@ -543,48 +523,6 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
     }
   } */
 
-  // log the octree
-  /* std::cout << "construct octree " <<
-    position.x << " " << position.y << " " << position.z << " : " <<
-    lod1Range << " " << maxLod <<
-    std::endl;
-  for (auto &pair : nodeMap) {
-    auto node = pair.second;
-    if (node->size == 2) {
-      stdoutSpaces(node->size);
-      if (node->type == Node_Internal) {
-        std::cout << "node internal " << node->min.x << " " << node->min.y << " " << node->min.z << " : " <<
-          node->size <<
-          std::endl;
-        for (int childIndex = 0; childIndex < 8; childIndex++) {
-          stdoutSpaces(node->size + 2);
-          if (node->children[childIndex] != nullptr) {
-            auto &child = node->children[childIndex];
-            std::cout << "child " << childIndex << " : " <<
-              child->min.x << " " << child->min.y << " " << child->min.z << " : " << child->size <<
-              std::endl;
-          } else {
-            std::cout << "child " << childIndex << " null" << std::endl;
-          }
-        }
-      } else if (node->type == Node_Leaf) {
-        std::cout << "node leaf " << node->min.x << " " << node->min.y << " " << node->min.z << " : " <<
-          node->lodArray[0] << " " <<
-          node->lodArray[1] << " " <<
-          node->lodArray[2] << " " <<
-          node->lodArray[3] << " " <<
-          node->lodArray[4] << " " <<
-          node->lodArray[5] << " " <<
-          node->lodArray[6] << " " <<
-          node->lodArray[7] <<
-          std::endl;
-      } else {
-        std::cout << "unknown node type: " << node->type << std::endl;
-        abort();
-      }
-    }
-  } */
-
   std::vector<std::shared_ptr<OctreeNode>> rootNodes;
   for (const auto &iter : nodeMap) {
     auto node = iter.second;
@@ -670,6 +608,51 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
       }
     }
   }
+
+  /* if (leafNodes.size() == 0) {
+    // log the octree
+    std::cout << "construct octree " <<
+      position.x << " " << position.y << " " << position.z << " : " <<
+      lod1Range << " " << maxLod <<
+      std::endl;
+    for (auto &pair : nodeMap) {
+      auto node = pair.second;
+      if (node->size == 2) {
+        stdoutSpaces(node->size);
+        if (node->type == Node_Internal) {
+          std::cout << "node internal " << node->min.x << " " << node->min.y << " " << node->min.z << " : " <<
+            node->size <<
+            std::endl;
+          for (int childIndex = 0; childIndex < 8; childIndex++) {
+            stdoutSpaces(node->size + 2);
+            if (node->children[childIndex] != nullptr) {
+              auto &child = node->children[childIndex];
+              std::cout << "child " << childIndex << " : " <<
+                child->min.x << " " << child->min.y << " " << child->min.z << " : " << child->size <<
+                std::endl;
+            } else {
+              std::cout << "child " << childIndex << " null" << std::endl;
+            }
+          }
+        } else if (node->type == Node_Leaf) {
+          std::cout << "node leaf " << node->min.x << " " << node->min.y << " " << node->min.z << " : " <<
+            node->lodArray[0] << " " <<
+            node->lodArray[1] << " " <<
+            node->lodArray[2] << " " <<
+            node->lodArray[3] << " " <<
+            node->lodArray[4] << " " <<
+            node->lodArray[5] << " " <<
+            node->lodArray[6] << " " <<
+            node->lodArray[7] <<
+            std::endl;
+        } else {
+          std::cout << "unknown node type: " << node->type << std::endl;
+          abort();
+        }
+      }
+    }
+    abort();
+  } */
 
   // return
   return leafNodes;
@@ -773,7 +756,7 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
 }
 // sort nodes by distance to world position of the central max lod node
 std::vector<OctreeNodePtr> sortNodes(const std::vector<OctreeNodePtr> &nodes, const vm::vec3 &worldPosition) {
-  std::vector<std::pair<OctreeNodePtr, float>> nodeDistances;
+  std::vector<std::tuple<OctreeNodePtr, float, int>> nodeDistances;
   nodeDistances.reserve(nodes.size());
 
   for (const auto &node : nodes) {
@@ -782,23 +765,32 @@ std::vector<OctreeNodePtr> sortNodes(const std::vector<OctreeNodePtr> &nodes, co
 
     vm::vec3 center = vm::vec3{(float)min.x, (float)min.y, (float)min.z} +
       vm::vec3{0.5, 0.5, 0.5} * (float)lod;
+    center *= (float)chunkSize;
     vm::vec3 delta = worldPosition - center;
-    float distance = vm::lengthSq(delta);
+    float distance = vm::length(delta);
 
-    nodeDistances.push_back(std::pair<OctreeNodePtr, float>(node, distance));
+    nodeDistances.push_back(std::tuple<OctreeNodePtr, float, int>(node, distance, lod));
   }
 
   std::sort(
     nodeDistances.begin(),
     nodeDistances.end(),
-    [](const std::pair<OctreeNodePtr, float> &a, const std::pair<OctreeNodePtr, float> &b) -> bool {
-      return a.second < b.second;
+    [](
+      const std::tuple<OctreeNodePtr, float, int> &a,
+      const std::tuple<OctreeNodePtr, float, int> &b
+    ) -> bool {
+      float distanceDiff = std::get<1>(a) - std::get<1>(b);
+      if (distanceDiff != 0.f) {
+        return distanceDiff < 0.f;
+      } else {
+        return std::get<2>(a) < std::get<2>(b);
+      }
     }
   );
 
   std::vector<OctreeNodePtr> sortedNodes;
   for (const auto &iter : nodeDistances) {
-    sortedNodes.push_back(iter.first);
+    sortedNodes.push_back(std::get<0>(iter));
   }
   return sortedNodes;
 }
@@ -929,7 +921,7 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<T
   return false;
 }
 // dynamic methods
-TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
+TrackerUpdate Tracker::updateCoord(const vm::vec3 &position, const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
   /* std::vector<TrackerTaskPtr> tasks = diffLeafNodes(
@@ -954,14 +946,15 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   // std::cout << "check abort 1" << std::endl;
   // duplicateTask(tasks); */
 
-  vm::vec3 worldPosition = vm::vec3{
-    (float)currentCoord.x,
-    (float)currentCoord.y,
-    (float)currentCoord.z
-  } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
+  // vm::vec3 worldPosition = vm::vec3{
+  //   (float)currentCoord.x,
+  //   (float)currentCoord.y,
+  //   (float)currentCoord.z
+  // } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
   // tasks = sortTasks(tasks, worldPosition);
-  
-  octreeLeafNodes = sortNodes(octreeLeafNodes, worldPosition);
+
+  // std::cout << "got world position " << worldPosition.x << " " << worldPosition.y << " " << worldPosition.z << std::endl;
+  octreeLeafNodes = sortNodes(octreeLeafNodes, position);
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
@@ -974,12 +967,18 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
   const vm::ivec3 &currentCoord = getCurrentCoord(position);
 
+  /* std::cout << "wasm update coord " <<
+    currentCoord.x << " " << currentCoord.y << " " << currentCoord.z << " " <<
+    position.x << " " << position.y << " " << position.z <<
+    std::endl; */
+
   // if we moved across a chunk boundary, update needed chunks
-  if (currentCoord != this->lastCoord) {
-    TrackerUpdate trackerUpdate = updateCoord(currentCoord);
-    this->lastCoord = currentCoord;
+  // if (currentCoord != this->lastCoord) {
+    TrackerUpdate trackerUpdate = updateCoord(position, currentCoord);
+    // this->lastCoord = currentCoord;
     return trackerUpdate;
-  } else {
+  /* } else {
+    abort();
     return TrackerUpdate();
-  }
+  } */
 }
