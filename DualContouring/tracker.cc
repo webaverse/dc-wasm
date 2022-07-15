@@ -780,8 +780,8 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     tasks = std::move(tasks2);
   }
 
-  std::cout << "check abort 1" << std::endl;
-  duplicateTask(tasks);
+  // std::cout << "check abort 1" << std::endl;
+  // duplicateTask(tasks);
 
   vm::vec3 worldPosition = vm::vec3{
     (float)currentCoord.x,
