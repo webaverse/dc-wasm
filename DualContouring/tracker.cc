@@ -371,10 +371,10 @@ OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int
     nodeMap[hash] = node;
     return node;
 }
-OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod) {
+OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf) {
     OctreeNodePtr node = getNode(octreeContext, min, lod);
     if (!node) {
-        node = createNode(octreeContext, min, lod, lod == 1);
+        node = createNode(octreeContext, min, lod, isLeaf);
     }
     return node;
 }
@@ -404,7 +404,8 @@ void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode) {
 void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int maxLod) {
     auto &nodeMap = octreeContext.nodeMap;
 
-    OctreeNodePtr rootNode = getOrCreateNode(octreeContext, leafPosition, 1);
+    constexpr int minLod = 1;
+    OctreeNodePtr rootNode = getOrCreateNode(octreeContext, leafPosition, minLod, minLod == 1);
     for (int lod = 2; lod <= maxLod; lod *= 2) {
       vm::ivec3 lodMin = rootNode->min;
       lodMin.x = (int)(lodMin.x / lod) * lod;
@@ -416,7 +417,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
         (rootNode->min.y < lodCenter.y ? 0 : 2) +
         (rootNode->min.z < lodCenter.z ? 0 : 4);
 
-      OctreeNodePtr parentNode = getOrCreateNode(octreeContext, lodMin, lod);
+      OctreeNodePtr parentNode = getOrCreateNode(octreeContext, lodMin, lod, lod == 1);
       // parentNode.isLeaf = false;
       parentNode->type = Node_Internal;
       if (parentNode->children[childIndex] == nullptr) { // children not set yet
