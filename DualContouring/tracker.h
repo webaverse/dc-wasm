@@ -119,12 +119,19 @@ extern OctreeNodeAllocator octreeNodeAllocator;
 
 //
 
+enum ConstructTreeFlags {
+  ConstructTreeFlags_None = 0,
+  ConstructTreeFlags_Children = 1,
+  ConstructTreeFlags_Peers = 2,
+};
+
 OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNode *> &leafNodes, const vm::ivec3 &p);
 OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
 OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf);
 OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf);
 void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode);
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int maxLod);
+void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod);
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int minLod, int maxLod, int flags);
 
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod);
 OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min);

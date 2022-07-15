@@ -401,12 +401,11 @@ void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode) {
       }
     }
 }
-void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int maxLod) {
+void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int minLod, int maxLod, int flags) {
     auto &nodeMap = octreeContext.nodeMap;
 
-    constexpr int minLod = 1;
-    OctreeNodePtr rootNode = getOrCreateNode(octreeContext, leafPosition, minLod, minLod == 1);
-    for (int lod = 2; lod <= maxLod; lod *= 2) {
+    OctreeNodePtr rootNode = getOrCreateNode(octreeContext, leafPosition, minLod, true);
+    for (int lod = minLod * 2; lod <= maxLod; lod *= 2) {
       vm::ivec3 lodMin = rootNode->min;
       lodMin.x = (int)std::floor((float)lodMin.x / (float)lod) * lod;
       lodMin.y = (int)std::floor((float)lodMin.y / (float)lod) * lod;
@@ -417,30 +416,82 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
         (rootNode->min.y < lodCenter.y ? 0 : 2) +
         (rootNode->min.z < lodCenter.z ? 0 : 4);
 
-      OctreeNodePtr parentNode = getOrCreateNode(octreeContext, lodMin, lod, lod == 1);
-      // parentNode.isLeaf = false;
-      parentNode->type = Node_Internal;
-      if (parentNode->children[childIndex] == nullptr) { // children not set yet
-        parentNode->children[childIndex] = rootNode.get();
+      OctreeNodePtr parentNode = getOrCreateNode(octreeContext, lodMin, lod, minLod == 1);
+      if (parentNode->type == Node_Leaf) {
+        parentNode->type = Node_Internal;
+        for (int i = 0; i < 8; i++) {
+          parentNode->children[i] = nullptr;
+        }
+      } else if (parentNode->type == Node_Internal) {
+        // nothing
+      } else {
+        std::cout << "Invalid node type: " << (int)parentNode->type << std::endl;
+        abort();
       }
-      ensureChildren(octreeContext, parentNode.get());
+      
+      // set child as we walk upwards
+      // if (parentNode->children[childIndex] == nullptr) { // children not set yet
+        parentNode->children[childIndex] = rootNode.get();
+      // }
+
+      // ensure that this internal node has at least leaf nodes
+      if (flags & ConstructTreeFlags_Children) {
+        ensureChildren(octreeContext, parentNode.get());
+      }
+
+      // ensure that the space around is at least this lod
+      if (flags & ConstructTreeFlags_Peers) {
+        ensurePeers(octreeContext, parentNode.get(), maxLod);
+      }
+
+      // walk upwards
       rootNode = parentNode;
     }
     // return rootNode;
+}
+// ensure that every neighbor of this lod also is at least at this lod (it could be a lower/more detailed leaf)
+void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
+  for (int dx = -1; dx <= 1; dx++) {
+    for (int dy = -1; dy <= 1; dy++) {
+      for (int dz = -1; dz <= 1; dz++) {
+        if (dx == 0 && dy == 0 && dz == 0) {
+          continue;
+        }
+
+        vm::ivec3 neighborMin = node->min + vm::ivec3{dx, dy, dz} * node->size;
+        constructTreeUpwards(
+          octreeContext,
+          neighborMin,
+          node->size,
+          maxLod,
+          ConstructTreeFlags_None
+        );
+      }
+    }
+  }
 }
 
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod) {
   OctreeContext octreeContext;
   auto &nodeMap = octreeContext.nodeMap;
 
+  constexpr int minLod = 1;
+
   // sample base leaf nodes to generate octree upwards
+  // 1x lod
   const vm::ivec3 &rangeMin = position - vm::ivec3{lod1Range, lod1Range, lod1Range};
   const vm::ivec3 &rangeMax = position + vm::ivec3{lod1Range, lod1Range, lod1Range};
   for (int dx = rangeMin.x; dx <= rangeMax.x; dx++) {
     for (int dy = rangeMin.y; dy <= rangeMax.y; dy++) {
       for (int dz = rangeMin.z; dz <= rangeMax.z; dz++) {
         vm::ivec3 leafPosition = vm::ivec3{dx, dy, dz};
-        constructTreeUpwards(octreeContext, leafPosition, maxLod);
+        constructTreeUpwards(
+          octreeContext,
+          leafPosition,
+          minLod,
+          maxLod,
+          ConstructTreeFlags_Children | ConstructTreeFlags_Peers
+        );
       }
     }
   }
