@@ -122,7 +122,6 @@ extern OctreeNodeAllocator octreeNodeAllocator;
 OctreeNodePtr getLeafNodeFromPoint(const std::vector<OctreeNode *> &leafNodes, const vm::ivec3 &p);
 OctreeNodePtr getNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
 OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod, bool isLeaf);
-OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
 OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod);
 void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode);
 void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPosition, int maxLod);

@@ -371,13 +371,10 @@ OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int
     nodeMap[hash] = node;
     return node;
 }
-OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod) {
-    return createNode(octreeContext, min, lod, lod == 1);
-}
 OctreeNodePtr getOrCreateNode(OctreeContext &octreeContext, const vm::ivec3 &min, int lod) {
     OctreeNodePtr node = getNode(octreeContext, min, lod);
     if (!node) {
-        node = createNode(octreeContext, min, lod);
+        node = createNode(octreeContext, min, lod, lod == 1);
     }
     return node;
 }
