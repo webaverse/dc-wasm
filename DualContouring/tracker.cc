@@ -563,8 +563,8 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
       TrackerTask *trackerTask = new TrackerTask();
       trackerTask->id = ++nextTrackerId;
       // std::cout << "increment 1 " << trackerTask->id << std::endl;
-      trackerTask->maxLodNode = maxLodNode;
-      trackerTask->type = TrackerTaskType::ADD;
+      // trackerTask->maxLodNode = maxLodNode;
+      // trackerTask->type = TrackerTaskType::ADD;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
       
@@ -584,8 +584,8 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
       TrackerTask *trackerTask = new TrackerTask();
       trackerTask->id = ++nextTrackerId;
       // std::cout << "increment 2 " << trackerTask->id << std::endl;
-      trackerTask->maxLodNode = maxLodNode;
-      trackerTask->type = TrackerTaskType::REMOVE;
+      // trackerTask->maxLodNode = maxLodNode;
+      // trackerTask->type = TrackerTaskType::REMOVE;
       
       task = std::shared_ptr<TrackerTask>(trackerTask);
       
@@ -766,6 +766,20 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
     this->lastOctreeLeafNodes
   );
 
+  // filter out tasks that are nops
+  {
+    std::vector<TrackerTaskPtr> tasks2;
+    std::copy_if(
+      tasks.begin(),
+      tasks.end(),
+      std::back_inserter(tasks2),
+      [](TrackerTaskPtr task) -> bool {
+        return !task->isNop();
+      }
+    );
+    tasks = std::move(tasks2);
+  }
+
   std::cout << "check abort 1" << std::endl;
   duplicateTask(tasks);
 
@@ -776,93 +790,11 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
   tasks = sortTasks(tasks, worldPosition);
 
-  // cancel tasks that do not have a matching nop task now.
-  // that means the task is no longer in range or has been superseded.
-  std::vector<TrackerTaskPtr> cancelOldTasks;
-  // std::vector<TrackerTaskPtr> forgetNewTasks;
-  std::vector<TrackerTaskPtr> purgeTasks;
-  for (TrackerTaskPtr liveTask : this->liveTasks) {
-    // find new task that contains this one and is a nop
-    const auto &matchingIter = std::find_if(
-      tasks.begin(),
-      tasks.end(),
-      [&](auto &task) -> bool {
-        if (
-          containsNode(*task->maxLodNode, *liveTask->maxLodNode)
-        ) {
-          return true;
-        } else {
-          return false;
-        }        
-      }
-    );
-    if (matchingIter != tasks.end()) { // if new task match
-      TrackerTaskPtr matchingTask = *matchingIter;
-      if (matchingTask->isNop()) { // if matching task was a nop
-        // nothing; keep the old task
-      } else { // else if matching task not a nop
-        // cancel the old task softly but do not purge its chunk
-        cancelOldTasks.push_back(liveTask);
-      }
-    } else { // else if no new task match
-      // cancel the old task
-      cancelOldTasks.push_back(liveTask);
-
-      // add a purge chunk task
-      {
-        TrackerTask *purgeTask = new TrackerTask();
-        purgeTask->id = ++nextTrackerId;
-        // std::cout << "increment 0 " << purgeTask->id << std::endl;
-        purgeTask->maxLodNode = liveTask->maxLodNode;
-        purgeTask->type = TrackerTaskType::OUTRANGE;
-        for (OctreeNodePtr oldNode : liveTask->oldNodes) {
-          purgeTask->oldNodes.push_back(oldNode);
-        }
-        for (OctreeNodePtr newNode : liveTask->newNodes) {
-          purgeTask->oldNodes.push_back(newNode);
-        }
-
-        TrackerTaskPtr task = std::shared_ptr<TrackerTask>(purgeTask);
-
-        purgeTasks.push_back(task);
-      }
-    }
-  }
-  // remove old tasks from the live set
-  for (TrackerTaskPtr cancelTask : cancelOldTasks) {
-    const auto &matchingIter = std::find(
-      this->liveTasks.begin(),
-      this->liveTasks.end(),
-      cancelTask
-    );
-    if (matchingIter == this->liveTasks.end()) {
-      std::cout << "could not remove task" << std::endl;
-      abort();
-    }
-    this->liveTasks.erase(matchingIter);
-  }
-
-  std::cout << "check abort 2" << std::endl;
-  duplicateTask(tasks);
-
-  // add new tasks to the live set
-  for (size_t i = 0; i < tasks.size(); i++) {
-    TrackerTaskPtr task = tasks[i];
-    if (!task->isNop() && task->type != TrackerTaskType::OUTRANGE) {
-      this->liveTasks.push_back(task);
-    }
-  }
-
-  // add purged tasks to the new task set
-  for (TrackerTaskPtr purgeTask : purgeTasks) {
-    tasks.push_back(purgeTask);
-  }
-
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
   result.currentCoord = currentCoord;
-  result.oldTasks = std::move(cancelOldTasks);
+  // result.oldTasks = std::move(cancelOldTasks);
   result.newTasks = std::move(tasks);
   result.leafNodes = this->lastOctreeLeafNodes;
   return result;
