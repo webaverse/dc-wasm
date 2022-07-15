@@ -361,13 +361,13 @@ OctreeNodePtr createNode(OctreeContext &octreeContext, const vm::ivec3 &min, int
     // node->size = lod;
     // node->type = isLeaf ? Node_Leaf : Node_Internal;
     uint64_t hash = hashOctreeMinLod(min, lod);
-    if (nodeMap.find(hash) != nodeMap.end()) {
+    /* if (nodeMap.find(hash) != nodeMap.end()) {
       // throw new Error(`Node already exists: ${hash}`);
       EM_ASM({
         console.log('Node already exists:', $0);
       }, hash);
       abort();
-    }
+    } */
     nodeMap[hash] = node;
     return node;
 }
