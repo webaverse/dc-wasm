@@ -631,6 +631,37 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
   }
   return sortedTasks;
 }
+// sort nodes by distance to world position of the central max lod node
+std::vector<OctreeNodePtr> sortNodes(const std::vector<OctreeNodePtr> &nodes, const vm::vec3 &worldPosition) {
+  std::vector<std::pair<OctreeNodePtr, float>> nodeDistances;
+  nodeDistances.reserve(nodes.size());
+
+  for (const auto &node : nodes) {
+    const vm::ivec3 &min = node->min;
+    const int &lod = node->size;
+
+    vm::vec3 center = vm::vec3{(float)min.x, (float)min.y, (float)min.z} +
+      vm::vec3{0.5, 0.5, 0.5} * (float)lod;
+    vm::vec3 delta = worldPosition - center;
+    float distance = vm::lengthSq(delta);
+
+    nodeDistances.push_back(std::pair<OctreeNodePtr, float>(node, distance));
+  }
+
+  std::sort(
+    nodeDistances.begin(),
+    nodeDistances.end(),
+    [](const std::pair<OctreeNodePtr, float> &a, const std::pair<OctreeNodePtr, float> &b) -> bool {
+      return a.second < b.second;
+    }
+  );
+
+  std::vector<OctreeNodePtr> sortedNodes;
+  for (const auto &iter : nodeDistances) {
+    sortedNodes.push_back(iter.first);
+  }
+  return sortedNodes;
+}
 std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
@@ -761,7 +792,7 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<T
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
-  std::vector<TrackerTaskPtr> tasks = diffLeafNodes(
+  /* std::vector<TrackerTaskPtr> tasks = diffLeafNodes(
     octreeLeafNodes,
     this->lastOctreeLeafNodes
   );
@@ -781,21 +812,22 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   }
 
   // std::cout << "check abort 1" << std::endl;
-  // duplicateTask(tasks);
+  // duplicateTask(tasks); */
 
   vm::vec3 worldPosition = vm::vec3{
     (float)currentCoord.x,
     (float)currentCoord.y,
     (float)currentCoord.z
   } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
-  tasks = sortTasks(tasks, worldPosition);
-
+  // tasks = sortTasks(tasks, worldPosition);
+  
+  octreeLeafNodes = sortNodes(octreeLeafNodes, worldPosition);
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
-  result.currentCoord = currentCoord;
+  // result.currentCoord = currentCoord;
   // result.oldTasks = std::move(cancelOldTasks);
-  result.newTasks = std::move(tasks);
+  // result.newTasks = std::move(tasks);
   result.leafNodes = this->lastOctreeLeafNodes;
   return result;
 }
