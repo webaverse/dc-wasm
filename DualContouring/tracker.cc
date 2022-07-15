@@ -408,9 +408,9 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
     OctreeNodePtr rootNode = getOrCreateNode(octreeContext, leafPosition, minLod, minLod == 1);
     for (int lod = 2; lod <= maxLod; lod *= 2) {
       vm::ivec3 lodMin = rootNode->min;
-      lodMin.x = (int)(lodMin.x / lod) * lod;
-      lodMin.y = (int)(lodMin.y / lod) * lod;
-      lodMin.z = (int)(lodMin.z / lod) * lod;
+      lodMin.x = (int)std::floor((float)lodMin.x / (float)lod) * lod;
+      lodMin.y = (int)std::floor((float)lodMin.y / (float)lod) * lod;
+      lodMin.z = (int)std::floor((float)lodMin.z / (float)lod) * lod;
 
       const vm::ivec3 &lodCenter = lodMin + (lod / 2);
       const int childIndex = (rootNode->min.x < lodCenter.x ? 0 : 1) +
