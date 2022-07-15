@@ -471,6 +471,11 @@ void ensurePeers(OctreeContext &octreeContext, OctreeNode *node, int maxLod) {
   }
 }
 
+/* void stdoutSpaces(int numSpaces) {
+    for (int i = 0; i < numSpaces; i++) {
+        printf(" ");
+    }
+} */
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod) {
   OctreeContext octreeContext;
   auto &nodeMap = octreeContext.nodeMap;
@@ -495,6 +500,90 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
       }
     }
   }
+
+  /* // higher lods
+  vm::ivec3 lastRangeMin = rangeMin;
+  // snap to 2x
+  lastRangeMin.x = (int)std::floor((float)lastRangeMin.x / 2.0f) * 2;
+  lastRangeMin.y = (int)std::floor((float)lastRangeMin.y / 2.0f) * 2;
+  lastRangeMin.z = (int)std::floor((float)lastRangeMin.z / 2.0f) * 2;
+  vm::ivec3 lastRangeMax = rangeMax;
+  // snap to 2x
+  lastRangeMax.x = (int)std::ceil((float)lastRangeMax.x / 2.0f) * 2;
+  lastRangeMax.y = (int)std::ceil((float)lastRangeMax.y / 2.0f) * 2;
+  lastRangeMax.z = (int)std::ceil((float)lastRangeMax.z / 2.0f) * 2;
+  for (int lod = 2; lod <= maxLod; lod *= 2) {
+    lastRangeMin = lastRangeMin - (lod / 2); // move one slot outside the edge
+    // snap to this lod
+    lastRangeMin.x = (int)std::floor((float)lastRangeMin.x / (float)lod) * lod;
+    lastRangeMin.y = (int)std::floor((float)lastRangeMin.y / (float)lod) * lod;
+    lastRangeMin.z = (int)std::floor((float)lastRangeMin.z / (float)lod) * lod;
+
+    lastRangeMax = lastRangeMax + (lod / 2) + (lod / 2); // move one slot outside the edge
+    // snap to this lod
+    lastRangeMax.x = (int)std::floor((float)lastRangeMax.x / (float)lod) * lod;
+    lastRangeMax.y = (int)std::floor((float)lastRangeMax.y / (float)lod) * lod;
+    lastRangeMax.z = (int)std::floor((float)lastRangeMax.z / (float)lod) * lod;
+
+    vm::ivec3 rangeSize = lastRangeMax - lastRangeMin;
+
+    for (int dx = lastRangeMin.x; dx <= lastRangeMax.x; dx += rangeSize.x) {
+      for (int dy = lastRangeMin.y; dy <= lastRangeMax.y; dy += rangeSize.y) {
+        for (int dz = lastRangeMin.z; dz <= lastRangeMax.z; dz += rangeSize.z) {
+          vm::ivec3 lodLeafPosition = vm::ivec3{
+            dx, dy, dz,
+          };
+          constructTreeUpwards(
+            octreeContext,
+            lodLeafPosition,
+            lod
+          );
+        }
+      }
+    }
+  } */
+
+  // log the octree
+  /* std::cout << "construct octree " <<
+    position.x << " " << position.y << " " << position.z << " : " <<
+    lod1Range << " " << maxLod <<
+    std::endl;
+  for (auto &pair : nodeMap) {
+    auto node = pair.second;
+    if (node->size == 2) {
+      stdoutSpaces(node->size);
+      if (node->type == Node_Internal) {
+        std::cout << "node internal " << node->min.x << " " << node->min.y << " " << node->min.z << " : " <<
+          node->size <<
+          std::endl;
+        for (int childIndex = 0; childIndex < 8; childIndex++) {
+          stdoutSpaces(node->size + 2);
+          if (node->children[childIndex] != nullptr) {
+            auto &child = node->children[childIndex];
+            std::cout << "child " << childIndex << " : " <<
+              child->min.x << " " << child->min.y << " " << child->min.z << " : " << child->size <<
+              std::endl;
+          } else {
+            std::cout << "child " << childIndex << " null" << std::endl;
+          }
+        }
+      } else if (node->type == Node_Leaf) {
+        std::cout << "node leaf " << node->min.x << " " << node->min.y << " " << node->min.z << " : " <<
+          node->lodArray[0] << " " <<
+          node->lodArray[1] << " " <<
+          node->lodArray[2] << " " <<
+          node->lodArray[3] << " " <<
+          node->lodArray[4] << " " <<
+          node->lodArray[5] << " " <<
+          node->lodArray[6] << " " <<
+          node->lodArray[7] <<
+          std::endl;
+      } else {
+        std::cout << "unknown node type: " << node->type << std::endl;
+        abort();
+      }
+    }
+  } */
 
   std::vector<std::shared_ptr<OctreeNode>> rootNodes;
   for (const auto &iter : nodeMap) {
