@@ -398,7 +398,7 @@ void ensureChildren(OctreeContext &octreeContext, OctreeNode *parentNode) {
                 lod / 2,
                 true
               ).get();
-            //   parentNode->children[childIndex].parent = parentNode;
+              // parentNode->children[childIndex].parent = parentNode;
            }
         }
       }
