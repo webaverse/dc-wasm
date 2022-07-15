@@ -426,6 +426,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
         parentNode->children[childIndex] = rootNode.get();
         ensureChildren(octreeContext, parentNode.get());
       }
+      ensureChildren(octreeContext, parentNode.get());
       rootNode = parentNode;
     }
     // return rootNode;
@@ -479,6 +480,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
     }
   }
 
+  // find leaf nodes
   std::vector<OctreeNodePtr> leafNodes;
   for (const auto &iter : nodeMap) {
     auto node = iter.second;
@@ -532,6 +534,7 @@ std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int
     }
   }
 
+  // return
   return leafNodes;
 }
 OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min) {
