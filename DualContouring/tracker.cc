@@ -424,7 +424,6 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
       parentNode->type = Node_Internal;
       if (parentNode->children[childIndex] == nullptr) { // children not set yet
         parentNode->children[childIndex] = rootNode.get();
-        ensureChildren(octreeContext, parentNode.get());
       }
       ensureChildren(octreeContext, parentNode.get());
       rootNode = parentNode;
