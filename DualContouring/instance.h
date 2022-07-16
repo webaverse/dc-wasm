@@ -22,6 +22,14 @@ class Tracker;
 
 //
 
+class PeekFaceIndices{
+public:
+  int array[8 * 8];
+  PeekFaceIndices();
+};
+
+//
+
 class DCInstance {
 public:
     Mutex locksMutex;
@@ -83,6 +91,10 @@ public:
     ~DCInstance();
 
     //
+    
+    // peek buffer
+
+    PeekFaceIndices PEEK_FACE_INDICES;
 
     Chunk3D &getChunk(const vm::ivec3 &min, const int lod, GenerateFlags flags);
     Chunk3D &getChunkInternal(const vm::ivec3 &min, int lod);

@@ -7,6 +7,7 @@
 #include "../vector.h"
 #include "../util.h"
 #include <emscripten.h>
+#include "peek.h"
 
 constexpr int CHUNK_RANGE = 1;
 
@@ -22,7 +23,8 @@ DCInstance::DCInstance() :
     cachedSdf(this),
     cachedWaterSdf(this)
     // cachedDamageSdf(this)
-{}
+{
+}
 DCInstance::~DCInstance() {}
 
 // chunks
@@ -559,52 +561,31 @@ std::vector<vm::ivec2> getChunkRangeInclusive(const vm::ivec2 &worldPosition, in
 uint8_t *DCInstance::createTerrainChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
+    ChunkOctree<TerrainDCContext> chunkOctree(this, worldPosition, lodArray);
+    if (!chunkOctree.root)
     {
-        /* if (generateMutex.try_lock())
-        {
-            generateMutex.unlock();
-        } else {
-            EM_ASM(
-                console.log('generateMutex failed to lock');
-            );
-            abort();
-        }
-        std::unique_lock<Mutex> lock(generateMutex); */
-
-        ChunkOctree<TerrainDCContext> chunkOctree(this, worldPosition, lodArray);
-        if (!chunkOctree.root)
-        {
-            // printf("Chunk Has No Data\n");
-            return nullptr;
-        }
-        TerrainDCContext vertexContext;
-        generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
-        generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
-
-        auto &vertexBuffer = vertexContext.vertexBuffer;
-        if (vertexBuffer.indices.size() == 0)
-        {
-            // printf("Generated Mesh Is Not Valid\n");
-            return nullptr;
-        }
-
-        return vertexBuffer.getBuffer();
+        // printf("Chunk Has No Data\n");
+        return nullptr;
     }
+    TerrainDCContext vertexContext;
+    generateMeshFromOctree<TerrainDCContext, false>(chunkOctree.root, vertexContext);
+    generateMeshFromOctree<TerrainDCContext, true>(chunkOctree.seamRoot, vertexContext);
+
+    auto &vertexBuffer = vertexContext.vertexBuffer;
+    if (vertexBuffer.indices.size() == 0)
+    {
+        // printf("Generated Mesh Is Not Valid\n");
+        return nullptr;
+    }
+
+    const vm::ivec3 chunkMax = worldPosition + (chunkSize * lod);
+    setPeeks<TerrainDCContext>(this, worldPosition, chunkMax, lod, vertexBuffer.peeks, PEEK_FACE_INDICES.array);
+
+    return vertexBuffer.getBuffer();
 }
 uint8_t *DCInstance::createLiquidChunkMesh(const vm::ivec3 &worldPosition, const int lodArray[8])
 {
     int lod = lodArray[0];
-    /* EM_ASM({
-        console.log('createLiquidChunkMesh', $0, $1, $2, $3);
-    }, worldPosition.x, worldPosition.y, worldPosition.z, lod); */
-
-    /* if (chunk.cachedWaterSdf.value.size() == 0){
-        EM_ASM({
-            console.log('createLiquidChunkMesh did not have sdf', $0, $1, $2, $3);
-        }, worldPosition.x, worldPosition.y, worldPosition.z, lod);
-        abort();
-    } */
-
     ChunkOctree<LiquidDCContext> chunkOctree(this, worldPosition, lodArray);
     if (!chunkOctree.root)
     {
@@ -893,11 +874,10 @@ void DCInstance::getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPositi
         lod
     ]() -> void {
         void *result = getChunkSkylight(worldPosition, lod);
-        promise->resolve(result);
-    });
+        promise->resolve(result); });
     DualContouring::taskQueue.pushTask(skylightTask);
 }
-void DCInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod) {
+void DCInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod){
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
     
     Task *aoTask = new Task(id, [
@@ -1835,3 +1815,26 @@ void DCInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
     });
     DualContouring::taskQueue.pushTaskPre(trackerUpdateTask);
 }
+
+
+PeekFaceIndices::PeekFaceIndices()
+{
+    // initializing peek face indices
+    for (int i = 0; i < 8 * 8; i++)
+    {
+      array[i] = 0xFF;
+    }
+
+    int peekIndex = 0;
+    for (int i = 0; i < 6; i++)
+    {
+      for (int j = 0; j < 6; j++)
+      {
+        if (i != j)
+        {
+          int otherEntry = array[j << 3 | i];
+          array[i << 3 | j] = otherEntry != 0xFF ? otherEntry : peekIndex++;
+        }
+      }
+  }
+};
