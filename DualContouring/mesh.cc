@@ -41,6 +41,11 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     aos.size() * sizeof(aos[0]);
   neededSize = align4(neededSize);
 
+    neededSize +=
+    // peeks
+    sizeof(uint32_t) +
+    15 * sizeof(peeks[0]);
+
   // allocate buffer
   uint8_t *buffer = (uint8_t *)malloc(neededSize);
   int index = 0;
@@ -100,6 +105,12 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
   std::memcpy(buffer + index, &aos[0], aos.size() * sizeof(aos[0]));
   index += aos.size() * sizeof(aos[0]);
   index = align4(index);
+
+  // peeks
+  *((uint32_t *)(buffer + index)) = 15;
+  index += sizeof(uint32_t);
+  std::memcpy(buffer + index, &peeks[0], 15 * sizeof(peeks[0]));
+  index +=  15 * sizeof(peeks[0]);
 
   return buffer;
 }

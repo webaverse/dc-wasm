@@ -9,25 +9,24 @@ float lerp(const float &a, const float &b, const float &f);
 int align(int x, int N);
 int align4(int x);
 
-template<typename T>
-T bilinear( 
-    const float &tx, 
-    const float &ty, 
-    const T &c00, 
-    const T &c10, 
-    const T &c01, 
-    const T &c11) 
+template <typename T>
+T bilinear(
+    const float &tx,
+    const float &ty,
+    const T &c00,
+    const T &c10,
+    const T &c01,
+    const T &c11)
 {
-  T a = c00 * (1.f - tx) + c10 * tx; 
-  T b = c01 * (1.f - tx) + c11 * tx; 
-  return a * (1.f - ty) + b * ty; 
+  T a = c00 * (1.f - tx) + c10 * tx;
+  T b = c01 * (1.f - tx) + c11 * tx;
+  return a * (1.f - ty) + b * ty;
 }
-template<typename T, typename R>
+template <typename T, typename R>
 R trilinear(
-  const vm::vec3 &location,
-  const int lod,
-  T &data
-)
+    const vm::vec3 &location,
+    const int lod,
+    T &data)
 {
   float rx = std::round(location.x);
   float ry = std::round(location.y);
@@ -36,7 +35,7 @@ R trilinear(
   int ix = int(rx);
   int iy = int(ry);
   int iz = int(rz);
-  
+
   vm::ivec3 p000{ix, iy, iz};
   vm::ivec3 p100{ix + lod, iy, iz};
   vm::ivec3 p010{ix, iy + lod, iz};
@@ -59,12 +58,13 @@ R trilinear(
   float ty = location.y - p000.y;
   float tz = location.z - p000.z;
 
-  const R &e = bilinear<R>(tx, ty, v000, v100, v010, v110); 
-  const R &f = bilinear<R>(tx, ty, v001, v101, v011, v111); 
-  return e * (1 - tz) + f * tz; 
+  const R &e = bilinear<R>(tx, ty, v000, v100, v010, v110);
+  const R &f = bilinear<R>(tx, ty, v001, v101, v011, v111);
+  return e * (1 - tz) + f * tz;
 }
 
-enum class PEEK_FACES : int {
+enum class PEEK_FACES : int
+{
   FRONT = 0,
   BACK,
   LEFT,

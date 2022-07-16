@@ -19,6 +19,7 @@ typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<int> IndexBuffer;
 typedef std::vector<int> BiomeBuffer;
 typedef std::vector<uint8_t> LightBuffer;
+typedef unsigned char PeekBuffer[15];
 
 //
 
@@ -56,6 +57,8 @@ public:
     LightBuffer skylights;
     LightBuffer aos;
 
+    PeekBuffer peeks;
+
     uint8_t *getBuffer() const;
     
     void pushVertexData(const VertexData &vertexData);
@@ -68,6 +71,8 @@ public:
     IndexBuffer indices;
 
     BiomeBuffer biomes;
+
+    PeekBuffer peeks;
 
     uint8_t *getBuffer() const;
 
