@@ -115,8 +115,8 @@ void setPeeks(DCInstance *inst, const vm::ivec3 &chunkMin, const vm::ivec3 &chun
         }
     }
 
-    const int size = (chunkSize * lod);
-    unsigned char seenPeeks[(size+lod) * (size+lod) * (size+lod)];
+    const int size = (chunkSize * lod) + lod;
+    unsigned char seenPeeks[size * size * size];
       
     for (int x = chunkMin.x; x <= chunkMax.x; x += lod)
     {
