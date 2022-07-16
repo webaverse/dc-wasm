@@ -64,4 +64,14 @@ R trilinear(
   return e * (1 - tz) + f * tz; 
 }
 
+enum class PEEK_FACES : int {
+  FRONT = 0,
+  BACK,
+  LEFT,
+  RIGHT,
+  TOP,
+  BOTTOM,
+  NONE
+};
+
 #endif // _UTIL_H_
