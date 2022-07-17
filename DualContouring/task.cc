@@ -1,5 +1,6 @@
 #include "task.h"
 #include "instance.h"
+#include <limits>
 #include <iostream>
 #include <emscripten/atomic.h>
 
@@ -8,8 +9,22 @@
 Task::Task(uint32_t id, std::function<void()> fn) :
   id(id),
   fn(fn),
-  live(true)
+  live(true),
+  worldPosition{
+    std::numeric_limits<float>::quiet_NaN(),
+    std::numeric_limits<float>::quiet_NaN(),
+    std::numeric_limits<float>::quiet_NaN()
+  },
+  lod(0)
 {}
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true),
+  worldPosition(worldPosition),
+  lod(lod)
+{}
+
 Task::~Task() {}
 
 void Task::run() {
@@ -183,3 +198,32 @@ void TaskQueue::runLoop() {
     taskSemaphore.signal();
   }
 } */
+void TaskQueue::setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion) {
+  std::unique_lock<Mutex> lock(taskMutex);
+
+  this->worldPosition = worldPosition;
+  this->worldQuaternion = worldQuaternion;
+
+  sortTasksInternal();
+}
+void TaskQueue::sortTasksInternal() {
+  std::vector<std::pair<Task *, float>> taskDistances;
+  taskDistances.reserve(tasks.size());
+  for (size_t i = 0; i < tasks.size(); i++) {
+    Task *task = tasks[i];
+    float distanceSq = lengthSq(task->worldPosition - worldPosition);
+    taskDistances.push_back(std::pair<Task *, float>(task, distanceSq));
+  }
+
+  std::sort(
+    taskDistances.begin(),
+    taskDistances.end(),
+    [&](const std::pair<Task *, float> &a, const std::pair<Task *, float> &b) {
+      return a.second - b.second;
+    }
+  );
+
+  for (size_t i = 0; i < taskDistances.size(); i++) {
+    tasks[i] = taskDistances[i].first;
+  }
+}

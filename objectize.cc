@@ -134,6 +134,26 @@ EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
 
 //
 
+EMSCRIPTEN_KEEPALIVE void setSortPositionQuaternion(DCInstance *inst, float *position, float *quaternion) {
+    vm::vec3 worldPosition{
+        position[0],
+        position[1],
+        position[2]
+    };
+    Quat worldQuaternion{
+        quaternion[0],
+        quaternion[1],
+        quaternion[2],
+        quaternion[3]
+    };
+    inst->setSortPositionQuaternion(
+        worldPosition,
+        worldQuaternion
+    );
+}
+
+//
+
 EMSCRIPTEN_KEEPALIVE Tracker *createTracker(DCInstance *inst, int lod, int minLodRange, bool trackY) {
     Tracker *tracker = new Tracker(lod, minLodRange, trackY);
     return tracker;
