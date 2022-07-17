@@ -16,7 +16,6 @@ emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=536870912 -
   echo 'let accept, reject;const p = new Promise((a, r) => {accept = a;  reject = r;});Module.postRun = () => {accept();};Module.waitForLoad = () => p;' >> bin/dc.js
   cp bin/dc.js bin/dc.module.js
   echo 'export default Module;' >>bin/dc.module.js
-  cp -R bin/* ../app/public/
 echo done
 
 # Prevent compile window auto close after error, to see the error details. https://askubuntu.com/a/20353/1012283
