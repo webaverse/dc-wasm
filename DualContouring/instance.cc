@@ -820,6 +820,13 @@ bool DCInstance::eraseCubeDamage(
     chunk.injectDamage(damageBuffer);
 } */
 
+void DCInstance::setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion) {
+    this->worldPosition = worldPosition;
+    this->worldQuaternion = worldQuaternion;
+    
+    DualContouring::taskQueue.setSortPositionQuaternion(worldPosition, worldQuaternion);
+}
+
 void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)
 {
     clipRange.reset(new vm::box3{
@@ -836,7 +843,12 @@ void DCInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec3 &world
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    Task *terrainTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        (float)worldPosition.y,
+        (float)worldPosition.z
+    };
+    Task *terrainTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPosition,
@@ -858,7 +870,12 @@ void DCInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldP
     int lod = lodArray[0];
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
-    Task *liquidTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        (float)worldPosition.y,
+        (float)worldPosition.z
+    };
+    Task *liquidTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPosition,
@@ -872,7 +889,12 @@ void DCInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldP
 void DCInstance::getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
-    Task *heightfieldTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        0.f,
+        (float)worldPosition.y
+    };
+    Task *heightfieldTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPositionXZ,
@@ -886,7 +908,12 @@ void DCInstance::getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPos
 void DCInstance::getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
-    Task *skylightTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        (float)worldPosition.y,
+        (float)worldPosition.z
+    };
+    Task *skylightTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPosition,
@@ -900,7 +927,12 @@ void DCInstance::getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPositi
 void DCInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
     
-    Task *aoTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        (float)worldPosition.y,
+        (float)worldPosition.z
+    };
+    Task *aoTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPosition,
@@ -914,7 +946,12 @@ void DCInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
 void DCInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
-    Task *grassSplatTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPositionXZ.x,
+        0.f,
+        (float)worldPositionXZ.y
+    };
+    Task *grassSplatTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPositionXZ,
@@ -928,7 +965,12 @@ void DCInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositi
 void DCInstance::createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
-    Task *vegetationSplatTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPositionXZ.x,
+        0.f,
+        (float)worldPositionXZ.y
+    };
+    Task *vegetationSplatTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPositionXZ,
@@ -942,7 +984,12 @@ void DCInstance::createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldP
 void DCInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
-    Task *mobSplatTask = new Task(id, [
+    vm::vec3 worldPositionF{
+        (float)worldPositionXZ.x,
+        0.f,
+        (float)worldPositionXZ.y
+    };
+    Task *mobSplatTask = new Task(id, worldPositionF, lod, [
         this,
         promise,
         worldPositionXZ,
@@ -953,41 +1000,6 @@ void DCInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPosition
     });
     DualContouring::taskQueue.pushTask(mobSplatTask);
 }
-
-//
-
-/* std::vector<Promise *> DCInstance::ensureChunks2D(const vm::ivec2 &position2D, int minChunkDelta, int maxChunkDelta, int lod, GenerateFlags flags) {
-    std::vector<vm::ivec2> chunkPositions2D = getChunkRangeInclusive(position2D, minChunkDelta, maxChunkDelta, chunkSize);
-    std::vector<Promise *> promises(chunkPositions2D.size());
-    for (int i = 0; i < chunkPositions2D.size(); i++) {
-        const vm::ivec2 &position2D = chunkPositions2D[i];
-
-        MultiChunkLock *multiChunkLock = new MultiChunkLock(this);
-        multiChunkLock->pushPosition(position2D, lod, flags);
-
-        Promise *promise = new Promise();
-        promises[i] = promise;
-
-        Task *task = new Task(multiChunkLock, [
-            this,
-            position2D,
-            lod,
-            flags,
-            promise
-        ]() -> void {
-            ensureChunk(position2D, lod, flags);
-            promise->resolve();
-        });
-        DualContouring::taskQueue.pushTask(task);
-    }
-    return promises;
-}
-void DCInstance::ensureChunk(const vm::ivec2 &position2D, int lod, GenerateFlags flags) {
-    Chunk2D &chunk = getChunk(position2D, lod, flags);
-}
-void DCInstance::ensureChunk(const vm::ivec3 &position3D, int lod, GenerateFlags flags) {
-    Chunk3D &chunk = getChunk(position3D, lod, flags);
-} */
 
 // 2d caches
 

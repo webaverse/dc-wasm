@@ -28,10 +28,13 @@ public:
     std::unordered_map<uint64_t, Mutex> chunkLocks2D;
     std::unordered_map<uint64_t, Mutex> chunkLocks3D;
     Mutex cachesMutex;
-    // Mutex generateMutex;
+    
     std::unordered_map<uint64_t, Chunk2D> chunksCache2D;
     std::unordered_map<uint64_t, Chunk3D> chunksCache3D;
     std::unique_ptr<vm::box3> clipRange;
+
+    vm::vec3 worldPosition;
+    Quat worldQuaternion;
 
     // 2d caches
 
@@ -104,12 +107,6 @@ public:
     unsigned char *getChunkAo(const vm::ivec3 &worldPosition, int lod);
     
     //
-    
-    /* void getHeightfieldRange(int x, int z, int w, int h, int lod, float *heights);
-    void getSkylightFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos);
-    void getAoFieldRange(int x, int y, int z, int w, int h, int d, int lod, unsigned char *aos); */
-    
-    //
 
     uint8_t *createGrassSplat(const vm::ivec2 &worldPositionXZ, const int lod);
     uint8_t *createVegetationSplat(const vm::ivec2 &worldPositionXZ, const int lod);
@@ -155,6 +152,7 @@ public:
     
     //
 
+    void setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion);
     void setClipRange(const vm::vec3 &min, const vm::vec3 &max);
 
     //
