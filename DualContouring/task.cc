@@ -12,9 +12,9 @@ Task::Task(uint32_t id, std::function<void()> fn) :
   fn(fn),
   live(true),
   worldPosition{
-    std::numeric_limits<float>::quiet_NaN(),
-    std::numeric_limits<float>::quiet_NaN(),
-    std::numeric_limits<float>::quiet_NaN()
+    0,
+    0,
+    0
   },
   lod(0)
 {}
