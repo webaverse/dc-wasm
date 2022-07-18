@@ -1,5 +1,6 @@
 #include "task.h"
 #include "instance.h"
+#include "vector.h"
 #include <limits>
 #include <iostream>
 #include <emscripten/atomic.h>
@@ -45,9 +46,24 @@ TaskQueue::~TaskQueue() {
 }
 
 void TaskQueue::pushTask(Task *task) {
+  Frustum frustum = getFrustum();
+  const float taskDistanceSq = getTaskDistanceSq(task, frustum);
   {
     std::unique_lock<Mutex> lock(taskMutex);
-    tasks.push_back(task);
+
+    bool found = false;
+    for (size_t i = 0; i < tasks.size(); i++) {
+      auto iter = tasks.begin() + i;
+      const float taskDistanceSq2 = getTaskDistanceSq(*iter, frustum);
+      if (taskDistanceSq < taskDistanceSq2) {
+        tasks.insert(iter, task);
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      tasks.push_back(task);
+    }
   }
   taskSemaphore.signal();
 }
