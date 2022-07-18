@@ -801,11 +801,12 @@ bool DCInstance::eraseCubeDamage(
     chunk.injectDamage(damageBuffer);
 } */
 
-void DCInstance::setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion) {
+void DCInstance::setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix) {
     this->worldPosition = worldPosition;
     this->worldQuaternion = worldQuaternion;
+    this->projectionMatrix = projectionMatrix;
     
-    DualContouring::taskQueue.setSortPositionQuaternion(worldPosition, worldQuaternion);
+    DualContouring::taskQueue.setCamera(worldPosition, worldQuaternion, projectionMatrix);
 }
 
 void DCInstance::setClipRange(const vm::vec3 &min, const vm::vec3 &max)

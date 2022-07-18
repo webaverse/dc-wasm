@@ -43,6 +43,7 @@ public:
 
     vm::vec3 worldPosition;
     Quat worldQuaternion;
+    std::array<float, 16> projectionMatrix;
 
     // 2d caches
 
@@ -164,7 +165,7 @@ public:
     
     //
 
-    void setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion);
+    void setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix);
     void setClipRange(const vm::vec3 &min, const vm::vec3 &max);
 
     //
