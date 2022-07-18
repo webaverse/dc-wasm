@@ -214,28 +214,79 @@ void TaskQueue::runLoop() {
     taskSemaphore.signal();
   }
 } */
-void TaskQueue::setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion) {
+void TaskQueue::setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix) {
   std::unique_lock<Mutex> lock(taskMutex);
 
   this->worldPosition = worldPosition;
   this->worldQuaternion = worldQuaternion;
+  this->projectionMatrix = projectionMatrix;
 
   sortTasksInternal();
 }
+Frustum TaskQueue::getFrustum() {
+  Matrix matrixWorld(
+    Vec{
+      worldPosition.x,
+      worldPosition.y,
+      worldPosition.z
+    },
+    Quat{
+      worldQuaternion.x,
+      worldQuaternion.y,
+      worldQuaternion.z,
+      worldQuaternion.w
+    },
+    Vec{1, 1, 1}
+  );
+  Matrix matrixWorldInverse(matrixWorld);
+  matrixWorldInverse.invert();
+  Frustum frustum = Frustum::fromMatrix(
+    Matrix::fromArray(projectionMatrix.data()) *= matrixWorldInverse
+  );
+  return frustum;
+}
+float TaskQueue::getTaskDistanceSq(Task *task, const Frustum &frustum) {
+  if (task->lod > 0) {  
+    float distanceSq = vm::lengthSq(task->worldPosition - worldPosition);
+
+    /* std::cout << "task sort world position " <<
+      task->worldPosition.x << " " <<
+      task->worldPosition.y << " " <<
+      task->worldPosition.z << " " <<
+      std::endl; */
+
+    Sphere sphere(
+      Vec{
+        task->worldPosition.x,
+        task->worldPosition.y,
+        task->worldPosition.z
+      },
+      (float)std::sqrt(3.f * ((float)task->lod/2.f) * ((float)task->lod/2.f))
+    );
+    if (!frustum.intersectsSphere(sphere)) {
+      distanceSq += frustumCullDistancePenalty;
+    }
+    return distanceSq;
+  } else {
+    return 0;
+  }
+}
 void TaskQueue::sortTasksInternal() {
+  Frustum frustum = getFrustum();
+
   std::vector<std::pair<Task *, float>> taskDistances;
   taskDistances.reserve(tasks.size());
   for (size_t i = 0; i < tasks.size(); i++) {
     Task *task = tasks[i];
-    float distanceSq = lengthSq(task->worldPosition - worldPosition);
+    float distanceSq = getTaskDistanceSq(task, frustum);
     taskDistances.push_back(std::pair<Task *, float>(task, distanceSq));
   }
 
   std::sort(
     taskDistances.begin(),
     taskDistances.end(),
-    [&](const std::pair<Task *, float> &a, const std::pair<Task *, float> &b) {
-      return a.second - b.second;
+    [&](const std::pair<Task *, float> &a, const std::pair<Task *, float> &b) -> bool {
+      return a.second < b.second;
     }
   );
 

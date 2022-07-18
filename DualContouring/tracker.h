@@ -146,13 +146,14 @@ public:
   int lods;
   int minLodRange;
   bool trackY;
+  DCInstance *inst;
   
   vm::ivec3 lastCoord;
   std::vector<OctreeNodePtr> chunks;
   std::vector<OctreeNodePtr> lastOctreeLeafNodes;
   std::vector<TrackerTaskPtr> liveTasks;
 
-  Tracker(int lods, int minLodRange, bool trackY);
+  Tracker(int lods, int minLodRange, bool trackY, DCInstance *inst);
 
   // static methods
 
@@ -160,7 +161,8 @@ public:
 
   // dynamic methods
 
-  TrackerUpdate updateCoord(const vm::vec3 &position, const vm::ivec3 &currentCoord);
+  std::vector<OctreeNodePtr> sortNodes(const std::vector<OctreeNodePtr> &nodes);
+  TrackerUpdate updateCoord(const vm::ivec3 &currentCoord);
   TrackerUpdate update(const vm::vec3 &position);
 };
 

@@ -754,46 +754,6 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
   }
   return sortedTasks;
 }
-// sort nodes by distance to world position of the central max lod node
-std::vector<OctreeNodePtr> sortNodes(const std::vector<OctreeNodePtr> &nodes, const vm::vec3 &worldPosition) {
-  std::vector<std::tuple<OctreeNodePtr, float, int>> nodeDistances;
-  nodeDistances.reserve(nodes.size());
-
-  for (const auto &node : nodes) {
-    const vm::ivec3 &min = node->min;
-    const int &lod = node->size;
-
-    vm::vec3 center = vm::vec3{(float)min.x, (float)min.y, (float)min.z} +
-      vm::vec3{0.5, 0.5, 0.5} * (float)lod;
-    center *= (float)chunkSize;
-    vm::vec3 delta = worldPosition - center;
-    float distance = vm::length(delta);
-
-    nodeDistances.push_back(std::tuple<OctreeNodePtr, float, int>(node, distance, lod));
-  }
-
-  std::sort(
-    nodeDistances.begin(),
-    nodeDistances.end(),
-    [](
-      const std::tuple<OctreeNodePtr, float, int> &a,
-      const std::tuple<OctreeNodePtr, float, int> &b
-    ) -> bool {
-      float distanceDiff = std::get<1>(a) - std::get<1>(b);
-      if (distanceDiff != 0.f) {
-        return distanceDiff < 0.f;
-      } else {
-        return std::get<2>(a) < std::get<2>(b);
-      }
-    }
-  );
-
-  std::vector<OctreeNodePtr> sortedNodes;
-  for (const auto &iter : nodeDistances) {
-    sortedNodes.push_back(std::get<0>(iter));
-  }
-  return sortedNodes;
-}
 std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
@@ -856,10 +816,11 @@ std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(
 
 //
 
-Tracker::Tracker(int lods, int minLodRange, bool trackY) :
+Tracker::Tracker(int lods, int minLodRange, bool trackY, DCInstance *inst) :
   lods(lods),
   minLodRange(minLodRange),
   trackY(trackY),
+  inst(inst),
   lastCoord{
     INT32_MAX,
     INT32_MAX,
@@ -921,7 +882,93 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<T
   return false;
 }
 // dynamic methods
-TrackerUpdate Tracker::updateCoord(const vm::vec3 &position, const vm::ivec3 &currentCoord) {
+// sort nodes by distance to world position of the central max lod node
+std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &nodes) {
+  const vm::vec3 &worldPosition = inst->worldPosition;
+  const Quat &worldQuaternion = inst->worldQuaternion;
+  std::array<float, 16> &projectionMatrix = inst->projectionMatrix;
+  
+  // compute frustum
+  Matrix matrixWorld(
+    Vec{
+      worldPosition.x,
+      worldPosition.y,
+      worldPosition.z
+    },
+    Quat{
+      worldQuaternion.x,
+      worldQuaternion.y,
+      worldQuaternion.z,
+      worldQuaternion.w
+    },
+    Vec{1, 1, 1}
+  );
+  Matrix matrixWorldInverse(matrixWorld);
+  matrixWorldInverse.invert();
+  Frustum frustum = Frustum::fromMatrix(
+    Matrix::fromArray(projectionMatrix.data()) *= matrixWorldInverse
+  );
+  
+  // compute node distances
+  std::vector<std::tuple<OctreeNodePtr, float, int>> nodeDistances;
+  nodeDistances.reserve(nodes.size());
+
+  for (const auto &node : nodes) {
+    const vm::ivec3 &min = node->min;
+    const int &lod = node->size;
+
+    vm::vec3 center = vm::vec3{(float)min.x, (float)min.y, (float)min.z} +
+      vm::vec3{0.5, 0.5, 0.5} * (float)lod;
+    center *= (float)chunkSize;
+    vm::vec3 delta = worldPosition - center;
+    float distanceSq = vm::lengthSq(delta);
+
+    /* std::cout << "tracker sort center " <<
+      center.x << " " <<
+      center.y << " " <<
+      center.z << " " <<
+      std::endl; */
+
+    Sphere sphere(
+      Vec{
+        center.x,
+        center.y,
+        center.z
+      },
+      (float)std::sqrt(
+        3.f * ((float)lod / 2.f) * ((float)lod / 2.f)
+      )
+    );
+    if (!frustum.intersectsSphere(sphere)) {
+      distanceSq += frustumCullDistancePenalty;
+    }
+
+    nodeDistances.push_back(std::tuple<OctreeNodePtr, float, int>(node, distanceSq, lod));
+  }
+
+  std::sort(
+    nodeDistances.begin(),
+    nodeDistances.end(),
+    [](
+      const std::tuple<OctreeNodePtr, float, int> &a,
+      const std::tuple<OctreeNodePtr, float, int> &b
+    ) -> bool {
+      float distanceDiff = std::get<1>(a) - std::get<1>(b);
+      if (distanceDiff != 0.f) {
+        return distanceDiff < 0.f;
+      } else {
+        return std::get<2>(a) < std::get<2>(b);
+      }
+    }
+  );
+
+  std::vector<OctreeNodePtr> sortedNodes;
+  for (const auto &iter : nodeDistances) {
+    sortedNodes.push_back(std::get<0>(iter));
+  }
+  return sortedNodes;
+}
+TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
   /* std::vector<TrackerTaskPtr> tasks = diffLeafNodes(
@@ -946,15 +993,7 @@ TrackerUpdate Tracker::updateCoord(const vm::vec3 &position, const vm::ivec3 &cu
   // std::cout << "check abort 1" << std::endl;
   // duplicateTask(tasks); */
 
-  // vm::vec3 worldPosition = vm::vec3{
-  //   (float)currentCoord.x,
-  //   (float)currentCoord.y,
-  //   (float)currentCoord.z
-  // } + vm::vec3{0.5, 0.5, 0.5} * ((float)chunkSize / 2.0f);
-  // tasks = sortTasks(tasks, worldPosition);
-
-  // std::cout << "got world position " << worldPosition.x << " " << worldPosition.y << " " << worldPosition.z << std::endl;
-  octreeLeafNodes = sortNodes(octreeLeafNodes, position);
+  octreeLeafNodes = sortNodes(octreeLeafNodes);
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
@@ -974,7 +1013,7 @@ TrackerUpdate Tracker::update(const vm::vec3 &position) {
 
   // if we moved across a chunk boundary, update needed chunks
   // if (currentCoord != this->lastCoord) {
-    TrackerUpdate trackerUpdate = updateCoord(position, currentCoord);
+    TrackerUpdate trackerUpdate = updateCoord(currentCoord);
     // this->lastCoord = currentCoord;
     return trackerUpdate;
   /* } else {

@@ -5,6 +5,7 @@
 #include "sync.h"
 #include "lock.h"
 #include "vector.h"
+#include <array>
 #include <vector>
 #include <deque>
 // #include <semaphore>
@@ -25,6 +26,7 @@ public:
 
     vm::vec3 worldPosition;
     int lod;
+    // Sphere sphere;
 
     Task(uint32_t id, std::function<void()> fn);
     Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn);
@@ -50,6 +52,7 @@ public:
 
     vm::vec3 worldPosition;
     Quat worldQuaternion;
+    std::array<float, 16> projectionMatrix;
 
     TaskQueue();
     ~TaskQueue();
@@ -61,7 +64,9 @@ public:
     void cancelTask(uint32_t taskId);
     // void flushTasks();
 
-    void setSortPositionQuaternion(const vm::vec3 &worldPosition, const Quat &worldQuaternion);
+    void setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix);
+    Frustum getFrustum();
+    float getTaskDistanceSq(Task *task, const Frustum &frustum);
 
     void sortTasksInternal();
 };
