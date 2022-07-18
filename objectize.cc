@@ -134,7 +134,7 @@ EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
 
 //
 
-EMSCRIPTEN_KEEPALIVE void setSortPositionQuaternion(DCInstance *inst, float *position, float *quaternion) {
+EMSCRIPTEN_KEEPALIVE void setCamera(DCInstance *inst, float *position, float *quaternion, float *projectionMatrix) {
     vm::vec3 worldPosition{
         position[0],
         position[1],
@@ -146,16 +146,19 @@ EMSCRIPTEN_KEEPALIVE void setSortPositionQuaternion(DCInstance *inst, float *pos
         quaternion[2],
         quaternion[3]
     };
-    inst->setSortPositionQuaternion(
+    std::array<float, 16> worldProjectionMatrix;
+    memcpy(&worldProjectionMatrix[0], projectionMatrix, sizeof(worldProjectionMatrix));
+    inst->setCamera(
         worldPosition,
-        worldQuaternion
+        worldQuaternion,
+        worldProjectionMatrix
     );
 }
 
 //
 
 EMSCRIPTEN_KEEPALIVE Tracker *createTracker(DCInstance *inst, int lod, int minLodRange, bool trackY) {
-    Tracker *tracker = new Tracker(lod, minLodRange, trackY);
+    Tracker *tracker = new Tracker(lod, minLodRange, trackY, inst);
     return tracker;
 }
 
