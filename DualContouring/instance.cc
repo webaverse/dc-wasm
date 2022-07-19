@@ -264,10 +264,12 @@ uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
     std::vector<float> instances;
     unsigned int count = 0;
 
+    int size = chunkSize * lod;
+
     // accumulate
     // Chunk2D &chunk = getChunk(worldPositionXZ, lod, GF_HEIGHTFIELD);
-    int minX = worldPositionXZ.x / chunkSize * chunkSize;
-    int minZ = worldPositionXZ.y / chunkSize * chunkSize;
+    int minX = worldPositionXZ.x / size * size;
+    int minZ = worldPositionXZ.y / size * size;
 
     float seed = DualContouring::noises->grassNoise.in2D(minX, minZ);
     unsigned int seedInt;
@@ -280,8 +282,8 @@ uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
     // instances.resize(maxNumGrasses);
     for (int i = 0; i < maxNumGrasses; i++)
     {
-        float dx = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
-        float dz = (float)rng() / (float)0xFFFFFFFF * (float)chunkSize;
+        float dx = (float)rng() / (float)0xFFFFFFFF * (float)size;
+        float dz = (float)rng() / (float)0xFFFFFFFF * (float)size;
 
         float ax = (float)minX + dx;
         float az = (float)minZ + dz;
