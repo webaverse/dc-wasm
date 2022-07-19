@@ -286,9 +286,6 @@ uint8_t *DCInstance::createGrassSplat(const vm::ivec2 &worldPositionXZ, const in
         float ax = (float)minX + dx;
         float az = (float)minZ + dz;
 
-        // int idx = (int)dx + 1;
-        // int idz = (int)dz + 1;
-        // int index2D = idx + idz * gridPoints;
         float height = cachedHeightField.get(ax, az).heightField;
 
         ps.push_back(ax);
