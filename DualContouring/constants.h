@@ -8,4 +8,14 @@ constexpr int cacheWidth = chunkSize * CHUNK_CACHE_RANGE;
 
 constexpr float frustumCullDistancePenalty = 10000.f;
 
+enum class PEEK_FACES : int {
+  FRONT = 0,
+  BACK,
+  LEFT,
+  RIGHT,
+  TOP,
+  BOTTOM,
+  NONE
+};
+
 #endif // _CONSTANTS_H_
