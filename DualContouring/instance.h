@@ -82,6 +82,8 @@ public:
     void getCachedHeightfield(float *heights);
     void getCachedSkylight(unsigned char *skylights);
     void getCachedAo(unsigned char *aos);
+
+    float getCachedInterpolatedHeightfield(const vm::vec2 &worldPosition, const int lod);
     float getCachedInterpolatedSdf(const float x, const float y, const float z, const int lod);
     float getCachedWaterInterpolatedSdf(const float x, const float y, const float z, const int lod);
     float getCachedDamageInterpolatedSdf(const float &x, const float &y, const float &z, const int &lod);

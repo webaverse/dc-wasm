@@ -5,29 +5,34 @@
 #include "./DualContouring/instance.h"
 #include <functional>
 
+// utils
+
 float lerp(const float &a, const float &b, const float &f);
 int align(int x, int N);
 int align4(int x);
 
 template <typename T>
 T bilinear(
-    const float &tx,
-    const float &ty,
-    const T &c00,
-    const T &c10,
-    const T &c01,
-    const T &c11)
-{
+  const float &tx,
+  const float &ty,
+  const T &c00,
+  const T &c10,
+  const T &c01,
+  const T &c11
+) {
   T a = c00 * (1.f - tx) + c10 * tx;
   T b = c01 * (1.f - tx) + c11 * tx;
   return a * (1.f - ty) + b * ty;
 }
+
+// interpolators
+
 template <typename T, typename R>
 R trilinear(
-    const vm::vec3 &location,
-    const int lod,
-    T &data)
-{
+  const vm::vec3 &location,
+  const int lod,
+  T &data
+) {
   float rx = std::round(location.x);
   float ry = std::round(location.y);
   float rz = std::round(location.z);
@@ -63,15 +68,33 @@ R trilinear(
   return e * (1 - tz) + f * tz;
 }
 
-enum class PEEK_FACES : int
-{
-  FRONT = 0,
-  BACK,
-  LEFT,
-  RIGHT,
-  TOP,
-  BOTTOM,
-  NONE
-};
+template <typename T, typename R, typename Mapper>
+R bilinearMap(
+  const vm::vec2 &location,
+  const int lod,
+  T &data,
+  Mapper map
+) {
+  float rx = std::round(location.x);
+  float ry = std::round(location.y);
+
+  int ix = int(rx);
+  int iy = int(ry);
+
+  const auto &v00 = data.get(ix, iy);
+  const auto &v10 = data.get(ix + lod, iy);
+  const auto &v01 = data.get(ix, iy + lod);
+  const auto &v11 = data.get(ix + lod, iy + lod);
+
+  const R &v00m = map(v00);
+  const R &v10m = map(v10);
+  const R &v01m = map(v01);
+  const R &v11m = map(v11);
+
+  float tx = location.x - rx;
+  float ty = location.y - ry;
+
+  return bilinear<R>(tx, ty, v00m, v10m, v01m, v11m);
+}
 
 #endif // _UTIL_H_

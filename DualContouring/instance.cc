@@ -1513,6 +1513,24 @@ void DCInstance::getCachedInterpolatedLight(const vm::vec3 &worldPosition, uint8
     ao = cachedAoField.get(x, y, z);
 }
 
+// heightfield
+
+float heightfieldLens(const Heightfield &heightfield) {
+    return heightfield.heightField;
+}
+float DCInstance::getCachedInterpolatedHeightfield(const vm::vec2 &worldPosition, const int lod) {
+    return bilinearMap<
+        decltype(cachedHeightField),
+        float,
+        decltype(heightfieldLens)
+    >(
+        worldPosition,
+        lod,
+        cachedHeightField,
+        heightfieldLens
+    );
+}
+
 // sdf
 float DCInstance::getCachedInterpolatedSdf(const float x, const float y, const float z, const int lod) {
     return trilinear<decltype(cachedSdf), float>(
