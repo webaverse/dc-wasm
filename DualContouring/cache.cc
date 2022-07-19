@@ -1,9 +1,7 @@
 #include "cache.h"
-#include "xxhash.h"
+// #include "xxhash.h"
 
 //
-
-// constexpr int hashSeed = 0;
 
 uint32_t getCacheIndexWorld(int x, int y) {
     uint32_t x2 = (((uint32_t)x >> 16) ^ (uint32_t)x) * 0x45d9f3b;
