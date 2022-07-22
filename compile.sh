@@ -2,6 +2,7 @@ mkdir -p bin
 echo 'building main...'
 # m = 64*1024; s = 512 * 1024 * 1024; Math.floor(s/m)*m;
 # emcc -s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=52428800 -D__linux__ -s ALLOW_MEMORY_GROWTH=0 -sWASM_WORKERS=1 -g -s ASSERTIONS=1 -fexceptions \
+# -g -s ASSERTIONS=1 -fsanitize=address
 NUM_THREADS=8
 emcc -D NUM_THREADS=$NUM_THREADS -sNO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=536870912 -pthread -sPTHREAD_POOL_SIZE=$NUM_THREADS -sPTHREAD_POOL_SIZE_STRICT=$NUM_THREADS -s ALLOW_MEMORY_GROWTH=0 -O3 \
   objectize.cc \
