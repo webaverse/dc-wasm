@@ -177,6 +177,47 @@ Mutex *DCInstance::getChunkLock(const vm::ivec3 &worldPos, const int lod) {
     return chunkLock;
 }
 
+// field ranges
+void DCInstance::getHeightfieldRange(const vm::ivec2 &worldPositionXZ, const vm::ivec2 &size, int lod, float *heights) {
+    // std::cout << "iterate " << worldPositionXZ.x << " " << worldPositionXZ.y << " " << size.x << " " << size.y << " " << lod << " " << (void *)heights << std::endl;
+    
+    for (int z = 0; z < size.y; z++)
+    {
+        for (int x = 0; x < size.x; x++)
+        {
+            int index2D = x + z * size.x;
+
+            int ax = worldPositionXZ.x + x;
+            int az = worldPositionXZ.y + z;
+            heights[index2D] = cachedHeightField.get(ax, az).heightField;
+            /* if (index2D == 0) {
+                std::cout << "height at zero " << heights[index2D] << std::endl;
+            } */
+        }
+    }
+    
+    // return heights;
+}
+void DCInstance::getLightRange(const vm::ivec3 &worldPosition, const vm::ivec3 &size, int lod, uint8_t *skylights, uint8_t *aos) {
+    for (int z = 0; z < size.z; z++)
+    {
+        for (int y = 0; y < size.y; y++)
+        {
+            for (int x = 0; x < size.x; x++)
+            {
+                int dstIndex = x + y * size.x + z * size.x * size.y;
+
+                int ax = worldPosition.x + x;
+                int ay = worldPosition.y + y;
+                int az = worldPosition.z + z;
+
+                skylights[dstIndex] = cachedSkylightField.get(ax, ay, az);
+                aos[dstIndex] = cachedAoField.get(ax, ay, az);
+            }
+        }
+    }
+}
+
 // fields
 float *DCInstance::getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod) {
     const int &size = chunkSize;
@@ -867,6 +908,55 @@ void DCInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldP
     });
     DualContouring::taskQueue.pushTask(liquidTask);
 }
+
+// get ranges
+void DCInstance::getHeightfieldRangeAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const vm::ivec2 &sizeXZ, int lod, float *heights, int priority) {
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
+
+    vm::vec3 worldPositionF{
+        (float)worldPositionXZ.x,
+        0.f,
+        (float)worldPositionXZ.y
+    };
+    Task *heightfieldRangeTask = new Task(id, worldPositionF, lod, priority, [
+        this,
+        promise,
+        worldPositionXZ,
+        sizeXZ,
+        lod,
+        heights
+    ]() -> void {
+        getHeightfieldRange(worldPositionXZ, sizeXZ, lod, heights);
+        void *result = nullptr;
+        promise->resolve(result);
+    });
+    DualContouring::taskQueue.pushTask(heightfieldRangeTask);
+}
+void DCInstance::getLightRangeAsync(uint32_t id, const vm::ivec3 &worldPosition, const vm::ivec3 &size, int lod, uint8_t *skylights, uint8_t *aos, int priority) {
+    std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
+
+    vm::vec3 worldPositionF{
+        (float)worldPosition.x,
+        (float)worldPosition.y,
+        (float)worldPosition.z
+    };
+    Task *lightRangeTask = new Task(id, worldPositionF, lod, priority, [
+        this,
+        promise,
+        worldPosition,
+        size,
+        lod,
+        skylights,
+        aos
+    ]() -> void {
+        getLightRange(worldPosition, size, lod, skylights, aos);
+        void *result = nullptr;
+        promise->resolve(result);
+    });
+    DualContouring::taskQueue.pushTask(lightRangeTask);
+}
+
+// get chunk attributes
 void DCInstance::getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod, int priority) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 

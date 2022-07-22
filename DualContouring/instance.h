@@ -117,6 +117,11 @@ public:
 
     //
 
+    void getHeightfieldRange(const vm::ivec2 &worldPositionXZ, const vm::ivec2 &size, int lod, float *heights);
+    void getLightRange(const vm::ivec3 &worldPosition, const vm::ivec3 &size, int lod, uint8_t *skyLights, uint8_t *aos);
+
+    //
+
     float *getChunkHeightfield(const vm::ivec2 &worldPositionXZ, int lod);
     unsigned char *getChunkSkylight(const vm::ivec3 &worldPosition, int lod);
     unsigned char *getChunkAo(const vm::ivec3 &worldPosition, int lod);
@@ -197,6 +202,13 @@ public:
 
     void createTerrainChunkMeshAsync(uint32_t id, const vm::ivec3 &worldPosition, const int lodArray[8]);
     void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldPosition, const int lodArray[8]);
+
+    //
+
+    void getHeightfieldRangeAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const vm::ivec2 &sizeXZ, int lod, float *heights, int priority);
+    void getLightRangeAsync(uint32_t id, const vm::ivec3 &worldPosition, const vm::ivec3 &size, int lod, uint8_t *skylights, uint8_t *aos, int priority);
+
+    //
 
     void getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod, int priority);
     void getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod, int priority);
