@@ -67,9 +67,12 @@ TaskQueue::~TaskQueue() {
   abort();
 }
 
-void TaskQueue::pushTask(Task *task) {
+void TaskQueue::pushTask(Task *task, bool log) {
   Frustum frustum = getFrustum();
   const float taskDistanceSq = getTaskDistanceSq(task, frustum);
+  if (log) {
+    std::cout << "push task distance " << task->priority << " " << taskDistanceSq << std::endl;
+  }
   {
     std::unique_lock<Mutex> lock(taskMutex);
 
@@ -89,13 +92,13 @@ void TaskQueue::pushTask(Task *task) {
   }
   taskSemaphore.signal();
 }
-void TaskQueue::pushTaskPre(Task *task) {
+/* void TaskQueue::pushTaskPre(Task *task) {
   {
     std::unique_lock<Mutex> lock(taskMutex);
     tasks.push_front(task);
   }
   taskSemaphore.signal();
-}
+} */
 // std::atomic<int> numActiveThreads(NUM_THREADS);
 Task *TaskQueue::popLockTask() {
   /* EM_ASM(
