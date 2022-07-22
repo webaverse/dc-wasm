@@ -26,10 +26,13 @@ public:
 
     vm::vec3 worldPosition;
     int lod;
+    int priority;
     // Sphere sphere;
 
     Task(uint32_t id, std::function<void()> fn);
     Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn);
+    Task(uint32_t id, int priority, std::function<void()> fn);
+    Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn);
     ~Task();
 
     // bool tryLock();
