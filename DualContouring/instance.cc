@@ -873,9 +873,9 @@ void DCInstance::getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPos
     // std::cout << "get chunk heightfield priority " << priority << std::endl;
 
     vm::vec3 worldPositionF{
-        (float)worldPosition.x,
+        (float)worldPositionXZ.x,
         0.f,
-        (float)worldPosition.y
+        (float)worldPositionXZ.y
     };
     Task *heightfieldTask = new Task(id, worldPositionF, lod, priority, [
         this,
