@@ -7,7 +7,7 @@
 
 //
 
-Task::Task(uint32_t id, std::function<void()> fn) :
+/* Task::Task(uint32_t id, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
@@ -16,14 +16,36 @@ Task::Task(uint32_t id, std::function<void()> fn) :
     0,
     0
   },
-  lod(0)
-{}
+  lod(0),
+  priority(0)
+{} */
 Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
   worldPosition(worldPosition),
-  lod(lod)
+  lod(lod),
+  priority(0)
+{}
+Task::Task(uint32_t id, int priority, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true),
+  worldPosition{
+    0,
+    0,
+    0
+  },
+  lod(0),
+  priority(priority)
+{}
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true),
+  worldPosition(worldPosition),
+  lod(lod),
+  priority(priority)
 {}
 
 Task::~Task() {}
@@ -64,13 +86,6 @@ void TaskQueue::pushTask(Task *task) {
     if (!found) {
       tasks.push_back(task);
     }
-  }
-  taskSemaphore.signal();
-}
-void TaskQueue::pushTaskPre(Task *task) {
-  {
-    std::unique_lock<Mutex> lock(taskMutex);
-    tasks.push_front(task);
   }
   taskSemaphore.signal();
 }
@@ -177,8 +192,6 @@ void TaskQueue::runLoop() {
       }); */
       delete task;
       // task = nullptr;
-
-      // flushTasks();
     }
   // }
   /* EM_ASM(
@@ -187,33 +200,6 @@ void TaskQueue::runLoop() {
   std::cout << "main loop exited" << std::endl;
   abort();
 }
-/* void TaskQueue::flushTasks() {
-  int numSignals = 0;
-  {
-    std::unique_lock<Mutex> lock(taskMutex);
-
-    bool lockedTask = true;
-    while (lockedTask) {
-      lockedTask = false;
-      for (auto iter = tasks.begin(); iter != tasks.end(); iter++) {
-        Task *task = *iter;
-        if (task->tryLock()) {
-          lockedTasks.push_back(task);
-          tasks.erase(iter);
-
-          numSignals++;
-
-          lockedTask = true;
-          break;
-        }
-      }
-    }
-  }
-
-  for (int i = 0; i < numSignals; i++) {
-    taskSemaphore.signal();
-  }
-} */
 void TaskQueue::setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix) {
   std::unique_lock<Mutex> lock(taskMutex);
 
@@ -246,30 +232,21 @@ Frustum TaskQueue::getFrustum() {
   return frustum;
 }
 float TaskQueue::getTaskDistanceSq(Task *task, const Frustum &frustum) {
-  if (task->lod > 0) {  
-    float distanceSq = vm::lengthSq(task->worldPosition - worldPosition);
+  float distanceSq = vm::lengthSq(task->worldPosition - worldPosition);
 
-    /* std::cout << "task sort world position " <<
-      task->worldPosition.x << " " <<
-      task->worldPosition.y << " " <<
-      task->worldPosition.z << " " <<
-      std::endl; */
-
-    Sphere sphere(
-      Vec{
-        task->worldPosition.x,
-        task->worldPosition.y,
-        task->worldPosition.z
-      },
-      (float)std::sqrt(3.f * ((float)task->lod/2.f) * ((float)task->lod/2.f))
-    );
-    if (!frustum.intersectsSphere(sphere)) {
-      distanceSq += frustumCullDistancePenalty;
-    }
-    return distanceSq;
-  } else {
-    return 0;
+  Sphere sphere(
+    Vec{
+      task->worldPosition.x,
+      task->worldPosition.y,
+      task->worldPosition.z
+    },
+    (float)std::sqrt(3.f * ((float)task->lod/2.f) * ((float)task->lod/2.f))
+  );
+  if (!frustum.intersectsSphere(sphere)) {
+    distanceSq += frustumCullDistancePenalty;
   }
+  distanceSq += task->priority * priorityDistancePenalty;
+  return distanceSq;
 }
 void TaskQueue::sortTasksInternal() {
   Frustum frustum = getFrustum();

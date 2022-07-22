@@ -26,10 +26,13 @@ public:
 
     vm::vec3 worldPosition;
     int lod;
+    int priority;
     // Sphere sphere;
 
     Task(uint32_t id, std::function<void()> fn);
     Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn);
+    Task(uint32_t id, int priority, std::function<void()> fn);
+    Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn);
     ~Task();
 
     // bool tryLock();
@@ -58,11 +61,9 @@ public:
     ~TaskQueue();
     
     void pushTask(Task *task);
-    void pushTaskPre(Task *task);
     Task *popLockTask();
     void runLoop();
     void cancelTask(uint32_t taskId);
-    // void flushTasks();
 
     void setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix);
     Frustum getFrustum();

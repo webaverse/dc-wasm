@@ -198,13 +198,13 @@ public:
     void createTerrainChunkMeshAsync(uint32_t id, const vm::ivec3 &worldPosition, const int lodArray[8]);
     void createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldPosition, const int lodArray[8]);
 
-    void getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod);
-    void getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod);
-    void getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod);
+    void getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod, int priority);
+    void getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod, int priority);
+    void getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod, int priority);
 
-    void createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod);
-    void createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod);
-    void createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod);
+    void createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
+    void createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
+    void createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
 
     //
 
@@ -233,7 +233,7 @@ public:
     
     //
     
-    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position);
+    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, int priority);
 };
 
 #endif // _INSTANCE_H_
