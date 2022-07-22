@@ -67,12 +67,9 @@ TaskQueue::~TaskQueue() {
   abort();
 }
 
-void TaskQueue::pushTask(Task *task, bool log) {
+void TaskQueue::pushTask(Task *task) {
   Frustum frustum = getFrustum();
   const float taskDistanceSq = getTaskDistanceSq(task, frustum);
-  if (log) {
-    std::cout << "push task distance " << task->priority << " " << taskDistanceSq << std::endl;
-  }
   {
     std::unique_lock<Mutex> lock(taskMutex);
 
@@ -92,13 +89,6 @@ void TaskQueue::pushTask(Task *task, bool log) {
   }
   taskSemaphore.signal();
 }
-/* void TaskQueue::pushTaskPre(Task *task) {
-  {
-    std::unique_lock<Mutex> lock(taskMutex);
-    tasks.push_front(task);
-  }
-  taskSemaphore.signal();
-} */
 // std::atomic<int> numActiveThreads(NUM_THREADS);
 Task *TaskQueue::popLockTask() {
   /* EM_ASM(
@@ -202,8 +192,6 @@ void TaskQueue::runLoop() {
       }); */
       delete task;
       // task = nullptr;
-
-      // flushTasks();
     }
   // }
   /* EM_ASM(
@@ -212,33 +200,6 @@ void TaskQueue::runLoop() {
   std::cout << "main loop exited" << std::endl;
   abort();
 }
-/* void TaskQueue::flushTasks() {
-  int numSignals = 0;
-  {
-    std::unique_lock<Mutex> lock(taskMutex);
-
-    bool lockedTask = true;
-    while (lockedTask) {
-      lockedTask = false;
-      for (auto iter = tasks.begin(); iter != tasks.end(); iter++) {
-        Task *task = *iter;
-        if (task->tryLock()) {
-          lockedTasks.push_back(task);
-          tasks.erase(iter);
-
-          numSignals++;
-
-          lockedTask = true;
-          break;
-        }
-      }
-    }
-  }
-
-  for (int i = 0; i < numSignals; i++) {
-    taskSemaphore.signal();
-  }
-} */
 void TaskQueue::setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix) {
   std::unique_lock<Mutex> lock(taskMutex);
 

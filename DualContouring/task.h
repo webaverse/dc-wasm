@@ -60,12 +60,10 @@ public:
     TaskQueue();
     ~TaskQueue();
     
-    void pushTask(Task *task, bool log = false);
-    // void pushTaskPre(Task *task);
+    void pushTask(Task *task);
     Task *popLockTask();
     void runLoop();
     void cancelTask(uint32_t taskId);
-    // void flushTasks();
 
     void setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix);
     Frustum getFrustum();
