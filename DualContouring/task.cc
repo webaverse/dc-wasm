@@ -7,7 +7,7 @@
 
 //
 
-Task::Task(uint32_t id, std::function<void()> fn) :
+/* Task::Task(uint32_t id, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
@@ -16,14 +16,36 @@ Task::Task(uint32_t id, std::function<void()> fn) :
     0,
     0
   },
-  lod(0)
-{}
+  lod(0),
+  priority(0)
+{} */
 Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
   worldPosition(worldPosition),
-  lod(lod)
+  lod(lod),
+  priority(0)
+{}
+Task::Task(uint32_t id, int priority, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true),
+  worldPosition{
+    0,
+    0,
+    0
+  },
+  lod(0),
+  priority(priority)
+{}
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn) :
+  id(id),
+  fn(fn),
+  live(true),
+  worldPosition(worldPosition),
+  lod(lod),
+  priority(priority)
 {}
 
 Task::~Task() {}
