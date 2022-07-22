@@ -271,30 +271,21 @@ Frustum TaskQueue::getFrustum() {
   return frustum;
 }
 float TaskQueue::getTaskDistanceSq(Task *task, const Frustum &frustum) {
-  if (task->lod > 0) {  
-    float distanceSq = vm::lengthSq(task->worldPosition - worldPosition);
+  float distanceSq = vm::lengthSq(task->worldPosition - worldPosition);
 
-    /* std::cout << "task sort world position " <<
-      task->worldPosition.x << " " <<
-      task->worldPosition.y << " " <<
-      task->worldPosition.z << " " <<
-      std::endl; */
-
-    Sphere sphere(
-      Vec{
-        task->worldPosition.x,
-        task->worldPosition.y,
-        task->worldPosition.z
-      },
-      (float)std::sqrt(3.f * ((float)task->lod/2.f) * ((float)task->lod/2.f))
-    );
-    if (!frustum.intersectsSphere(sphere)) {
-      distanceSq += frustumCullDistancePenalty;
-    }
-    return distanceSq;
-  } else {
-    return 0;
+  Sphere sphere(
+    Vec{
+      task->worldPosition.x,
+      task->worldPosition.y,
+      task->worldPosition.z
+    },
+    (float)std::sqrt(3.f * ((float)task->lod/2.f) * ((float)task->lod/2.f))
+  );
+  if (!frustum.intersectsSphere(sphere)) {
+    distanceSq += frustumCullDistancePenalty;
   }
+  distanceSq += task->priority * priorityDistancePenalty;
+  return distanceSq;
 }
 void TaskQueue::sortTasksInternal() {
   Frustum frustum = getFrustum();
