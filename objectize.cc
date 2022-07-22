@@ -17,7 +17,20 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
     DualContouring::destroyInstance(instance);
 }
 
-// 
+//
+
+EMSCRIPTEN_KEEPALIVE void getHeightfieldRangeAsync(DCInstance *inst, uint32_t taskId, int x, int z, int w, int h, int lod, float *heights, int priority) {
+    vm::ivec2 worldPositionXZ{x, z};
+    vm::ivec2 sizeXZ{w, h};
+    inst->getHeightfieldRangeAsync(taskId, worldPositionXZ, sizeXZ, lod, heights, priority);
+}
+EMSCRIPTEN_KEEPALIVE void getLightRangeAsync(DCInstance *inst, uint32_t taskId, int x, int y, int z, int w, int h, int d, int lod, uint8_t *skylights, uint8_t *aos, int priority) {
+    vm::ivec3 worldPosition{x, y, z};
+    vm::ivec3 size{w, h, d};
+    inst->getLightRangeAsync(taskId, worldPosition, size, lod, skylights, aos, priority);
+}
+
+//
 
 EMSCRIPTEN_KEEPALIVE void getChunkHeightfieldAsync(DCInstance *inst, uint32_t taskId, int x, int z, int lod, int priority) {
     inst->getChunkHeightfieldAsync(taskId, vm::ivec2{x, z}, lod, priority);
