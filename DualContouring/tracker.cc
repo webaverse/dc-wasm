@@ -885,21 +885,22 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<T
 // sort nodes by distance to world position of the central max lod node
 std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &nodes) {
   const vm::vec3 &worldPosition = inst->worldPosition;
-  const Quat &worldQuaternion = inst->worldQuaternion;
+  const vm::vec3 &cameraPosition = inst->cameraPosition;
+  const Quat &cameraQuaternion = inst->cameraQuaternion;
   std::array<float, 16> &projectionMatrix = inst->projectionMatrix;
   
   // compute frustum
   Matrix matrixWorld(
     Vec{
-      worldPosition.x,
-      worldPosition.y,
-      worldPosition.z
+      cameraPosition.x,
+      cameraPosition.y,
+      cameraPosition.z
     },
     Quat{
-      worldQuaternion.x,
-      worldQuaternion.y,
-      worldQuaternion.z,
-      worldQuaternion.w
+      cameraQuaternion.x,
+      cameraQuaternion.y,
+      cameraQuaternion.z,
+      cameraQuaternion.w
     },
     Vec{1, 1, 1}
   );

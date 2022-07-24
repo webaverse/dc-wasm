@@ -144,24 +144,30 @@ EMSCRIPTEN_KEEPALIVE void cancelTask(DCInstance *inst, uint32_t taskId) {
 
 //
 
-EMSCRIPTEN_KEEPALIVE void setCamera(DCInstance *inst, float *position, float *quaternion, float *projectionMatrix) {
-    vm::vec3 worldPosition{
-        position[0],
-        position[1],
-        position[2]
+EMSCRIPTEN_KEEPALIVE void setCamera(DCInstance *inst, float *worldPosition, float *cameraPosition, float *cameraQuaternion, float *projectionMatrix) {
+    vm::vec3 _worldPosition{
+        worldPosition[0],
+        worldPosition[1],
+        worldPosition[2]
     };
-    Quat worldQuaternion{
-        quaternion[0],
-        quaternion[1],
-        quaternion[2],
-        quaternion[3]
+    vm::vec3 _cameraPosition{
+        cameraPosition[0],
+        cameraPosition[1],
+        cameraPosition[2]
     };
-    std::array<float, 16> worldProjectionMatrix;
-    memcpy(&worldProjectionMatrix[0], projectionMatrix, sizeof(worldProjectionMatrix));
+    Quat _cameraQuaternion{
+        cameraQuaternion[0],
+        cameraQuaternion[1],
+        cameraQuaternion[2],
+        cameraQuaternion[3]
+    };
+    std::array<float, 16> _projectionMatrix;
+    memcpy(&_projectionMatrix[0], projectionMatrix, sizeof(_projectionMatrix));
     inst->setCamera(
-        worldPosition,
-        worldQuaternion,
-        worldProjectionMatrix
+        _worldPosition,
+        _cameraPosition,
+        _cameraQuaternion,
+        _projectionMatrix
     );
 }
 

@@ -54,7 +54,8 @@ public:
     Semaphore taskSemaphore;
 
     vm::vec3 worldPosition;
-    Quat worldQuaternion;
+    vm::vec3 cameraPosition;
+    Quat cameraQuaternion;
     std::array<float, 16> projectionMatrix;
 
     TaskQueue();
@@ -65,7 +66,7 @@ public:
     void runLoop();
     void cancelTask(uint32_t taskId);
 
-    void setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix);
+    void setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix);
     Frustum getFrustum();
     float getTaskDistanceSq(Task *task, const Frustum &frustum);
 

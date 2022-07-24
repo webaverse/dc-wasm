@@ -42,7 +42,8 @@ public:
     std::unique_ptr<vm::box3> clipRange;
 
     vm::vec3 worldPosition;
-    Quat worldQuaternion;
+    vm::vec3 cameraPosition;
+    Quat cameraQuaternion;
     std::array<float, 16> projectionMatrix;
 
     // 2d caches
@@ -172,7 +173,7 @@ public:
     
     //
 
-    void setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix);
+    void setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix);
     void setClipRange(const vm::vec3 &min, const vm::vec3 &max);
 
     //
