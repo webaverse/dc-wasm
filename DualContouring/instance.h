@@ -42,7 +42,8 @@ public:
     std::unique_ptr<vm::box3> clipRange;
 
     vm::vec3 worldPosition;
-    Quat worldQuaternion;
+    vm::vec3 cameraPosition;
+    Quat cameraQuaternion;
     std::array<float, 16> projectionMatrix;
 
     // 2d caches
