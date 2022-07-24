@@ -200,11 +200,12 @@ void TaskQueue::runLoop() {
   std::cout << "main loop exited" << std::endl;
   abort();
 }
-void TaskQueue::setCamera(const vm::vec3 &worldPosition, const Quat &worldQuaternion, const std::array<float, 16> &projectionMatrix) {
+void TaskQueue::setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix) {
   std::unique_lock<Mutex> lock(taskMutex);
 
   this->worldPosition = worldPosition;
-  this->worldQuaternion = worldQuaternion;
+  this->cameraPosition = cameraPosition;
+  this->cameraQuaternion = cameraQuaternion;
   this->projectionMatrix = projectionMatrix;
 
   sortTasksInternal();
@@ -212,15 +213,15 @@ void TaskQueue::setCamera(const vm::vec3 &worldPosition, const Quat &worldQuater
 Frustum TaskQueue::getFrustum() {
   Matrix matrixWorld(
     Vec{
-      worldPosition.x,
-      worldPosition.y,
-      worldPosition.z
+      cameraPosition.x,
+      cameraPosition.y,
+      cameraPosition.z
     },
     Quat{
-      worldQuaternion.x,
-      worldQuaternion.y,
-      worldQuaternion.z,
-      worldQuaternion.w
+      cameraQuaternion.x,
+      cameraQuaternion.y,
+      cameraQuaternion.z,
+      cameraQuaternion.w
     },
     Vec{1, 1, 1}
   );
