@@ -1,7 +1,6 @@
 #include "task.h"
 #include "instance.h"
 #include "vector.h"
-#include "sort.h"
 #include <limits>
 #include <iostream>
 #include <emscripten/atomic.h>
@@ -60,24 +59,6 @@ void Task::run() {
 }
 void Task::cancel() {
   live.store(false);
-}
-
-int Task::getPriority() {
-  return priority;
-}
-Sphere Task::getSphere() {
-  return Sphere{
-    Vec{
-      worldPosition.x,
-      worldPosition.y,
-      worldPosition.z
-    },
-    std::sqrt(
-      halfSize.x * halfSize.x +
-      halfSize.y * halfSize.y +
-      halfSize.z * halfSize.z
-    )
-  };
 }
 
 //
@@ -277,12 +258,9 @@ float TaskQueue::getTaskDistance(Task *task, const Frustum &frustum) {
   return distance;
 }
 void TaskQueue::sortTasksInternal() {
-  const vm::vec3 &worldPosition = this->worldPosition;
   Frustum frustum = getFrustum();
 
-  sort<Task *>(tasks, worldPosition, frustum);
-
-  /* std::vector<std::pair<Task *, float>> taskDistances;
+  std::vector<std::pair<Task *, float>> taskDistances;
   taskDistances.reserve(tasks.size());
   for (size_t i = 0; i < tasks.size(); i++) {
     Task *task = tasks[i];
@@ -300,5 +278,5 @@ void TaskQueue::sortTasksInternal() {
 
   for (size_t i = 0; i < taskDistances.size(); i++) {
     tasks[i] = taskDistances[i].first;
-  } */
+  }
 }

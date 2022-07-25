@@ -87,6 +87,21 @@ public:
     vm::ivec3 min;
     int size;
     OctreeNodeType type;
+
+    int getPriority() const {
+        return 0;
+    }
+    Sphere getSphere() const {
+        float halfSize = size / 2.0f;
+        return Sphere(
+            Vec{
+                (float)min.x + halfSize,
+                (float)min.y + halfSize,
+                (float)min.z + halfSize
+            },
+            std::sqrt(3.f * halfSize * halfSize)
+        );
+    }
 };
 
 //

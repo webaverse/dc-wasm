@@ -867,11 +867,21 @@ void DCInstance::createTerrainChunkMeshAsync(uint32_t id, const vm::ivec3 &world
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
     vm::vec3 worldPositionF{
-        (float)worldPosition.x,
-        (float)worldPosition.y,
-        (float)worldPosition.z
+        (float)worldPosition.x + (float)lod / 2.f,
+        (float)worldPosition.y + (float)lod / 2.f,
+        (float)worldPosition.z + (float)lod / 2.f
     };
-    Task *terrainTask = new Task(id, worldPositionF, lod, [
+    /* std::cout << "create terrain task position: " <<
+      worldPositionF.x << " " <<
+      worldPositionF.y << " " <<
+      worldPositionF.z << " " <<
+      std::endl; */
+    vm::vec3 sizeF{
+        (float)lod / 2.f,
+        (float)lod / 2.f,
+        (float)lod / 2.f
+    };
+    Task *terrainTask = new Task(id, worldPositionF, sizeF, [
         this,
         promise,
         worldPosition,
@@ -894,11 +904,16 @@ void DCInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldP
     std::vector<int> lodVector(lodArray, lodArray + 8);
 
     vm::vec3 worldPositionF{
-        (float)worldPosition.x,
-        (float)worldPosition.y,
-        (float)worldPosition.z
+        (float)worldPosition.x + (float)lod / 2.f,
+        (float)worldPosition.y + (float)lod / 2.f,
+        (float)worldPosition.z + (float)lod / 2.f
     };
-    Task *liquidTask = new Task(id, worldPositionF, lod, [
+    vm::vec3 sizeF{
+        (float)lod / 2.f,
+        (float)lod / 2.f,
+        (float)lod / 2.f
+    };
+    Task *liquidTask = new Task(id, worldPositionF, sizeF, [
         this,
         promise,
         worldPosition,
@@ -914,12 +929,23 @@ void DCInstance::createLiquidChunkMeshAsync(uint32_t id, const vm::ivec3 &worldP
 void DCInstance::getHeightfieldRangeAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const vm::ivec2 &sizeXZ, int lod, float *heights, int priority) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
+    // float radius = std::sqrt(sizeXZ.x * sizeXZ.x + sizeXZ.y * sizeXZ.y) / 2.f;
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.x + (float)sizeXZ.x / 2.f,
         0.f,
-        (float)worldPositionXZ.y
+        (float)worldPositionXZ.y + (float)sizeXZ.y / 2.f
     };
-    Task *heightfieldRangeTask = new Task(id, worldPositionF, lod, priority, [
+    vm::vec3 sizeF{
+        (float)sizeXZ.x / 2.f,
+        0.f,
+        (float)sizeXZ.y / 2.f
+    };
+    /* std::cout << "get heightfield range task position: " <<
+      worldPositionF.x << " " <<
+      worldPositionF.y << " " <<
+      worldPositionF.z << " " <<
+      std::endl; */
+    Task *heightfieldRangeTask = new Task(id, worldPositionF, sizeF, priority, [
         this,
         promise,
         worldPositionXZ,
@@ -937,11 +963,21 @@ void DCInstance::getLightRangeAsync(uint32_t id, const vm::ivec3 &worldPosition,
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPosition.x,
-        (float)worldPosition.y,
-        (float)worldPosition.z
+        (float)worldPosition.x + size.x / 2.f,
+        (float)worldPosition.y + size.y / 2.f,
+        (float)worldPosition.z + size.z / 2.f
     };
-    Task *lightRangeTask = new Task(id, worldPositionF, lod, priority, [
+    /* std::cout << "get light range task position: " <<
+      worldPositionF.x << " " <<
+      worldPositionF.y << " " <<
+      worldPositionF.z << " " <<
+      std::endl; */
+    vm::vec3 worldSizeF{
+        (float)size.x / 2.f,
+        (float)size.y / 2.f,
+        (float)size.z / 2.f
+    };
+    Task *lightRangeTask = new Task(id, worldPositionF, worldSizeF, priority, [
         this,
         promise,
         worldPosition,
@@ -957,7 +993,7 @@ void DCInstance::getLightRangeAsync(uint32_t id, const vm::ivec3 &worldPosition,
     DualContouring::taskQueue.pushTask(lightRangeTask);
 }
 
-// get chunk attributes
+/* // get chunk attributes
 void DCInstance::getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod, int priority) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
@@ -1015,18 +1051,26 @@ void DCInstance::getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, in
         promise->resolve(result);
     });
     DualContouring::taskQueue.pushTask(aoTask);
-}
+} */
+
 void DCInstance::createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
-    // std::cout << "grass splat priority " << priority << std::endl;
-
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.x + (float)lod / 2.f,
         0.f,
-        (float)worldPositionXZ.y
+        (float)worldPositionXZ.y + (float)lod / 2.f
     };
-    Task *grassSplatTask = new Task(id, worldPositionF, lod, priority, [
+    vm::vec3 sizeF{
+        (float)lod / 2.f,
+        0.f,
+        (float)lod / 2.f
+    };
+    /* std::cout << "grass splat world position" <<
+        worldPositionF.x << " " <<
+        worldPositionF.y << " " <<
+        worldPositionF.z << std::endl; */
+    Task *grassSplatTask = new Task(id, worldPositionF, sizeF, priority, [
         this,
         promise,
         worldPositionXZ,
@@ -1041,11 +1085,16 @@ void DCInstance::createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldP
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.x + (float)lod / 2.f,
         0.f,
-        (float)worldPositionXZ.y
+        (float)worldPositionXZ.y + (float)lod / 2.f
     };
-    Task *vegetationSplatTask = new Task(id, worldPositionF, lod, priority, [
+    vm::vec3 sizeF{
+        (float)lod / 2.f,
+        0.f,
+        (float)lod / 2.f
+    };
+    Task *vegetationSplatTask = new Task(id, worldPositionF, sizeF, priority, [
         this,
         promise,
         worldPositionXZ,
@@ -1060,11 +1109,16 @@ void DCInstance::createMobSplatAsync(uint32_t id, const vm::ivec2 &worldPosition
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
     vm::vec3 worldPositionF{
-        (float)worldPositionXZ.x,
+        (float)worldPositionXZ.x + (float)lod / 2.f,
         0.f,
-        (float)worldPositionXZ.y
+        (float)worldPositionXZ.y + (float)lod / 2.f
     };
-    Task *mobSplatTask = new Task(id, worldPositionF, lod, priority, [
+    vm::vec3 sizeF{
+        (float)lod / 2.f,
+        0.f,
+        (float)lod / 2.f
+    };
+    Task *mobSplatTask = new Task(id, worldPositionF, sizeF, priority, [
         this,
         promise,
         worldPositionXZ,

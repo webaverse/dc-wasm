@@ -25,14 +25,15 @@ public:
     std::atomic<bool> live;
 
     vm::vec3 worldPosition;
-    int lod;
+    vm::vec3 halfSize;
+    // int lod;
     int priority;
     // Sphere sphere;
 
     Task(uint32_t id, std::function<void()> fn);
-    Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn);
+    Task(uint32_t id, const vm::vec3 &worldPosition, const vm::vec3 &halfSize, std::function<void()> fn);
     Task(uint32_t id, int priority, std::function<void()> fn);
-    Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn);
+    Task(uint32_t id, const vm::vec3 &worldPosition, const vm::vec3 &halfSize, int priority, std::function<void()> fn);
     ~Task();
 
     // bool tryLock();
@@ -41,6 +42,9 @@ public:
     void run();
     void cancel();
     // void ensurePop();
+
+    int getPriority();
+    Sphere getSphere();
 };
 
 //
@@ -68,7 +72,7 @@ public:
 
     void setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix);
     Frustum getFrustum();
-    float getTaskDistanceSq(Task *task, const Frustum &frustum);
+    float getTaskDistance(Task *task, const Frustum &frustum);
 
     void sortTasksInternal();
 };
