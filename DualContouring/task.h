@@ -42,6 +42,9 @@ public:
     void run();
     void cancel();
     // void ensurePop();
+
+    int getPriority();
+    Sphere getSphere();
 };
 
 //

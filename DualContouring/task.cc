@@ -62,6 +62,24 @@ void Task::cancel() {
   live.store(false);
 }
 
+int Task::getPriority() {
+  return priority;
+}
+Sphere Task::getSphere() {
+  return Sphere{
+    Vec{
+      worldPosition.x,
+      worldPosition.y,
+      worldPosition.z
+    },
+    std::sqrt(
+      halfSize.x * halfSize.x +
+      halfSize.y * halfSize.y +
+      halfSize.z * halfSize.z
+    )
+  };
+}
+
 //
 
 TaskQueue::TaskQueue() {}
