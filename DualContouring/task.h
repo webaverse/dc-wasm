@@ -72,7 +72,7 @@ public:
 
     void setCamera(const vm::vec3 &worldPosition, const vm::vec3 &cameraPosition, const Quat &cameraQuaternion, const std::array<float, 16> &projectionMatrix);
     Frustum getFrustum();
-    float getTaskDistanceSq(Task *task, const Frustum &frustum);
+    float getTaskDistance(Task *task, const Frustum &frustum);
 
     void sortTasksInternal();
 };
