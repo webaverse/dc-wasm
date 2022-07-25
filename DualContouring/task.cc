@@ -1,6 +1,7 @@
 #include "task.h"
 #include "instance.h"
 #include "vector.h"
+#include "sort.h"
 #include <limits>
 #include <iostream>
 #include <emscripten/atomic.h>
@@ -19,12 +20,12 @@
   lod(0),
   priority(0)
 {} */
-Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, std::function<void()> fn) :
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, const vm::vec3 &halfSize, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
   worldPosition(worldPosition),
-  lod(lod),
+  halfSize(halfSize),
   priority(0)
 {}
 Task::Task(uint32_t id, int priority, std::function<void()> fn) :
@@ -36,15 +37,19 @@ Task::Task(uint32_t id, int priority, std::function<void()> fn) :
     0,
     0
   },
-  lod(0),
+  halfSize{
+    0,
+    0,
+    0
+  },
   priority(priority)
 {}
-Task::Task(uint32_t id, const vm::vec3 &worldPosition, int lod, int priority, std::function<void()> fn) :
+Task::Task(uint32_t id, const vm::vec3 &worldPosition, const vm::vec3 &halfSize, int priority, std::function<void()> fn) :
   id(id),
   fn(fn),
   live(true),
   worldPosition(worldPosition),
-  lod(lod),
+  halfSize(halfSize),
   priority(priority)
 {}
 
