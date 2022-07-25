@@ -211,9 +211,9 @@ public:
 
     //
 
-    void getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod, int priority);
+    /* void getChunkHeightfieldAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, int lod, int priority);
     void getChunkSkylightAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod, int priority);
-    void getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod, int priority);
+    void getChunkAoAsync(uint32_t id, const vm::ivec3 &worldPosition, int lod, int priority); */
 
     void createGrassSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
     void createVegetationSplatAsync(uint32_t id, const vm::ivec2 &worldPositionXZ, const int lod, const int priority);
