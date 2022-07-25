@@ -136,7 +136,7 @@ void constructTreeUpwards(OctreeContext &octreeContext, const vm::ivec3 &leafPos
 std::vector<OctreeNodePtr> constructOctreeForLeaf(const vm::ivec3 &position, int lod1Range, int maxLod);
 OctreeNodePtr getMaxLodNode(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes, const vm::ivec3 &min);
 std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newLeafNodes, const std::vector<OctreeNodePtr> &oldLeafNodes);
-std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition);
+// std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition);
 std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks);
 
 //
@@ -161,7 +161,7 @@ public:
 
   // dynamic methods
 
-  std::vector<OctreeNodePtr> sortNodes(const std::vector<OctreeNodePtr> &nodes);
+  void sortNodes(std::vector<OctreeNodePtr> &nodes);
   TrackerUpdate updateCoord(const vm::ivec3 &currentCoord);
   TrackerUpdate update(const vm::vec3 &position);
 };

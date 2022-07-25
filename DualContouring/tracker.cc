@@ -1,5 +1,6 @@
 #include "tracker.h"
 #include "octree.h"
+#include "sort.h"
 #include <iostream>
 
 /*
@@ -723,7 +724,7 @@ std::vector<TrackerTaskPtr> diffLeafNodes(const std::vector<OctreeNodePtr> &newL
   }
   return tasks;
 }
-// sort tasks by distance to world position of the central max lod node
+/* // sort tasks by distance to world position of the central max lod node
 std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, const vm::vec3 &worldPosition) {
   std::vector<std::pair<TrackerTaskPtr, float>> taskDistances;
   taskDistances.reserve(tasks.size());
@@ -753,7 +754,7 @@ std::vector<TrackerTaskPtr> sortTasks(const std::vector<TrackerTaskPtr> &tasks, 
     sortedTasks.push_back(iter.first);
   }
   return sortedTasks;
-}
+} */
 std::pair<std::vector<OctreeNodePtr>, std::vector<TrackerTaskPtr>> updateChunks(const std::vector<OctreeNodePtr> &oldChunks, const std::vector<TrackerTaskPtr> &tasks) {
   std::vector<OctreeNodePtr> newChunks = oldChunks;
   
@@ -883,7 +884,7 @@ bool duplicateTask(const std::vector<TrackerTaskPtr> &tasks, const std::vector<T
 }
 // dynamic methods
 // sort nodes by distance to world position of the central max lod node
-std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &nodes) {
+void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
   const vm::vec3 &worldPosition = inst->worldPosition;
   const vm::vec3 &cameraPosition = inst->cameraPosition;
   const Quat &cameraQuaternion = inst->cameraQuaternion;
@@ -909,8 +910,10 @@ std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &
   Frustum frustum = Frustum::fromMatrix(
     Matrix::fromArray(projectionMatrix.data()) *= matrixWorldInverse
   );
+
+  sort<OctreeNodePtr>(nodes, worldPosition, frustum);
   
-  // compute node distances
+  /* // compute node distances
   std::vector<std::tuple<OctreeNodePtr, float, int>> nodeDistances;
   nodeDistances.reserve(nodes.size());
 
@@ -922,13 +925,7 @@ std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &
       vm::vec3{0.5, 0.5, 0.5} * (float)lod;
     center *= (float)chunkSize;
     vm::vec3 delta = worldPosition - center;
-    float distanceSq = vm::lengthSq(delta);
-
-    /* std::cout << "tracker sort center " <<
-      center.x << " " <<
-      center.y << " " <<
-      center.z << " " <<
-      std::endl; */
+    float distance = vm::length(delta);
 
     Sphere sphere(
       Vec{
@@ -941,10 +938,10 @@ std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &
       )
     );
     if (!frustum.intersectsSphere(sphere)) {
-      distanceSq += frustumCullDistancePenalty;
+      distance += frustumCullDistancePenalty;
     }
 
-    nodeDistances.push_back(std::tuple<OctreeNodePtr, float, int>(node, distanceSq, lod));
+    nodeDistances.push_back(std::tuple<OctreeNodePtr, float, int>(node, distance, lod));
   }
 
   std::sort(
@@ -967,7 +964,7 @@ std::vector<OctreeNodePtr> Tracker::sortNodes(const std::vector<OctreeNodePtr> &
   for (const auto &iter : nodeDistances) {
     sortedNodes.push_back(std::get<0>(iter));
   }
-  return sortedNodes;
+  return sortedNodes; */
 }
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
@@ -994,7 +991,7 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   // std::cout << "check abort 1" << std::endl;
   // duplicateTask(tasks); */
 
-  octreeLeafNodes = sortNodes(octreeLeafNodes);
+  sortNodes(octreeLeafNodes);
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
   TrackerUpdate result;
