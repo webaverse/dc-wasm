@@ -74,15 +74,15 @@ TaskQueue::~TaskQueue() {
 
 void TaskQueue::pushTask(Task *task) {
   Frustum frustum = getFrustum();
-  const float taskDistanceSq = getTaskDistanceSq(task, frustum);
+  const float taskDistance = getTaskDistance(task, frustum);
   {
     std::unique_lock<Mutex> lock(taskMutex);
 
     bool found = false;
     for (size_t i = 0; i < tasks.size(); i++) {
       auto iter = tasks.begin() + i;
-      const float taskDistanceSq2 = getTaskDistanceSq(*iter, frustum);
-      if (taskDistanceSq < taskDistanceSq2) {
+      const float taskDistance2 = getTaskDistance(*iter, frustum);
+      if (taskDistance < taskDistance2) {
         tasks.insert(iter, task);
         found = true;
         break;
@@ -237,8 +237,8 @@ Frustum TaskQueue::getFrustum() {
   );
   return frustum;
 }
-float TaskQueue::getTaskDistanceSq(Task *task, const Frustum &frustum) {
-  float distanceSq = vm::lengthSq(task->worldPosition - worldPosition);
+float TaskQueue::getTaskDistance(Task *task, const Frustum &frustum) {
+  float distance = vm::length(task->worldPosition - worldPosition);
 
   Sphere sphere(
     Vec{
@@ -246,23 +246,30 @@ float TaskQueue::getTaskDistanceSq(Task *task, const Frustum &frustum) {
       task->worldPosition.y,
       task->worldPosition.z
     },
-    (float)std::sqrt(3.f * ((float)task->lod/2.f) * ((float)task->lod/2.f))
+    (float)std::sqrt(
+      task->halfSize.x * task->halfSize.x +
+      task->halfSize.y * task->halfSize.y +
+      task->halfSize.z * task->halfSize.z
+    )
   );
   if (!frustum.intersectsSphere(sphere)) {
-    distanceSq += frustumCullDistancePenalty;
+    distance += frustumCullDistancePenalty;
   }
-  distanceSq += task->priority * priorityDistancePenalty;
-  return distanceSq;
+  distance += task->priority * priorityDistancePenalty;
+  return distance;
 }
 void TaskQueue::sortTasksInternal() {
+  const vm::vec3 &worldPosition = this->worldPosition;
   Frustum frustum = getFrustum();
 
-  std::vector<std::pair<Task *, float>> taskDistances;
+  sort<Task *>(tasks, worldPosition, frustum);
+
+  /* std::vector<std::pair<Task *, float>> taskDistances;
   taskDistances.reserve(tasks.size());
   for (size_t i = 0; i < tasks.size(); i++) {
     Task *task = tasks[i];
-    float distanceSq = getTaskDistanceSq(task, frustum);
-    taskDistances.push_back(std::pair<Task *, float>(task, distanceSq));
+    float distance = getTaskDistance(task, frustum);
+    taskDistances.push_back(std::pair<Task *, float>(task, distance));
   }
 
   std::sort(
@@ -275,5 +282,5 @@ void TaskQueue::sortTasksInternal() {
 
   for (size_t i = 0; i < taskDistances.size(); i++) {
     tasks[i] = taskDistances[i].first;
-  }
+  } */
 }
