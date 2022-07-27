@@ -1982,13 +1982,16 @@ void DCInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
 
     // std::cout << "tracker update async " << priority << std::endl;
 
+    std::vector<OctreeNodePtr> renderChunks;
+
     Task *trackerUpdateTask = new Task(id, priority, [
         this,
         promise,
         tracker,
-        position
+        position,
+        oldRenderChunks = std::move(renderChunks)
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position);
+        const TrackerUpdate &trackerUpdate = tracker->update(position, oldRenderChunks);
         uint8_t *buffer = trackerUpdate.getBuffer();
         if (!promise->resolve(buffer)) {
           // XXX clean up
