@@ -19,6 +19,8 @@
 //
 
 class Tracker;
+class OctreeNode;
+typedef std::shared_ptr<OctreeNode> OctreeNodePtr;
 
 //
 
@@ -246,7 +248,7 @@ public:
     
     //
     
-    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, int priority);
+    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, const std::vector<OctreeNodePtr> &renderedChunks, int priority);
 };
 
 #endif // _INSTANCE_H_

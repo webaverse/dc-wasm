@@ -141,12 +141,6 @@ uint8_t *TrackerUpdate::getBuffer() const {
 
 //
 
-/* class DataRequest {
-public:
-  OctreeNodePtr node;
-
-  std::vector<uint8_t> getBuffer() const;
-}; */
 std::vector<uint8_t> DataRequest::getBuffer() const {
   size_t size = 0;
   size += sizeof(vm::ivec3); // min
@@ -171,68 +165,46 @@ std::vector<uint8_t> DataRequest::getBuffer() const {
   return result;
 }
 
+std::vector<uint8_t> DataRequestUpdate::getBuffer() const {
+  return std::vector<uint8_t>(); // XXX
+}
+
 //
 
-/* class TransformRequest {
-public:
-  std::vector<OctreeNodePtr> fromNodes;
-  std::vector<OctreeNodePtr> toNodes;
+Dominator::Dominator(OctreeNodePtr node) :
+  node(node)
+  {}
 
-  std::vector<uint8_t> getBuffer() const;
-}; */
-std::vector<uint8_t> TransformRequest::getBuffer() const {
+//
+
+std::vector<uint8_t> Dominator::getBuffer() const {
   size_t size = 0;
-  size += sizeof(uint32_t); // numFromNodes
-  size += sizeof(uint32_t); // numToNodes
-  size += sizeof(uint32_t) * fromNodes.size(); // fromMin
-  size += sizeof(uint32_t) * fromNodes.size(); // fromSize
-  size += sizeof(uint32_t) * fromNodes.size(); // fromIsLeaf
-  size += sizeof(uint32_t) * fromNodes.size(); // fromLodArray
-  size += sizeof(uint32_t) * toNodes.size(); // toMin
-  size += sizeof(uint32_t) * toNodes.size(); // toSize
-  size += sizeof(uint32_t) * toNodes.size(); // toIsLeaf
-  size += sizeof(uint32_t) * toNodes.size(); // toLodArray
+  size += sizeof(uint32_t); // numNewChunks
+  size += sizeof(uint32_t); // numOldChunks
+  size += sizeof(uint32_t) * newChunks.size(); // new chunk hashes
+  size += sizeof(uint32_t) * oldChunks.size(); // old chunk hashes
 
   std::vector<uint8_t> result(size);
   int index = 0;
-  // numFromNodes
-  *((uint32_t *)(result.data() + index)) = fromNodes.size();
+  // numNewChunks
+  *((uint32_t *)(result.data() + index)) = newChunks.size();
   index += sizeof(uint32_t);
-  // numToNodes
-  *((uint32_t *)(result.data() + index)) = toNodes.size();
+  // numOldChunks
+  *((uint32_t *)(result.data() + index)) = oldChunks.size();
   index += sizeof(uint32_t);
-  // fromNodes
-  for (size_t i = 0; i < fromNodes.size(); i++) {
-    OctreeNodePtr node = fromNodes[i];
-    // min
-    std::memcpy(result.data() + index, &node->min, sizeof(vm::ivec3));
-    index += sizeof(vm::ivec3);
-    // size
-    *((int *)(result.data() + index)) = node->size;
-    index += sizeof(int);
-    // isLeaf
-    *((int *)(result.data() + index)) = (node->type == Node_Leaf) ? 1 : 0;
-    index += sizeof(int);
-    // lodArray
-    std::memcpy(result.data() + index, &node->lodArray[0], sizeof(int[8]));
-    index += sizeof(int[8]);
+  // new chunk hashes
+  for (auto chunk : newChunks) {
+    uint64_t hash = hashOctreeMinLod(chunk->min, chunk->size);
+    *((uint32_t *)(result.data() + index)) = hash;
+    index += sizeof(uint32_t);
   }
-  // toNodes
-  for (size_t i = 0; i < toNodes.size(); i++) {
-    OctreeNodePtr node = toNodes[i];
-    // min
-    std::memcpy(result.data() + index, &node->min, sizeof(vm::ivec3));
-    index += sizeof(vm::ivec3);
-    // size
-    *((int *)(result.data() + index)) = node->size;
-    index += sizeof(int);
-    // isLeaf
-    *((int *)(result.data() + index)) = (node->type == Node_Leaf) ? 1 : 0;
-    index += sizeof(int);
-    // lodArray
-    std::memcpy(result.data() + index, &node->lodArray[0], sizeof(int[8]));
-    index += sizeof(int[8]);
+  // old chunk hashes
+  for (auto chunk : oldChunks) {
+    uint64_t hash = hashOctreeMinLod(chunk->min, chunk->size);
+    *((uint32_t *)(result.data() + index)) = hash;
+    index += sizeof(uint32_t);
   }
+  
   return result;
 }
 
@@ -966,56 +938,168 @@ void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
   }
   return sortedNodes; */
 }
-TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
-  std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
-  /* std::vector<TrackerTaskPtr> tasks = diffLeafNodes(
-    octreeLeafNodes,
-    this->lastOctreeLeafNodes
-  );
+const OctreeNodePtr findLeafNodeForPosition(
+  const std::vector<OctreeNodePtr> &nodes,
+  const vm::ivec3 &p
+) {
+  for (auto iter = nodes.begin(); iter != nodes.end(); iter++) {
+    const OctreeNodePtr &node = *iter;
+    if (containsPoint(*node, p)) {
+      return node;
+    }
+  }
+  return nullptr;
+}
 
-  // filter out tasks that are nops
-  {
-    std::vector<TrackerTaskPtr> tasks2;
-    std::copy_if(
-      tasks.begin(),
-      tasks.end(),
-      std::back_inserter(tasks2),
-      [](TrackerTaskPtr task) -> bool {
-        return !task->isNop();
+DataRequestUpdate Tracker::updateDataRequests(
+  std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+  const std::vector<OctreeNodePtr> &leafNodes
+) {
+  DataRequestUpdate dataRequestUpdate;
+
+  // cancel old data requests
+  for (auto iter = dataRequests.begin(); iter != dataRequests.end();) {
+    const uint64_t &hash = iter->first;
+    const DataRequestPtr &oldDataRequest = iter->second;
+
+    auto matchingLeafNodeIter = std::find_if(
+      leafNodes.begin(),
+      leafNodes.end(),
+      [&](const OctreeNodePtr &leafNode) -> bool {
+        return equalsNodeLod(*leafNode, *oldDataRequest->node);
       }
     );
-    tasks = std::move(tasks2);
+    if (matchingLeafNodeIter != leafNodes.end()) {
+      // keep the data request
+      // oldDataRequest.replaceNode(matchingLeafNode);
+      dataRequestUpdate.keepDataRequests.push_back(oldDataRequest);
+
+      iter++;
+    } else {
+      // cancel the data request
+      // oldDataRequest.cancel();
+      dataRequestUpdate.cancelDataRequests.push_back(oldDataRequest);
+      // forget the data request
+      auto currentIter = iter;
+      auto nextIter = iter;
+      nextIter++;
+      dataRequests.erase(currentIter);
+      iter = nextIter;
+    }
   }
 
-  // std::cout << "check abort 1" << std::endl;
-  // duplicateTask(tasks); */
+  // add new data requests
+  for (auto chunk : leafNodes) {
+    // const hash = _getHashChunk(chunk);
+    uint64_t hash = hashOctreeMinLod(chunk->min, chunk->size);
+    auto dataRequestIter = dataRequests.find(hash);
+    if (dataRequestIter == dataRequests.end()) {
+      DataRequestPtr dataRequest(new DataRequest{chunk});
 
+      dataRequestUpdate.newDataRequests.push_back(dataRequest);
+
+      dataRequests.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(hash),
+        std::forward_as_tuple(dataRequest)
+      );
+    }
+  }
+
+  return dataRequestUpdate;
+}
+std::unordered_map<uint64_t, Dominator> Tracker::updateDominators(
+  const std::vector<OctreeNodePtr> &oldRenderedChunks,
+  std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
+) {
+  // new rendered chunks come from the data requests
+  std::vector<OctreeNodePtr> newRenderedChunks(dataRequests.size());
+  std::transform(
+    dataRequests.begin(),
+    dataRequests.end(),
+    newRenderedChunks.begin(),
+    [](const auto &iter) -> const auto & {
+      return iter.second->node;
+    }
+  );
+
+  // compute dominators. a dominator is a chunk lod that contains a a transform from old chunks to new chunks.
+  std::unordered_map<uint64_t, Dominator> dominators;
+  auto addChunk = [&](const OctreeNodePtr &chunk, bool isNew) -> void {
+    OctreeNodePtr oldLeafNode = findLeafNodeForPosition(oldRenderedChunks, chunk->min);
+    OctreeNodePtr newLeafNode = findLeafNodeForPosition(newRenderedChunks, chunk->min);
+    OctreeNodePtr maxLodChunk = nullptr;
+    if (oldLeafNode != nullptr && newLeafNode != nullptr) {
+      maxLodChunk = oldLeafNode->size > newLeafNode->size ? oldLeafNode : newLeafNode;
+    } else if (oldLeafNode != nullptr) {
+      maxLodChunk = oldLeafNode;
+    } else if (newLeafNode != nullptr) {
+      maxLodChunk = newLeafNode;
+    } else {
+      std::cout << "no chunk match in any leaf set" << std::endl;
+      abort();
+    }
+
+    // uint64_t maxLodHash = _getHashChunk(maxLodChunk);
+    uint64_t maxLodHash = hashOctreeMinLod(maxLodChunk->min, maxLodChunk->size);
+    auto dominatorIter = dominators.find(maxLodHash);
+    if (dominatorIter == dominators.end()) {
+      auto insertResult = dominators.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(maxLodHash),
+        std::forward_as_tuple(maxLodChunk)
+      );
+      dominatorIter = insertResult.first;
+    }
+    Dominator &dominator = dominatorIter->second;
+    if (isNew) {
+      dominator.newChunks.push_back(chunk);
+    } else {
+      dominator.oldChunks.push_back(chunk);
+    }
+  };
+  for (auto chunk : oldRenderedChunks) {
+    addChunk(chunk, false);
+  }
+  for (auto chunk : newRenderedChunks) {
+    addChunk(chunk, true);
+  }
+  /* for (const dominator of this.dominators.values()) {
+    dominator.start();
+  } */
+  return dominators;
+}
+TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord, const std::vector<OctreeNodePtr> &oldRenderedChunks) {
+  std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
   sortNodes(octreeLeafNodes);
-  this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
+
+  //
+
+  DataRequestUpdate dataRequestUpdate = updateDataRequests(this->dataRequests, octreeLeafNodes);
+
+  //
+
+  std::unordered_map<uint64_t, Dominator> dominators = updateDominators(oldRenderedChunks, this->dataRequests);
+  // const oldRenderedChunks = Array.from(this.renderedChunks.values());
+  // const newRenderedChunks = Array.from(this.dataRequests.values()).map(dataRequest => dataRequest.node);
+
+  //
 
   TrackerUpdate result;
-  // result.currentCoord = currentCoord;
-  // result.oldTasks = std::move(cancelOldTasks);
-  // result.newTasks = std::move(tasks);
-  result.leafNodes = this->lastOctreeLeafNodes;
+
+  result.leafNodes = std::move(octreeLeafNodes);
+
+  result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
+  result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
+  result.cancelDataRequests = std::move(dataRequestUpdate.cancelDataRequests);
+
+  result.dominators = std::move(dominators);
+
   return result;
 }
-TrackerUpdate Tracker::update(const vm::vec3 &position) {
+TrackerUpdate Tracker::update(const vm::vec3 &position, const std::vector<OctreeNodePtr> &oldRenderedChunks) {
   const vm::ivec3 &currentCoord = getCurrentCoord(position);
-
-  /* std::cout << "wasm update coord " <<
-    currentCoord.x << " " << currentCoord.y << " " << currentCoord.z << " " <<
-    position.x << " " << position.y << " " << position.z <<
-    std::endl; */
-
-  // if we moved across a chunk boundary, update needed chunks
-  // if (currentCoord != this->lastCoord) {
-    TrackerUpdate trackerUpdate = updateCoord(currentCoord);
-    // this->lastCoord = currentCoord;
-    return trackerUpdate;
-  /* } else {
-    abort();
-    return TrackerUpdate();
-  } */
+  TrackerUpdate trackerUpdate = updateCoord(currentCoord, oldRenderedChunks);
+  return trackerUpdate;
 }

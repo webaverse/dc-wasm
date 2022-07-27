@@ -53,6 +53,39 @@ public:
 
 //
 
+class DataRequest {
+public:
+  OctreeNodePtr node;
+  
+  std::vector<uint8_t> getBuffer() const;
+};
+
+typedef std::shared_ptr<DataRequest> DataRequestPtr;
+
+class DataRequestUpdate {
+public:
+  std::vector<DataRequestPtr> newDataRequests;
+  std::vector<DataRequestPtr> keepDataRequests;
+  std::vector<DataRequestPtr> cancelDataRequests;
+
+  std::vector<uint8_t> getBuffer() const;
+};
+
+//
+
+class Dominator {
+public:
+  OctreeNodePtr node;
+  std::vector<OctreeNodePtr> newChunks;
+  std::vector<OctreeNodePtr> oldChunks;
+
+  Dominator(OctreeNodePtr node);
+
+  std::vector<uint8_t> getBuffer() const;
+};
+
+//
+
 extern std::atomic<int> nextTrackerId;
 
 enum TrackerTaskType {
@@ -77,31 +110,15 @@ typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
 class TrackerUpdate {
 public:
-  // vm::ivec3 currentCoord;
-  // std::vector<TrackerTaskPtr> oldTasks;
-  // std::vector<TrackerTaskPtr> newTasks;
   std::vector<OctreeNodePtr> leafNodes;
 
+  std::vector<DataRequestPtr> newDataRequests;
+  std::vector<DataRequestPtr> keepDataRequests;
+  std::vector<DataRequestPtr> cancelDataRequests;
+
+  std::unordered_map<uint64_t, Dominator> dominators;
+
   uint8_t *getBuffer() const;
-};
-
-//
-
-class DataRequest {
-public:
-  OctreeNodePtr node;
-
-  std::vector<uint8_t> getBuffer() const;
-};
-
-//
-
-class TransformRequest {
-public:
-  std::vector<OctreeNodePtr> fromNodes;
-  std::vector<OctreeNodePtr> toNodes;
-
-  std::vector<uint8_t> getBuffer() const;
 };
 
 //
@@ -150,8 +167,7 @@ public:
   
   vm::ivec3 lastCoord;
   std::vector<OctreeNodePtr> chunks;
-  std::vector<OctreeNodePtr> lastOctreeLeafNodes;
-  std::vector<TrackerTaskPtr> liveTasks;
+  std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
 
   Tracker(int lods, int minLodRange, bool trackY, DCInstance *inst);
 
@@ -162,8 +178,16 @@ public:
   // dynamic methods
 
   void sortNodes(std::vector<OctreeNodePtr> &nodes);
-  TrackerUpdate updateCoord(const vm::ivec3 &currentCoord);
-  TrackerUpdate update(const vm::vec3 &position);
+  DataRequestUpdate updateDataRequests(
+    std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+    const std::vector<OctreeNodePtr> &leafNodes
+  );
+  std::unordered_map<uint64_t, Dominator> updateDominators(
+    const std::vector<OctreeNodePtr> &oldRenderedChunks,
+    std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
+  );
+  TrackerUpdate updateCoord(const vm::ivec3 &currentCoord, const std::vector<OctreeNodePtr> &oldRenderedChunks);
+  TrackerUpdate update(const vm::vec3 &position, const std::vector<OctreeNodePtr> &oldRenderedChunks);
 };
 
 #endif // _TRACKER_H_
