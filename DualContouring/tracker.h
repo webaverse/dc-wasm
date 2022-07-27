@@ -77,10 +77,13 @@ typedef std::shared_ptr<TrackerTask> TrackerTaskPtr;
 
 class TrackerUpdate {
 public:
-  // vm::ivec3 currentCoord;
-  // std::vector<TrackerTaskPtr> oldTasks;
-  // std::vector<TrackerTaskPtr> newTasks;
   std::vector<OctreeNodePtr> leafNodes;
+
+  std::vector<DataRequestPtr> newDataRequests;
+  std::vector<DataRequestPtr> keepDataRequests;
+  std::vector<DataRequestPtr> oldDataRequests;
+
+  std::unordered_map<uint64_t, Dominator> dominators;
 
   uint8_t *getBuffer() const;
 };

@@ -966,6 +966,153 @@ void Tracker::sortNodes(std::vector<OctreeNodePtr> &nodes) {
   }
   return sortedNodes; */
 }
+
+typedef std::shared_ptr<DataRequest> DataRequestPtr;
+class DataRequestUpdate {
+public:
+  std::vector<DataRequestPtr> newDataRequests;
+  std::vector<DataRequestPtr> cancelDataRequests;
+  std::vector<DataRequestPtr> keepDataRequests;
+};
+
+const equalsNode = (a, b) => {
+  return a.min.equals(b.min) && a.lod === b.lod;
+};
+const equalsNodeLod = (a, b) => {
+  return equalsNode(a, b) && a.lodArray.every((lod, i) => lod === b.lodArray[i]);
+};
+const containsPoint = (a, p) => {
+  return p.x >= a.min.x && p.x < a.min.x + a.lod &&
+    p.y >= a.min.y && p.y < a.min.y + a.lod &&
+    p.z >= a.min.z && p.z < a.min.z + a.lod;
+};
+/* const containsNode = (a, node) => {
+  return containsPoint(a, node.min);
+}; */
+const findLeafNodeForPosition = (nodes, p) => {
+  for (const node of nodes) {
+    if (containsPoint(node, p)) {
+      return node;
+    }
+  }
+  return null;
+};
+
+DataRequestUpdate Tracker::updateDataRequests(
+  std::unordered_map<uint64_t, DataRequestPtr> &dataRequests,
+  std::vector<OctreeNodePtr> &leafNodes
+) {
+  DataRequestUpdate dataRequestUpdate;
+
+  // cancel old data requests
+  std::vector<DataRequestPtr> oldDataRequests;
+  oldDataRequests.reserve(dataRequests.size());
+  for (auto iter = dataRequests.begin(); iter != dataRequests.end();) {
+    const uint64_t &hash = iter->first;
+    DataRequestPtr oldDataRequest = iter->second;
+
+    auto matchingLeafNodeIter = std::find_if(leafNodes.begin(), leafNodes.end(), [&](const auto &OctreeNodePtr leafNode) -> bool {
+      return equalsNodeLod(*leafNode, *oldDataRequest->node);
+    });
+    if (matchingLeafNode != leafNodes.end()) {
+      // keep the data request
+      // oldDataRequest.replaceNode(matchingLeafNode);
+      dataRequestUpdate.keepDataRequests.push_back(*matchingLeafNode);
+
+      iter++;
+    } else {
+      // cancel the data request
+      // oldDataRequest.cancel();
+      dataRequestUpdate.cancelDataRequests.push_back(*iter);
+      // forget the data request
+      auto currentIter = iter;
+      auto nextIter = iter + 1;
+      this->dataRequests.erase(currentIter);
+      iter = nextIter;
+    }
+  }
+
+  // add new data requests
+  for (auto chunk : leafNodes) {
+    const hash = _getHashChunk(chunk);
+    if (!this.dataRequests.has(hash)) {
+      DataRequestPtr dataRequest(new DataRequest(chunk));
+      // const {signal} = dataRequest;
+      // let waited = false;
+
+      dataRequestUpdate.push_back(dataRequest);
+
+      this->dataRequests.set(hash, dataRequest);
+    }
+  }
+
+  return dataRequestUpdate;
+}
+std::unordered_map<uint64_t, Dominator> dominators = Tracker::updateDominators(
+  std::unordered_map<uint64_t, OctreeNodePtr> &renderedChunks,
+  std::unordered_map<uint64_t, DataRequestPtr> &dataRequests
+) {
+  // XXX rewrite this
+
+  // compute dominators. a dominator is a chunk lod that contains a a transform from old chunks to new chunks.
+  const oldRenderedChunks = Array.from(this.renderedChunks.values());
+  const newRenderedChunks = Array.from(this.dataRequests.values()).map(dataRequest => dataRequest.node);
+  const addChunk = (chunk, isNew) => {
+    const oldLeafNode = findLeafNodeForPosition(oldRenderedChunks, chunk.min);
+    const newLeafNode = findLeafNodeForPosition(newRenderedChunks, chunk.min);
+    let maxLodChunk;
+    if (oldLeafNode && newLeafNode) {
+      maxLodChunk = oldLeafNode.lod > newLeafNode.lod ? oldLeafNode : newLeafNode;
+    } else if (oldLeafNode) {
+      maxLodChunk = oldLeafNode;
+    } else if (newLeafNode) {
+      maxLodChunk = newLeafNode;
+    } else {
+      throw new Error('no chunk match in any leaf set');
+    }
+
+    const maxLodHash = _getHashChunk(maxLodChunk);
+    let dominator = this.dominators.get(maxLodHash);
+    if (!dominator) {
+      dominator = new Dominator(maxLodChunk, renderDatas => {
+        for (const oldChunk of dominator.oldChunks) {
+          this.chunkRemove(oldChunk);
+
+          const hash = _getHashChunk(oldChunk);
+          this.renderedChunks.delete(hash);
+        }
+        for (let i = 0; i < dominator.newChunks.length; i++) {
+          const newChunk = dominator.newChunks[i];
+          const renderData = renderDatas[i];
+          // console.log('add chunk', newChunk);
+
+          this.chunkAdd({
+            renderData,
+            chunk: newChunk,
+          });
+
+          const hash = _getHashChunk(newChunk);
+          this.renderedChunks.set(hash, newChunk);
+        }
+      });
+      this.dominators.set(maxLodHash, dominator);
+    }
+    if (isNew) {
+      dominator.newChunks.push(chunk);
+    } else {
+      dominator.oldChunks.push(chunk);
+    }
+  };
+  for (const chunk of oldRenderedChunks) {
+    addChunk(chunk, false);
+  }
+  for (const chunk of newRenderedChunks) {
+    addChunk(chunk, true);
+  }
+  for (const dominator of this.dominators.values()) {
+    dominator.start();
+  }
+}
 TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   std::vector<OctreeNodePtr> octreeLeafNodes = constructOctreeForLeaf(currentCoord, this->minLodRange, 1 << (this->lods - 1));
 
@@ -994,28 +1141,32 @@ TrackerUpdate Tracker::updateCoord(const vm::ivec3 &currentCoord) {
   sortNodes(octreeLeafNodes);
   this->lastOctreeLeafNodes = std::move(octreeLeafNodes);
 
+  //
+
+  DataRequestUpdate dataRequestUpdate = updateDataRequests(this->dataRequests, this->lastOctreeLeafNodes);
+
+  //
+
+  std::unordered_map<uint64_t, Dominator> dominators = updateDominators(this->renderedChunks, this->dataRequests);
+  // const oldRenderedChunks = Array.from(this.renderedChunks.values());
+  // const newRenderedChunks = Array.from(this.dataRequests.values()).map(dataRequest => dataRequest.node);
+
+  //
+
   TrackerUpdate result;
-  // result.currentCoord = currentCoord;
-  // result.oldTasks = std::move(cancelOldTasks);
-  // result.newTasks = std::move(tasks);
+
   result.leafNodes = this->lastOctreeLeafNodes;
+
+  result.newDataRequests = std::move(dataRequestUpdate.newDataRequests);
+  result.keepDataRequests = std::move(dataRequestUpdate.keepDataRequests);
+  result.oldDataRequests = std::move(dataTrquestUpdate.oldDataRequests);
+
+  result.dominators = std::move(dominators);
+
   return result;
 }
 TrackerUpdate Tracker::update(const vm::vec3 &position) {
   const vm::ivec3 &currentCoord = getCurrentCoord(position);
-
-  /* std::cout << "wasm update coord " <<
-    currentCoord.x << " " << currentCoord.y << " " << currentCoord.z << " " <<
-    position.x << " " << position.y << " " << position.z <<
-    std::endl; */
-
-  // if we moved across a chunk boundary, update needed chunks
-  // if (currentCoord != this->lastCoord) {
-    TrackerUpdate trackerUpdate = updateCoord(currentCoord);
-    // this->lastCoord = currentCoord;
-    return trackerUpdate;
-  /* } else {
-    abort();
-    return TrackerUpdate();
-  } */
+  TrackerUpdate trackerUpdate = updateCoord(currentCoord);
+  return trackerUpdate;
 }
