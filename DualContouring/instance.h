@@ -248,7 +248,7 @@ public:
     
     //
     
-    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, const std::vector<OctreeNodePtr> &renderChunks, int priority);
+    void trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, const std::vector<OctreeNodePtr> &renderedChunks, int priority);
 };
 
 #endif // _INSTANCE_H_

@@ -1977,7 +1977,7 @@ bool DCInstance::removeCubeDamage(
     return drew; */
 }
 
-void DCInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, const std::vector<OctreeNodePtr> &renderChunks, int priority) {
+void DCInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec3 &position, const std::vector<OctreeNodePtr> &renderedChunks, int priority) {
     std::shared_ptr<Promise> promise = DualContouring::resultQueue.createPromise(id);
 
     // std::cout << "tracker update async " << priority << std::endl;
@@ -1987,9 +1987,9 @@ void DCInstance::trackerUpdateAsync(uint32_t id, Tracker *tracker, const vm::vec
         promise,
         tracker,
         position,
-        oldRenderChunks = std::move(renderChunks)
+        renderedChunks = std::move(renderedChunks)
     ]() -> void {
-        const TrackerUpdate &trackerUpdate = tracker->update(position, oldRenderChunks);
+        const TrackerUpdate &trackerUpdate = tracker->update(position, renderedChunks);
         uint8_t *buffer = trackerUpdate.getBuffer();
         if (!promise->resolve(buffer)) {
           // XXX clean up
