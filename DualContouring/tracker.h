@@ -53,6 +53,36 @@ public:
 
 //
 
+class DataRequest {
+public:
+  OctreeNodePtr node;
+  
+  std::vector<uint8_t> getBuffer() const;
+};
+
+typedef std::shared_ptr<DataRequest> DataRequestPtr;
+
+class DataRequestUpdate {
+public:
+  std::vector<DataRequestPtr> newDataRequests;
+  std::vector<DataRequestPtr> cancelDataRequests;
+  std::vector<DataRequestPtr> keepDataRequests;
+
+  std::vector<uint8_t> getBuffer() const;
+};
+
+//
+
+class Dominator {
+public:
+  std::vector<OctreeNodePtr> newChunks;
+  std::vector<OctreeNodePtr> oldChunks;
+
+  std::vector<uint8_t> getBuffer() const;
+};
+
+//
+
 extern std::atomic<int> nextTrackerId;
 
 enum TrackerTaskType {
@@ -86,25 +116,6 @@ public:
   std::unordered_map<uint64_t, Dominator> dominators;
 
   uint8_t *getBuffer() const;
-};
-
-//
-
-class DataRequest {
-public:
-  OctreeNodePtr node;
-
-  std::vector<uint8_t> getBuffer() const;
-};
-
-//
-
-class TransformRequest {
-public:
-  std::vector<OctreeNodePtr> fromNodes;
-  std::vector<OctreeNodePtr> toNodes;
-
-  std::vector<uint8_t> getBuffer() const;
 };
 
 //
@@ -153,8 +164,7 @@ public:
   
   vm::ivec3 lastCoord;
   std::vector<OctreeNodePtr> chunks;
-  std::vector<OctreeNodePtr> lastOctreeLeafNodes;
-  std::vector<TrackerTaskPtr> liveTasks;
+  std::unordered_map<uint64_t, DataRequestPtr> dataRequests;
 
   Tracker(int lods, int minLodRange, bool trackY, DCInstance *inst);
 
