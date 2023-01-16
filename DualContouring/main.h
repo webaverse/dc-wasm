@@ -10,8 +10,8 @@
 #include <pthread.h>
 // #include <emscripten/wasm_worker.h>
 #include "instance.h"
-#include "noises.h"
-#include "result.h"
+// #include "noises.h"
+// #include "result.h"
 #include "vectorMath.h"
 #include "constants.h"
 
@@ -27,12 +27,12 @@ namespace DualContouring {
     // extern int chunkSize;
     // extern int gridPoints;
     // extern int cacheWidth;
-    extern Noises *noises;
+    // extern Noises *noises;
     // extern std::vector<emscripten_wasm_worker_t> threads;
-    extern TaskQueue taskQueue;
-    extern ResultQueue resultQueue;
+    // extern TaskQueue taskQueue;
+    // extern ResultQueue resultQueue;
 
-    extern pthread_t parentThreadId;
+    // extern pthread_t parentThreadId;
     // extern std::vector<emscripten_wasm_worker_t> threads;
 
     // initialization
@@ -43,14 +43,14 @@ namespace DualContouring {
     void destroyInstance(DCInstance *instance);
 
     // threads
-    void start();
-    void runLoop();
+    // void start();
+    // void runLoop();
 
     // biomes
-    float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
+    // float getComputedBiomeHeight(unsigned char b, const vm::vec2 &worldPosition);
     
     // caves
-    float getComputedCaveNoise(int ax, int ay, int az);
+    // float getComputedCaveNoise(int ax, int ay, int az);
 };
 
 #endif // MAIN_H

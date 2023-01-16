@@ -2,7 +2,7 @@
 #define MESH_H
 
 #include "vectorMath.h"
-#include "biomes.h"
+// #include "biomes.h"
 
 #include <vector>
 #include <array>
@@ -13,13 +13,13 @@
 
 typedef std::vector<vm::vec3> PositionBuffer;
 typedef std::vector<vm::vec3> NormalBuffer;
-typedef std::vector<vm::ivec4> BiomesBuffer;
-typedef std::vector<vm::vec4> BiomesWeightBuffer;
-typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
+// typedef std::vector<vm::ivec4> BiomesBuffer;
+// typedef std::vector<vm::vec4> BiomesWeightBuffer;
+// typedef std::vector<std::array<UV, 2>> BiomesUvsBuffer;
 typedef std::vector<int> IndexBuffer;
-typedef std::vector<int> BiomeBuffer;
-typedef std::vector<uint8_t> LightBuffer;
-typedef unsigned char PeekBuffer[15];
+// typedef std::vector<int> BiomeBuffer;
+// typedef std::vector<uint8_t> LightBuffer;
+// typedef unsigned char PeekBuffer[15];
 
 //
 
@@ -31,14 +31,14 @@ struct VertexData
     vm::vec3 position;
     vm::vec3 normal;
 
-    vm::ivec4 biomes;
-    vm::vec4 biomesWeights;
+    // vm::ivec4 biomes;
+    // vm::vec4 biomesWeights;
 
-    std::array<UV, 2> biomeUvs1; // needs to be broken up to fit into vec4
-    std::array<UV, 2> biomeUvs2;
+    // std::array<UV, 2> biomeUvs1; // needs to be broken up to fit into vec4
+    // std::array<UV, 2> biomeUvs2;
 
-    uint8_t skylight;
-    uint8_t ao;
+    // uint8_t skylight;
+    // uint8_t ao;
 };
 
 //
@@ -49,15 +49,15 @@ public:
     NormalBuffer normals;
     IndexBuffer indices;
 
-    BiomesBuffer biomes;
-    BiomesWeightBuffer biomesWeights;
-    BiomesUvsBuffer biomesUvs1;
-    BiomesUvsBuffer biomesUvs2;
+    // BiomesBuffer biomes;
+    // BiomesWeightBuffer biomesWeights;
+    // BiomesUvsBuffer biomesUvs1;
+    // BiomesUvsBuffer biomesUvs2;
 
-    LightBuffer skylights;
-    LightBuffer aos;
+    // LightBuffer skylights;
+    // LightBuffer aos;
 
-    PeekBuffer peeks;
+    // PeekBuffer peeks;
 
     uint8_t *getBuffer() const;
     
@@ -70,9 +70,9 @@ public:
     NormalBuffer normals;
     IndexBuffer indices;
 
-    BiomeBuffer biomes;
+    // BiomeBuffer biomes;
 
-    PeekBuffer peeks;
+    // PeekBuffer peeks;
 
     uint8_t *getBuffer() const;
 

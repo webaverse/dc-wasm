@@ -1,8 +1,8 @@
 #include "main.h"
 #include "density.h"
-#include "./biomes.h"
+// #include "./biomes.h"
 
-float sphere(const vm::vec3 &worldPosition, const vm::vec3 &origin, float radius)
+/* float sphere(const vm::vec3 &worldPosition, const vm::vec3 &origin, float radius)
 {
 	return vm::length(worldPosition - origin) - radius;
 }
@@ -15,7 +15,7 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 	const vm::vec3 &d = vm::abs(pos) - halfDimensions;
 	const float m = std::max(d.x, std::max(d.y, d.z));
 	return std::min(m, vm::length(vm::max(d, 0.0)));
-}
+} */
 
 // float falloffMap(const vm::vec2 &position)
 // {
@@ -80,7 +80,7 @@ float cuboid(const vm::vec3 &worldPosition, const vm::vec3 &origin, const vm::ve
 	return biome;
 } */
 
-template <typename BoxType>
+/* template <typename BoxType>
 inline float clampPointToRange(float minDistance, const vm::vec3 &position, const BoxType &range) {
   const auto &rangeMin = range.min;
 	const auto &rangeMax = range.max;
@@ -96,9 +96,9 @@ inline float clampPointToRange(float minDistance, const vm::vec3 &position, cons
 	);
 	minDistance = std::max(minDistance, cube);
 	return minDistance;
-}
+} */
 
-// negative density means inside the chunk, positive density means outside the chunk
+/* // negative density means inside the chunk, positive density means outside the chunk
 // when the clipper is enabled, we contain the SDF into a AABB (sdf increases with distance away from the range AABB)
 float terrainDensityFn(const vm::vec3 &position, const int lod, DCInstance *inst)
 {
@@ -110,13 +110,6 @@ float terrainDensityFn(const vm::vec3 &position, const int lod, DCInstance *inst
 	  minDistance = clampPointToRange(minDistance, position, *inst->clipRange);
 	}
 
-	// const float cube = cuboid(position, vm::vec3(-4., 10.f, -4.f), vm::vec3(12.f));
-	// const float orb = sphere(position, vm::vec3(15.f, 2.5f, 1.f), 16.f);
-
-	// return orb;
-	// return cube;
-	// return terrain;
-	// return std::max(-cube, terrain);
 	return minDistance;
 }
 
@@ -128,11 +121,5 @@ float liquidDensityFn(const vm::vec3 &position, const int lod, DCInstance *inst)
 	if (inst->clipRange) { // range clipper enabled
     minDistance = clampPointToRange(minDistance, position, *inst->clipRange);
 	}
-	/* if (isnan(minDistance)) {
-		EM_ASM({
-			console.log('liquid density nan', 'water=', $0, 'chunk=', $1, $2, $3, ', worldPosition=', $4, $5, $6);
-		}, water, chunk.min.x, chunk.min.y, chunk.min.z, position.x, position.y, position.z);
-		abort();
-	} */
 	return minDistance;
-}
+} */

@@ -1,7 +1,7 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
-#include "./DualContouring/cache.h"
+// #include "./DualContouring/cache.h"
 #include "./DualContouring/instance.h"
 #include <functional>
 
@@ -33,9 +33,9 @@ R trilinear(
   const int lod,
   T &data
 ) {
-  float rx = std::round(location.x);
-  float ry = std::round(location.y);
-  float rz = std::round(location.z);
+  float rx = std::floor(location.x);
+  float ry = std::floor(location.y);
+  float rz = std::floor(location.z);
 
   int ix = int(rx);
   int iy = int(ry);
@@ -75,8 +75,8 @@ R bilinearMap(
   T &data,
   Mapper map
 ) {
-  float rx = std::round(location.x);
-  float ry = std::round(location.y);
+  float rx = std::floor(location.x);
+  float ry = std::floor(location.y);
 
   int ix = int(rx);
   int iy = int(ry);
