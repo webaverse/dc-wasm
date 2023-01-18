@@ -7,18 +7,22 @@
 #include "../vector.h"
 #include "../util.h"
 #include <emscripten.h>
-#include "peek.h"
+// #include "peek.h"
 
-constexpr int CHUNK_RANGE = 1;
+// constexpr int CHUNK_RANGE = 1;
 
 // constructor/destructor
-DCInstance::DCInstance() {}
+DCInstance::DCInstance(int chunkSize, int range, float fatness) :
+  chunkSize(chunkSize),
+  range(range),
+  fatness(fatness)
+{}
 DCInstance::~DCInstance() {}
 
 //
 
-uint8_t *DCInstance::createPointCloudMesh(const std::vector<vm::vec3> &pointcloud) {
-    TerrainDCContext vertexContext(pointcloud);
+uint8_t *DCInstance::createPointCloudMesh(const std::vector<vm::vec3> &pointcloud, unsigned int *resultSize) {
+    TerrainDCContext vertexContext(pointcloud, chunkSize, range, fatness);
     
     ChunkOctree<TerrainDCContext> chunkOctree(this, &vertexContext);
     if (!chunkOctree.root)
@@ -39,7 +43,8 @@ uint8_t *DCInstance::createPointCloudMesh(const std::vector<vm::vec3> &pointclou
     // const vm::ivec3 chunkMax = worldPosition + (chunkSize * lod);
     // setPeeks<TerrainDCContext>(this, worldPosition, chunkMax, lod, vertexBuffer.peeks, PEEK_FACE_INDICES.array);
 
-    return vertexBuffer.getBuffer();
+    uint8_t *resultBuffer = vertexBuffer.getBuffer(resultSize);
+    return resultBuffer;
 }
 
 /* float randomFromPoint(int x, int y, int z) {

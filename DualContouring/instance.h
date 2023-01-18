@@ -20,10 +20,14 @@
 
 class DCInstance {
 public:
-    DCInstance();
+    int chunkSize;
+    int range;
+    float fatness;
+
+    DCInstance(int chunkSize, int range, float fatness);
     ~DCInstance();
 
-    uint8_t *createPointCloudMesh(const std::vector<vm::vec3> &pointcloud);
+    uint8_t *createPointCloudMesh(const std::vector<vm::vec3> &pointcloud, unsigned int *resultSize);
 };
 
 #endif // _INSTANCE_H_
