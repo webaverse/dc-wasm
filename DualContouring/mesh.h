@@ -59,7 +59,7 @@ public:
 
     // PeekBuffer peeks;
 
-    uint8_t *getBuffer() const;
+    uint8_t *getBuffer(unsigned int *outputLength) const;
     
     void pushVertexData(const VertexData &vertexData);
 };
