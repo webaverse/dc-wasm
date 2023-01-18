@@ -2,7 +2,7 @@
 #include "util.h"
 #include <iostream>
 
-uint8_t *TerrainVertexBuffer::getBuffer() const {
+uint8_t *TerrainVertexBuffer::getBuffer(unsigned int *outputLength) const {
   // calculate size
   size_t neededSize = 
     // positions
@@ -10,7 +10,7 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     positions.size() * sizeof(positions[0]) +
     // normals
     sizeof(uint32_t) +
-    normals.size() * sizeof(normals[0]); // +
+    normals.size() * sizeof(normals[0]) +
     // // biomes
     // sizeof(uint32_t) +
     // biomes.size() * sizeof(biomes[0]) +
@@ -24,7 +24,6 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
     // sizeof(uint32_t) +
     // biomesUvs2.size() * sizeof(biomesUvs2[0]);
 
-  neededSize +=
     // indices
     sizeof(uint32_t) +
     indices.size() * sizeof(indices[0]);
@@ -111,6 +110,10 @@ uint8_t *TerrainVertexBuffer::getBuffer() const {
   // index += sizeof(uint32_t);
   // std::memcpy(buffer + index, &peeks[0], 15 * sizeof(peeks[0]));
   // index +=  15 * sizeof(peeks[0]);
+
+  *outputLength = neededSize;
+
+  std::cout << "output buffer " << positions.size() << " " << normals.size() << " " << indices.size() << " " << index << " " << neededSize << std::endl;
 
   return buffer;
 }
