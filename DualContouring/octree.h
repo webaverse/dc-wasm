@@ -622,14 +622,14 @@ void contourEdgeProc(OctreeNode *node[4], int dir, IndexBuffer &indexBuffer)
 
     if (!isBranch[0] && !isBranch[1] && !isBranch[2] && !isBranch[3])
     {
-        // prevents seams geometry from overlapping with the chunk geometry
+        /* // prevents seams geometry from overlapping with the chunk geometry
         if (isSeam &&
             chunkMinForPosition(node[0]->min, node[0]->size) == chunkMinForPosition(node[1]->min, node[1]->size) &&
             chunkMinForPosition(node[1]->min, node[1]->size) == chunkMinForPosition(node[2]->min, node[2]->size) &&
             chunkMinForPosition(node[2]->min, node[2]->size) == chunkMinForPosition(node[3]->min, node[3]->size))
         {
             return;
-        }
+        } */
         contourProcessEdge<isSeam>(node, dir, indexBuffer);
     }
     else
