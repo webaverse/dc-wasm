@@ -195,7 +195,7 @@ public:
       inst(inst),
       ctx(ctx)
     {
-        const int maxNodeCount = 64 * 1024; // 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
+        const int maxNodeCount = 1024 * 1024; // 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
         chunkNodes.resize(maxNodeCount);
         const int size = chunkSize * minVoxelSize;
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
