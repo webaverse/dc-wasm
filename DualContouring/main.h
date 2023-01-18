@@ -36,10 +36,14 @@ namespace DualContouring {
     // extern std::vector<emscripten_wasm_worker_t> threads;
 
     // initialization
-    void initialize(int newChunkSize, int seed);
+    // void initialize(int newChunkSize, int seed);
     
     // instances
-    DCInstance *createInstance();
+    DCInstance *createInstance(
+        int chunkSize,
+        int range,
+        float fatness
+    );
     void destroyInstance(DCInstance *instance);
 
     // threads

@@ -9,8 +9,8 @@
 
 namespace DualContouring
 {
-    DCInstance *createInstance() {
-        DCInstance *instance = new DCInstance();
+    DCInstance *createInstance(int chunkSize, int range, float fatness) {
+        DCInstance *instance = new DCInstance(chunkSize, range, fatness);
         return instance;
     }
     void destroyInstance(DCInstance *instance) {
