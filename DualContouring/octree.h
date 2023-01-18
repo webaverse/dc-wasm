@@ -197,7 +197,7 @@ public:
     {
         const int maxNodeCount = 1024 * 1024; // 42130; // 4681 (number of chunk nodes) + 37449 (number of seam nodes)
         chunkNodes.resize(maxNodeCount);
-        const int size = chunkSize * minVoxelSize;
+        const int size = inst->chunkSize * minVoxelSize;
         OctreeNode *rootNode = newOctreeNode(min, size, Node_Internal);
         std::vector<OctreeNode *> voxelNodes = generateVoxelNodes(min, minVoxelSize);
         root = constructOctreeUpwards(rootNode, voxelNodes, min, size);
@@ -221,7 +221,7 @@ public:
     std::vector<OctreeNode *> generateVoxelNodes(const vm::ivec3 &min, int lod)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = min + chunkSize * lod;
+        const vm::ivec3 chunkMax = min + inst->chunkSize * lod;
 
         for (int x = min.x; x < chunkMax.x; x += lod)
             for (int y = min.y; y < chunkMax.y; y += lod)
@@ -287,7 +287,7 @@ public:
             if (voxelNode->size != 1)
             {
                 const vm::ivec3 maxPos = voxelNode->min + voxelNode->size;
-                const vm::ivec3 maxChunkPos = chunkMinForPosition(voxelNode->min, voxelNode->size) + chunkSize * voxelNode->size;
+                const vm::ivec3 maxChunkPos = chunkMinForPosition(voxelNode->min, inst->chunkSize, voxelNode->size) + inst->chunkSize * voxelNode->size;
                 bool addedNode = false;
                 if (maxPos.x == maxChunkPos.x || maxPos.y == maxChunkPos.y || maxPos.z == maxChunkPos.z)
                 {
@@ -365,7 +365,7 @@ public:
     std::vector<OctreeNode *> constructChunkSeamNodes(DCInstance *inst, const int &baseLod, const int &lod, const vm::ivec3 &chunkMin, FilterNodesFunc filterFunc)
     {
         std::vector<OctreeNode *> nodes;
-        const vm::ivec3 chunkMax = chunkMin + chunkSize * baseLod;
+        const vm::ivec3 chunkMax = chunkMin + inst->chunkSize * baseLod;
 
         for (int x = chunkMin.x; x < chunkMax.x; x += lod)
             for (int y = chunkMin.y; y < chunkMax.y; y += lod)
