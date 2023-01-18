@@ -13,8 +13,9 @@
 class SdfAccessor {
 public:
   std::vector<float> &sdf;
+  int chunkSize;
 
-  SdfAccessor(std::vector<float> &sdf);
+  SdfAccessor(std::vector<float> &sdf, int chunkSize);
   float get(float x, float y, float z) const;
 };
 
@@ -27,7 +28,7 @@ public:
     SdfAccessor sdfAccessor;
     TerrainVertexBuffer vertexBuffer;
 
-    TerrainDCContext(const std::vector<vm::vec3> &pointcloud);
+    TerrainDCContext(const std::vector<vm::vec3> &pointcloud, int chunkSize, int range, float fatness);
 
     float densityFn(const vm::vec3 &position);
 };
