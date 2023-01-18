@@ -450,8 +450,8 @@ public:
         OctreeNode *octree,
         const std::vector<OctreeNode *> &nodes,
         const int &parentSize,
-        const vm::ivec3 &rootMin)
-    {
+        const vm::ivec3 &rootMin
+    ) {
         std::unordered_map<uint64_t, OctreeNode *> parentsHashmap;
 
         for_each(begin(nodes), end(nodes), [&](OctreeNode *node)
