@@ -1,11 +1,22 @@
 #include <emscripten.h>
 // #include "DualContouring/tracker.h"
 #include "DualContouring/main.h"
+#include "DualContouring/vectorMath.h"
+#include "MC.h"
+#include "VHACD.h"
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE DCInstance *createInstance() {
-    return DualContouring::createInstance();
+EMSCRIPTEN_KEEPALIVE DCInstance *createInstance(
+    int chunkSize,
+    int range,
+    float fatness
+) {
+    return DualContouring::createInstance(
+        chunkSize,
+        range,
+        fatness
+    );
 }
 EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
     DualContouring::destroyInstance(instance);
