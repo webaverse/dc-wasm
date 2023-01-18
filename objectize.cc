@@ -176,6 +176,207 @@ EMSCRIPTEN_KEEPALIVE uint8_t *marchCubes(DCInstance *instance, float *points, un
 
 //
 
+// struct Vertex
+// {
+//     double mX;
+//     double mY;
+//     double mZ;
+
+//     Vertex() = default;
+//     Vertex(double x, double y, double z) : mX(x), mY(y), mZ(z) {}
+
+//     const double& operator[](size_t idx) const
+//     {
+//         switch(idx)
+//         {
+//             case 0: return mX;
+//             case 1: return mY;
+//             case 2: return mZ;
+//         };
+//         return mX;
+//     }
+// };
+
+// struct Triangle
+// {
+//     uint32_t mI0;
+//     uint32_t mI1;
+//     uint32_t mI2;
+
+//     Triangle() = default;
+//     Triangle(uint32_t i0, uint32_t i1, uint32_t i2) : mI0(i0), mI1(i1), mI2(i2) {}
+// };
+
+// class ConvexHull {
+// public:
+//     std::vector<VHACD::Vertex>      m_points;
+//     std::vector<VHACD::Triangle>    m_triangles;
+
+//     double                          m_volume{ 0 };          // The volume of the convex hull
+//     VHACD::Vect3                    m_center{ 0, 0, 0 };    // The centroid of the convex hull
+//     uint32_t                        m_meshId{ 0 };          // A unique id for this convex hull
+//     VHACD::Vect3            mBmin;                  // Bounding box minimum of the AABB
+//     VHACD::Vect3            mBmax;                  // Bounding box maximum of the AABB
+// };
+
+// bool Compute(
+//     const float* const points,
+//     const uint32_t countPoints,
+//     const uint32_t* const triangles,
+//     const uint32_t countTriangles,
+//     const Parameters& params);
+
+// class Parameters
+// {
+// public:
+//     IUserCallback*      m_callback{nullptr};            // Optional user provided callback interface for progress
+//     IUserLogger*        m_logger{nullptr};              // Optional user provided callback interface for log messages
+//     IUserTaskRunner*    m_taskRunner{nullptr};          // Optional user provided interface for creating tasks
+//     uint32_t            m_maxConvexHulls{ 64 };         // The maximum number of convex hulls to produce
+//     uint32_t            m_resolution{ 400000 };         // The voxel resolution to use
+//     double              m_minimumVolumePercentErrorAllowed{ 1 }; // if the voxels are within 1% of the volume of the hull, we consider this a close enough approximation
+//     uint32_t            m_maxRecursionDepth{ 10 };        // The maximum recursion depth
+//     bool                m_shrinkWrap{true};             // Whether or not to shrinkwrap the voxel positions to the source mesh on output
+//     FillMode            m_fillMode{ FillMode::FLOOD_FILL }; // How to fill the interior of the voxelized mesh
+//     uint32_t            m_maxNumVerticesPerCH{ 64 };    // The maximum number of vertices allowed in any output convex hull
+//     bool                m_asyncACD{ true };             // Whether or not to run asynchronously, taking advantage of additional cores
+//     uint32_t            m_minEdgeLength{ 2 };           // Once a voxel patch has an edge length of less than 4 on all 3 sides, we don't keep recursing
+//     bool                m_findBestPlane{ false };       // Whether or not to attempt to split planes along the best location. Experimental feature. False by default.
+// };
+
+EMSCRIPTEN_KEEPALIVE uint8_t *vhacd(
+    float *positions,
+    unsigned int positionsSize,
+    unsigned int *indices,
+    unsigned int indicesSize,
+    unsigned int *resultSize,
+
+    uint32_t maxConvexHulls,
+    uint32_t resolution,
+    float minimumVolumePercentErrorAllowed,
+    uint32_t maxRecursionDepth,
+    uint32_t shrinkWrapInt,
+    uint32_t fillModeIndex,
+    uint32_t maxNumVerticesPerCH,
+    uint32_t minEdgeLength,
+    uint32_t findBestPlaneInt
+) {
+    // std::cout << "compute " << positionsSize << " " << indicesSize << std::endl;
+
+    // initialize
+    VHACD::IVHACD *iface = VHACD::CreateVHACD();
+
+    VHACD::IVHACD::Parameters parameters;
+    parameters.m_maxConvexHulls = maxConvexHulls;
+    parameters.m_resolution = resolution;
+    parameters.m_minimumVolumePercentErrorAllowed = minimumVolumePercentErrorAllowed;
+    parameters.m_maxRecursionDepth = maxRecursionDepth;
+    parameters.m_shrinkWrap = (bool)shrinkWrapInt;
+    parameters.m_fillMode = (VHACD::FillMode)fillModeIndex;
+    parameters.m_maxNumVerticesPerCH = maxNumVerticesPerCH;
+    parameters.m_minEdgeLength = minEdgeLength;
+    parameters.m_findBestPlane = (bool)findBestPlaneInt;
+
+    // compute hulls
+    bool ok = iface->Compute(
+        positions,
+        positionsSize / 3,
+        indices,
+        indicesSize / 3,
+        parameters
+    );
+    bool ready = iface->IsReady();
+    std::cout << "vhacd done " << (+ok) << " " << (+ready) << std::endl;
+
+    // extract hulls
+    unsigned int numHulls = iface->GetNConvexHulls();
+    std::vector<VHACD::IVHACD::ConvexHull> hulls(numHulls);
+    for (uint32_t i = 0; i < iface->GetNConvexHulls(); i++) {
+        iface->GetConvexHull(i, hulls[i]);
+    }
+
+    // compute needed size
+    unsigned int neededSize = 0;
+    neededSize += sizeof(uint32_t); // num hulls
+    for (uint32_t i = 0; i < hulls.size(); i++) {
+        VHACD::IVHACD::ConvexHull &ch = hulls[i];
+
+        neededSize += sizeof(uint32_t); // num positions
+        for (uint32_t j = 0; j < ch.m_points.size(); j++) {
+          neededSize += sizeof(float) * 3;
+        }
+
+        neededSize += sizeof(uint32_t); // num triangles
+        for (uint32_t j = 0; j < ch.m_triangles.size(); j++) {
+            neededSize += sizeof(uint32_t) * 3;
+        }
+    }
+
+    // read result
+    uint8_t *resultBuffer = (uint8_t *)malloc(neededSize);
+    int index = 0;
+
+    uint32_t numHulls32 = (uint32_t)hulls.size();
+    memcpy(resultBuffer + index, &numHulls32, sizeof(uint32_t));
+    index += sizeof(uint32_t);
+
+    for (uint32_t i = 0; i < iface->GetNConvexHulls(); i++) {
+        VHACD::IVHACD::ConvexHull &ch = hulls[i];
+
+        // positions
+        uint32_t numPositions = ch.m_points.size();
+        uint32_t numPositionFloats = numPositions * 3;
+        memcpy(resultBuffer + index, &numPositionFloats, sizeof(uint32_t));
+        index += sizeof(uint32_t);
+
+        for (uint32_t j = 0; j < ch.m_points.size(); j++) {
+            VHACD::Vertex &v = ch.m_points[j];
+            
+            float mX = (float)v.mX;
+            memcpy(resultBuffer + index, &mX, sizeof(float));
+            index += sizeof(float);
+
+            float mY = (float)v.mY;
+            memcpy(resultBuffer + index, &mY, sizeof(float));
+            index += sizeof(float);
+
+            float mZ = (float)v.mZ;
+            memcpy(resultBuffer + index, &mZ, sizeof(float));
+            index += sizeof(float);
+        }
+
+        // triangles
+        uint32_t numTriangles = ch.m_triangles.size();
+        uint32_t numTriangleUints = numTriangles * 3;
+        memcpy(resultBuffer + index, &numTriangleUints, sizeof(uint32_t));
+        index += sizeof(uint32_t);
+
+        for (uint32_t j = 0; j < ch.m_triangles.size(); j++) {
+            VHACD::Triangle &t = ch.m_triangles[j];
+
+            uint32_t mI0 = t.mI0;
+            memcpy(resultBuffer + index, &mI0, sizeof(uint32_t));
+            index += sizeof(uint32_t);
+
+            uint32_t mI1 = t.mI1;
+            memcpy(resultBuffer + index, &mI1, sizeof(uint32_t));
+            index += sizeof(uint32_t);
+
+            uint32_t mI2 = t.mI2;
+            memcpy(resultBuffer + index, &mI2, sizeof(uint32_t));
+            index += sizeof(uint32_t);
+        }
+    }
+
+    *resultSize = neededSize;
+
+    iface->Release();
+
+    return resultBuffer;
+}
+
+//
+
 EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {
     return malloc(size);
 }
