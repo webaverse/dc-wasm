@@ -184,7 +184,7 @@ public:
     OctreeNode *root;     // chunk nodes root (without the seams)
     // OctreeNode *seamRoot; // seam nodes root
     vm::ivec3 min;
-    int minVoxelSize; // determined by level of detail
+    int minVoxelSize;
     DCInstance *inst;
     DCContextType *ctx;
 
