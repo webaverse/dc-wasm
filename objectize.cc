@@ -24,6 +24,22 @@ EMSCRIPTEN_KEEPALIVE void destroyInstance(DCInstance *instance) {
 
 //
 
+EMSCRIPTEN_KEEPALIVE uint8_t *createPointCloudMesh(DCInstance *instance, float *points, unsigned int pointsSize, unsigned int *resultSize) {
+    unsigned int numPoints = pointsSize / 3;
+    std::vector<vm::vec3> pointcloud(numPoints);
+    for (int i = 0; i < numPoints; i++) {
+        pointcloud[i] = vm::vec3{
+            points[i * 3],
+            points[i * 3 + 1],
+            points[i * 3 + 2]
+        };
+    }
+    uint8_t *result = instance->createPointCloudMesh(pointcloud, resultSize);
+    return result;
+}
+
+//
+
 EMSCRIPTEN_KEEPALIVE void *doMalloc(size_t size) {
     return malloc(size);
 }
