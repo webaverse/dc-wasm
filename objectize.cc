@@ -188,7 +188,7 @@ EMSCRIPTEN_KEEPALIVE uint8_t *vhacd(
         parameters
     );
     bool ready = iface->IsReady();
-    std::cout << "vhacd done " << (+ok) << " " << (+ready) << std::endl;
+    // std::cout << "vhacd done " << (+ok) << " " << (+ready) << std::endl;
 
     // extract hulls
     unsigned int numHulls = iface->GetNConvexHulls();
