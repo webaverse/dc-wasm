@@ -386,7 +386,7 @@ public:
         return nodes;
     }
 
-    std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, const vm::ivec3 &baseChunkMin, const int lodArray[])
+    /* std::vector<OctreeNode *> generateSeamNodes(DCInstance *inst, const vm::ivec3 &baseChunkMin, const int lodArray[])
     {
         const vm::ivec3 seamValues = baseChunkMin + vm::ivec3{chunkSize, chunkSize, chunkSize} * lodArray[0];
 
@@ -444,7 +444,7 @@ public:
         seamNodes.insert(std::end(seamNodes), std::begin(neighbourNodes), std::end(neighbourNodes));
 
         return seamNodes;
-    }
+    } */
 
     std::vector<OctreeNode *> constructParents(
         OctreeNode *octree,
