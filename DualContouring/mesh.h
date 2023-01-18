@@ -64,7 +64,7 @@ public:
     void pushVertexData(const VertexData &vertexData);
 };
 
-class LiquidVertexBuffer {
+/* class LiquidVertexBuffer {
 public:
     PositionBuffer positions;
     NormalBuffer normals;
@@ -77,6 +77,6 @@ public:
     uint8_t *getBuffer() const;
 
     void pushVertexData(const VertexData &vertexData);
-};
+}; */
 
 #endif // MESH_H

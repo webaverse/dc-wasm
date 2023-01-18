@@ -132,7 +132,7 @@ void TerrainVertexBuffer::pushVertexData(const VertexData &vertexData) {
 
 //
 
-uint8_t *LiquidVertexBuffer::getBuffer() const {
+/* uint8_t *LiquidVertexBuffer::getBuffer() const {
   // calculate size
   size_t neededSize =
     // positions
@@ -182,4 +182,4 @@ void LiquidVertexBuffer::pushVertexData(const VertexData &vertexData) {
   positions.push_back(vertexData.position);
   normals.push_back(vertexData.normal);
   // biomes.push_back(vertexData.biomes.x);
-}
+} */
